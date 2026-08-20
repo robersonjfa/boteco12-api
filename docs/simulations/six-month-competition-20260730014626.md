@@ -1,4 +1,4 @@
-# Simulação Fantasy12 — seis meses — 20260730014626
+# Simulação Boteco12 — seis meses — 20260730014626
 
 - **Status:** ok
 - **Período:** 31/12/2025, 21:00 até 30/06/2026, 21:00

@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-A trilha ativa do `fantasy12-api` começa em uma baseline consolidada:
+A trilha ativa do `boteco12-api` começa em uma baseline consolidada:
 
 ```text
 20260730000000_fantasy12_baseline_v2

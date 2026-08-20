@@ -33,8 +33,8 @@ Esta rodada consolidou o bloco de perfil, admin operacional basico e bolões pre
 
 ### Producao validada
 
-- `https://api.fantasy12.com/health`
-- `https://api.fantasy12.com/api/me` com `adminRoles`
+- `https://api.boteco12.com/health`
+- `https://api.boteco12.com/api/me` com `adminRoles`
 - `GET /api/admin/users` com sessao admin
 - `GET /api/admin/logs` com sessao admin
 - frontend publico servindo bundle novo com as superficies novas

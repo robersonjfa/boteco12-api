@@ -50,7 +50,7 @@ export function getRequiredSchedules(): RegisteredSchedule[] {
   ]
 }
 
-export async function registerFantasy12Schedules(queue: Queue) {
+export async function registerBoteco12Schedules(queue: Queue) {
   const schedules = getRequiredSchedules()
 
   for (const schedule of schedules) {

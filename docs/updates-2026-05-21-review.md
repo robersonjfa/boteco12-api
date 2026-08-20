@@ -72,7 +72,7 @@ Esse item precisa auditoria de implementação:
 Esse item já aparece explicitamente no frontend atual como benefício PRO.
 
 Estado encontrado:
-- `/Users/roberson/dev/personal/fantasy12-frontend/src/pages/Subscription.tsx`
+- `/Users/roberson/dev/personal/boteco12-frontend/src/pages/Subscription.tsx`
 
 Recomendação:
 - remover da lista de benefícios
@@ -85,7 +85,7 @@ O PDF aponta corretamente uma duplicidade visual:
 - depois há blocos adicionais que repetem parte da mesma informação
 
 Estado encontrado:
-- `/Users/roberson/dev/personal/fantasy12-frontend/src/pages/Dashboard.tsx`
+- `/Users/roberson/dev/personal/boteco12-frontend/src/pages/Dashboard.tsx`
 
 Recomendação:
 - consolidar `rodada + status + envio` no bloco hero superior

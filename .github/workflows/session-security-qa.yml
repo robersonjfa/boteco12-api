@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: fantasy12-production-session-qa
+  group: boteco12-production-session-qa
   cancel-in-progress: false
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
 
             API_SERVICE='f12-prd_api'
             REDIS_SERVICE='f12-prd_redis'
-            API_URL='https://api.fantasy12.com'
+            API_URL='https://api.boteco12.com'
             QA_EMAIL="qa-session-${QA_RUN_ID}@example.invalid"
             QA_CPF="9$(date +%s)"
             QA_PASSWORD="Qa!$(openssl rand -hex 18)"
@@ -159,7 +159,7 @@ jobs:
             test -n "$API_CONTAINER"
 
             ORIGIN="$(docker exec "$API_CONTAINER" node -e '
-              const configured = process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_ORIGIN || "https://fantasy12.com"
+              const configured = process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_ORIGIN || "https://boteco12.com"
               process.stdout.write(configured.split(",")[0].trim())
             ')"
             test -n "$ORIGIN"

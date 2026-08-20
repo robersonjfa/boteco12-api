@@ -7,7 +7,7 @@ Ultima atualizacao:
 ## Verificacoes rapidas
 
 1. Validar API:
-   - `GET https://api.fantasy12.com/health`
+   - `GET https://api.boteco12.com/health`
    - esperado: `api: ok`, `db: ok`
 2. Validar painel:
    - abrir `Admin > Operacao`
@@ -58,7 +58,7 @@ Ultima atualizacao:
   - para teste sandbox, `MP_ALLOW_UNSIGNED_TEST_WEBHOOKS=true` pode ser usado somente com token `TEST-...`
 - `mp_notification_url_not_explicit`
   - a URL de notificacao depende da configuracao do app Mercado Pago ou nao esta explicita no ambiente
-  - configurar `API_PUBLIC_URL=https://api.fantasy12.com` ou `MP_NOTIFICATION_URL`
+  - configurar `API_PUBLIC_URL=https://api.boteco12.com` ou `MP_NOTIFICATION_URL`
 
 ## Jobs internos
 
@@ -92,7 +92,7 @@ Variaveis para habilitar envio real via SMTP:
 
 ```bash
 EMAIL_PROVIDER=smtp
-EMAIL_FROM="Fantasy12 <no-reply@fantasy12.com>"
+EMAIL_FROM="Boteco12 <no-reply@boteco12.com>"
 SMTP_HOST=smtp.exemplo.com
 SMTP_PORT=587
 SMTP_SECURE=false

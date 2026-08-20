@@ -104,7 +104,7 @@ test('deploy faz cutover antes de executar migrations na pasta isolada', () => {
   assert.notEqual(cutoverIndex, -1)
   assert.notEqual(deployIndex, -1)
   assert.ok(cutoverIndex < deployIndex)
-  assert.match(workflow, /STAGED_PRISMA="\/tmp\/fantasy12-prisma-/)
+  assert.match(workflow, /STAGED_PRISMA="\/tmp\/boteco12-prisma-/)
   assert.match(workflow, /MIGRATION_HISTORY_BACKUP_PATH/)
   assert.match(workflow, /CUTOVER_STATUS=\$\?/)
   assert.match(workflow, /Migration cutover diagnostic backup:/)

@@ -9,7 +9,7 @@
 
 Backlog oficial:
 
-- ver [`docs/backlog-master.md`](/Users/roberson/dev/personal/fantasy12-api/docs/backlog-master.md)
+- ver [`docs/backlog-master.md`](/Users/roberson/dev/personal/boteco12-api/docs/backlog-master.md)
 
 ## Fase 0: Diagnóstico e alinhamento
 
@@ -92,7 +92,7 @@ Critério de saída:
 
 - não depender de configuração frágil para manter segurança mínima
 
-## Fase 4: Criação do `fantasy12-infra`
+## Fase 4: Criação do `boteco12-infra`
 
 Objetivo:
 
@@ -100,7 +100,7 @@ Objetivo:
 
 Entregáveis:
 
-- novo repositório `fantasy12-infra`
+- novo repositório `boteco12-infra`
 - `docker-compose` local
 - templates de ambiente
 - scripts operacionais
@@ -150,14 +150,14 @@ Prioridade desta fase:
 
 Referência adicional:
 
-- ver [`docs/ui-patterns-backlog.md`](/Users/roberson/dev/personal/fantasy12-api/docs/ui-patterns-backlog.md)
+- ver [`docs/ui-patterns-backlog.md`](/Users/roberson/dev/personal/boteco12-api/docs/ui-patterns-backlog.md)
 
 ## Ordem recomendada de execução
 
 1. consolidar contratos
 2. consolidar banco
 3. corrigir segurança básica
-4. criar `fantasy12-infra`
+4. criar `boteco12-infra`
 5. automatizar deploy e observabilidade
 
 ## Backlog objetivo imediato
@@ -178,7 +178,7 @@ Semana 2:
 
 Semana 3:
 
-- desenhar e criar `fantasy12-infra`
+- desenhar e criar `boteco12-infra`
 - subir ambiente local integrado
 - organizar deploy inicial por ambiente
 

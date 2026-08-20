@@ -235,7 +235,7 @@ async function main() {
       data: {
         name: `[SIM6 ${scenarioId}] ${config.name}`,
         nickname: `s6${scenarioId.slice(-6)}${role.toLowerCase()}`,
-        email: `sim6-${scenarioId}-${role.toLowerCase()}@simulation.fantasy12.test`,
+        email: `sim6-${scenarioId}-${role.toLowerCase()}@simulation.boteco12.test`,
         password: 'simulation-account-no-login',
         createdAt,
       },
@@ -731,7 +731,7 @@ function check(report, key, passed, evidence) {
 
 function buildMarkdown(report) {
   const lines = [
-    `# Simulação Fantasy12 — seis meses — ${report.scenarioId}`,
+    `# Simulação Boteco12 — seis meses — ${report.scenarioId}`,
     '',
     `- **Status:** ${report.status}`,
     `- **Período:** ${report.period.start.saoPaulo} até ${report.period.endExclusive.saoPaulo}`,

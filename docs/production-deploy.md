@@ -61,13 +61,13 @@ COOKIE_SAME_SITE=none
 SESSION_IDLE_TTL_MIN=30
 SESSION_ABSOLUTE_TTL_HOURS=24
 REDIS_URL=redis://:PASSWORD@HOST:6379/0
-FRONTEND_ORIGIN=https://www.fantasy12.com
-CORS_ALLOWED_ORIGINS=https://www.fantasy12.com
+FRONTEND_ORIGIN=https://www.boteco12.com
+CORS_ALLOWED_ORIGINS=https://www.boteco12.com
 INTERNAL_JOB_SECRET=change-me-too
 RUN_DB_MIGRATIONS=false
 MP_ACCESS_TOKEN=APP_USR-...
 MP_WEBHOOK_SECRET=change-me-too
-API_PUBLIC_URL=https://api.fantasy12.com
+API_PUBLIC_URL=https://api.boteco12.com
 ```
 
 ## Primeiro deploy
@@ -145,7 +145,7 @@ Registro do fluxo validado em 2026-06-21 para publicar API e frontend em produca
 Status:
 
 - automatizado em .github/workflows/deploy.yml
-- frontend automatizado em fantasy12-frontend/.github/workflows/deploy.yml
+- frontend automatizado em boteco12-frontend/.github/workflows/deploy.yml
 
 O workflow CI/CD API é a trilha oficial para a API:
 
@@ -161,7 +161,7 @@ O workflow CI/CD API é a trilha oficial para a API:
   - valida as variáveis obrigatórias e os invariantes financeiros na base ativa
   - aplica as migrations com `prisma migrate deploy` e confirma o status
   - chama deployService via RPC do EasyPanel
-  - aguarda https://api.fantasy12.com/health retornar api/db: ok e o fingerprint exato dos insumos de produção
+  - aguarda https://api.boteco12.com/health retornar api/db: ok e o fingerprint exato dos insumos de produção
 
 Segredos/variáveis necessários no GitHub:
 
@@ -184,7 +184,7 @@ API_HEALTH_URL
 Se API_HEALTH_URL não for definida, o workflow usa:
 
 ~~~text
-https://api.fantasy12.com/health
+https://api.boteco12.com/health
 ~~~
 
 Observações:
@@ -209,8 +209,8 @@ NGINX_CONTAINER_ID. A fonte de verdade em produção é o serviço frontend do E
 
 ### Premissas
 
-- Backend remoto: `fantasy12-api` branch `main`.
-- Frontend remoto: `fantasy12-frontend` branch `master`.
+- Backend remoto: `boteco12-api` branch `main`.
+- Frontend remoto: `boteco12-frontend` branch `master`.
 - Projeto no Easypanel: `f12-prd`.
 - Servicos no Easypanel: `api` e `frontend`.
 - Credenciais do painel ficam em `.env.local`:
@@ -223,11 +223,11 @@ Nao registrar token, senha, `SESSION_SECRET`, `DATABASE_URL`, chaves Mercado Pag
 ### 1. Build/check local antes do push
 
 ```bash
-cd /Users/roberson/dev/personal/fantasy12-api
+cd /Users/roberson/dev/personal/boteco12-api
 npm run build
-DATABASE_URL=postgresql://fantasy12:fantasy12@localhost:5432/fantasy12?schema=public npx prisma validate
+DATABASE_URL=postgresql://boteco12:boteco12@localhost:5432/boteco12?schema=public npx prisma validate
 
-cd /Users/roberson/dev/personal/fantasy12-frontend
+cd /Users/roberson/dev/personal/boteco12-frontend
 npx tsc --noEmit
 npm run build
 ```
@@ -235,13 +235,13 @@ npm run build
 ### 2. Commit e push
 
 ```bash
-cd /Users/roberson/dev/personal/fantasy12-api
+cd /Users/roberson/dev/personal/boteco12-api
 git status --short
 git add <arquivos>
 git commit -m "feat: ..."
 git push origin main
 
-cd /Users/roberson/dev/personal/fantasy12-frontend
+cd /Users/roberson/dev/personal/boteco12-frontend
 git status --short
 git add <arquivos>
 git commit -m "feat: ..."
@@ -253,7 +253,7 @@ git push origin master
 O painel usa RPC em `/api/rpc/*`. O login funcional usa envelope `{ "json": ... }`.
 
 ```bash
-cd /Users/roberson/dev/personal/fantasy12-api
+cd /Users/roberson/dev/personal/boteco12-api
 
 node - <<'NODE'
 const fs = require('fs')
@@ -330,11 +330,11 @@ Variáveis de contexto necessárias (ajuste `$CHANGED_FILES` conforme o que mudo
 
 ```bash
 VPS="root@72.60.51.161"
-VPS_KEY="~/.ssh/fantasy12_vps"
+VPS_KEY="~/.ssh/boteco12_vps"
 API_CODE="/etc/easypanel/projects/f12-prd/api/code"
 FE_CODE="/etc/easypanel/projects/f12-prd/frontend/code"
-LOCAL_API="/Users/roberson/dev/personal/fantasy12-api"
-LOCAL_FE="/Users/roberson/dev/personal/fantasy12-frontend"
+LOCAL_API="/Users/roberson/dev/personal/boteco12-api"
+LOCAL_FE="/Users/roberson/dev/personal/boteco12-frontend"
 ```
 
 Para a **API** (se houve mudança de código — exceto só docs):
@@ -365,10 +365,10 @@ scp -i $VPS_KEY \
   $VPS:$FE_CODE/src/pages/NovaPage.tsx
 ```
 
-A chave `~/.ssh/fantasy12_vps` tem passphrase. Para evitar digitar repetidamente:
+A chave `~/.ssh/boteco12_vps` tem passphrase. Para evitar digitar repetidamente:
 
 ```bash
-ssh-add ~/.ssh/fantasy12_vps
+ssh-add ~/.ssh/boteco12_vps
 # digitar a passphrase uma vez; ela fica no agent até o fim da sessão
 ```
 
@@ -434,9 +434,9 @@ corretamente antes de tentar de novo.
 ### 6. Validacao pos-deploy
 
 ```bash
-curl -sS https://api.fantasy12.com/health
-curl -sS -I https://www.fantasy12.com | head -40
-curl -sS https://www.fantasy12.com | head -40
+curl -sS https://api.boteco12.com/health
+curl -sS -I https://www.boteco12.com | head -40
+curl -sS https://www.boteco12.com | head -40
 ```
 
 Esperado:
@@ -455,7 +455,7 @@ Dados confirmados:
 ```text
 host: 72.60.51.161
 user: root
-key: ~/.ssh/fantasy12_vps
+key: ~/.ssh/boteco12_vps
 hostname remoto: srv969089
 ```
 
@@ -471,7 +471,7 @@ Se o `~/.ssh/config` local estiver apontando para outro agent SSH, force a chave
 ssh \
   -o IdentitiesOnly=yes \
   -o IdentityAgent="$SSH_AUTH_SOCK" \
-  -i ~/.ssh/fantasy12_vps \
+  -i ~/.ssh/boteco12_vps \
   root@72.60.51.161
 ```
 
@@ -484,24 +484,24 @@ ssh \
   -o StrictHostKeyChecking=no \
   -o IdentitiesOnly=yes \
   -o IdentityAgent="$SSH_AUTH_SOCK" \
-  -i ~/.ssh/fantasy12_vps \
+  -i ~/.ssh/boteco12_vps \
   root@72.60.51.161 \
   'hostname && whoami'
 ```
 
 Observacoes:
 
-- A chave privada local tem passphrase; desbloqueie com `ssh-add ~/.ssh/fantasy12_vps` quando necessario.
+- A chave privada local tem passphrase; desbloqueie com `ssh-add ~/.ssh/boteco12_vps` quando necessario.
 - Nao registrar passphrase, `INTERNAL_JOB_SECRET`, tokens Easypanel ou senhas neste documento.
-- A chave publica esperada no painel Hostinger aparece como `fantasy12-vps`.
+- A chave publica esperada no painel Hostinger aparece como `boteco12-vps`.
 
 Comandos uteis no VPS:
 
 ```bash
 docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
 crontab -l
-tail -40 /var/log/fantasy12-scheduler.log
-curl -sS https://api.fantasy12.com/health
+tail -40 /var/log/boteco12-scheduler.log
+curl -sS https://api.boteco12.com/health
 ```
 
 Scheduler de aplicacao (BullMQ worker; cron HTTP legado desativado apos migracao):
@@ -510,16 +510,16 @@ Scheduler de aplicacao (BullMQ worker; cron HTTP legado desativado apos migracao
 worker: mesma revisao da API (`scripts/start-worker.sh`)
 redis:  persistente + noeviction
 log API jobs: InternalJobExecution / auditLog
-recuperacao: /opt/fantasy12-infra/scripts/run-internal-job.sh
+recuperacao: /opt/boteco12-infra/scripts/run-internal-job.sh
 ```
 
 Validacao manual dos jobs (recovery):
 
 ```bash
-/opt/fantasy12-infra/scripts/run-internal-job.sh /internal/open-scheduled-rounds
-/opt/fantasy12-infra/scripts/run-internal-job.sh /internal/close-scheduled-rounds
-/opt/fantasy12-infra/scripts/run-internal-job.sh /internal/close-expired-rankings
-/opt/fantasy12-infra/scripts/run-internal-job.sh /internal/ensure-monthly-rankings
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/open-scheduled-rounds
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/close-scheduled-rounds
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/close-expired-rankings
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/ensure-monthly-rankings
 ```
 
 ### 8. Migrations Prisma
@@ -541,7 +541,7 @@ Para mudancas que apenas deixam de usar um valor antigo no codigo, como a remoca
 ### Arquitetura
 
 - Redis persiste filas/schedules BullMQ.
-- Processo **worker** separado (`node dist/worker.js` / `npm run start:worker`) consome a fila `fantasy12-jobs`.
+- Processo **worker** separado (`node dist/worker.js` / `npm run start:worker`) consome a fila `boteco12-jobs`.
 - O processo HTTP da API **nao** executa workers.
 - Processors chamam os mesmos services de dominio usados pelos endpoints `/internal/...`.
 - PostgreSQL continua como fonte da verdade; `InternalJobExecution` + status de dominio/`settledAt` protegem contra entrega duplicada.
@@ -560,7 +560,7 @@ Schedules:
 
 ```env
 REDIS_URL=redis://:PASSWORD@HOST:6379/0
-BULLMQ_PREFIX=fantasy12-prd
+BULLMQ_PREFIX=boteco12-prd
 BULLMQ_WORKER_CONCURRENCY=1
 BULLMQ_REGISTER_SCHEDULES=true
 WORKER_HEALTH_PORT=3002
@@ -593,9 +593,9 @@ No container do worker (ou host com `REDIS_URL`):
 ```bash
 node -e "
 const { Queue } = require('bullmq');
-const q = new Queue('fantasy12-jobs', {
+const q = new Queue('boteco12-jobs', {
   connection: { url: process.env.REDIS_URL },
-  prefix: process.env.BULLMQ_PREFIX || 'fantasy12',
+  prefix: process.env.BULLMQ_PREFIX || 'boteco12',
 });
 (async () => {
   console.log(await q.getJobCounts('waiting','active','completed','failed','delayed'));
@@ -630,7 +630,7 @@ O reconcile horario + reconcile no startup do worker cobre falha de Redis a meia
 1. Deploy Redis.
 2. Deploy worker com `BULLMQ_REGISTER_SCHEDULES=true`.
 3. Confirmar worker `/health` e counts completed aumentando.
-4. Comentar apenas as linhas de aplicacao em `fantasy12-infra/scripts/cron.txt` (manter backup/retention).
+4. Comentar apenas as linhas de aplicacao em `boteco12-infra/scripts/cron.txt` (manter backup/retention).
 5. Manter endpoints internos para recovery.
 6. Rollback: reativar as duas linhas `* * * * * ... open/close-scheduled-rounds` se Redis/worker falharem.
 

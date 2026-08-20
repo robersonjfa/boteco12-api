@@ -72,7 +72,7 @@ async function main() {
     users[key] = await prisma.user.create({
       data: {
         name: `[SIM ${scenarioId}] ${key}`,
-        email: `sim-${scenarioId}-${key}@simulation.fantasy12.test`,
+        email: `sim-${scenarioId}-${key}@simulation.boteco12.test`,
         password: 'simulation-account-no-login',
       },
     })

@@ -15,11 +15,11 @@ Ultima atualizacao:
 Uso recomendado deste documento:
 
 - referencia de analise de dominio e perfis
-- backlog oficial consolidado em [`docs/backlog-master.md`](/Users/roberson/dev/personal/fantasy12-api/docs/backlog-master.md)
+- backlog oficial consolidado em [`docs/backlog-master.md`](/Users/roberson/dev/personal/boteco12-api/docs/backlog-master.md)
 
 ## Resumo executivo
 
-O PDF esta conceitualmente bem alinhado com a direcao do Fantasy12, principalmente em:
+O PDF esta conceitualmente bem alinhado com a direcao do Boteco12, principalmente em:
 
 - backend como fonte da verdade
 - `ADMIN` como role estrutural
@@ -40,7 +40,7 @@ Em outras palavras: a arquitetura desejada esta implementada na regra de negocio
 
 | Regra do PDF | Status no codigo | Evidencia |
 |---|---|---|
-| `ADMIN` deve ser role estrutural | `Implementado` | [`prisma/schema.prisma`](/Users/roberson/dev/personal/fantasy12-api/prisma/schema.prisma) tem RBAC admin com `AdminRole`, `AdminPermission`, `UserAdminRole` |
+| `ADMIN` deve ser role estrutural | `Implementado` | [`prisma/schema.prisma`](/Users/roberson/dev/personal/boteco12-api/prisma/schema.prisma) tem RBAC admin com `AdminRole`, `AdminPermission`, `UserAdminRole` |
 | `PRO` deve ser estado de assinatura | `Implementado` | regras de elegibilidade usam `Subscription`; `UserRole.PRO` foi removido do schema e contratos |
 | Backend governa regras do sistema | `Implementado` | regras de round, beneficios, wallet, subscription, ranking e jobs estao no backend |
 | Frontend apenas renderiza estados/permissoes | `Implementado` | frontend consome `/api/me`, `/api/subscription`, `/api/wallet` e usa sessao |
@@ -48,12 +48,12 @@ Em outras palavras: a arquitetura desejada esta implementada na regra de negocio
 | PRO recebe mais beneficios por rodada | `Implementado` | `ROUND_BENEFIT_GRANTS.PRO_MONTHLY` e `PRO_ANNUAL` concedem 4 duplas e 2 super duplas por rodada |
 | Beneficios gratis nao acumulam entre rodadas | `Implementado` | beneficios gratuitos sao vinculados a `roundId` em `RoundBenefit` |
 | Creditos comprados acumulam permanentemente | `Implementado` | `Wallet` e `WalletLedger` persistem saldo e historico |
-| Sistema consome primeiro creditos gratis | `Implementado` | [`src/services/benefits/consume-benefits.service.ts`](/Users/roberson/dev/personal/fantasy12-api/src/services/benefits/consume-benefits.service.ts) consome `RoundBenefit` antes de inventario e wallet |
+| Sistema consome primeiro creditos gratis | `Implementado` | [`src/services/benefits/consume-benefits.service.ts`](/Users/roberson/dev/personal/boteco12-api/src/services/benefits/consume-benefits.service.ts) consome `RoundBenefit` antes de inventario e wallet |
 | Rankings FREE e PRO devem ser separados | `Implementado funcionalmente` | ranking mensal geral e PRO sao separados por escopo; PRO usa assinatura ativa como filtro |
 | Boloes devem ter inicio e encerramento | `Parcial` | criacao atual usa `durationDays`; inicio/encerramento operacional ainda deve ser acompanhado no fluxo de status |
 | Bolao premium apenas para PRO ANUAL | `Implementado` | `CreateBolaoService` usa `hasAnnualProSubscription` antes de criar bolao |
 | Ranking PRO mensal automatico para PRO ativos | `Implementado funcionalmente` | ranking PRO mensal e calculado/filtrado por assinatura ativa no momento da leitura, sem depender de inscricao manual por `User.role` |
-| Login via email | `Implementado` | rota [`src/routes/auth.ts`](/Users/roberson/dev/personal/fantasy12-api/src/routes/auth.ts) |
+| Login via email | `Implementado` | rota [`src/routes/auth.ts`](/Users/roberson/dev/personal/boteco12-api/src/routes/auth.ts) |
 | Login via Google | `Nao implementado` | nao encontrei fluxo OAuth/Google no backend ou frontend atual |
 | Compra e uso de coins | `Implementado` | models `PaymentPackage`, `Payment`, `Wallet`, `WalletLedger` e telas/servicos de payment/wallet |
 | Controle financeiro e auditoria admin | `Implementado` | billing metrics, admin monetization, wallet credit, audit logs |

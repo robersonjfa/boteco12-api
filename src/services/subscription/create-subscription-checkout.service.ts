@@ -61,7 +61,7 @@ type PreferencePayload = {
 function getFrontendUrl() {
   return (
     process.env.FRONTEND_ORIGIN?.split(',')[0]?.trim()?.replace(/\/+$/, '') ||
-    'https://www.fantasy12.com'
+    'https://www.boteco12.com'
   )
 }
 

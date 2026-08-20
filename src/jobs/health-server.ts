@@ -58,7 +58,7 @@ export function createWorkerHealthServer(
   })
 
   server.listen(port, '0.0.0.0', () => {
-    logger.info({ port }, 'Fantasy12 worker health server listening')
+    logger.info({ port }, 'Boteco12 worker health server listening')
   })
 
   return server

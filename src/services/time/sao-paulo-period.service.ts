@@ -1,4 +1,4 @@
-export const FANTASY12_TIME_ZONE = 'America/Sao_Paulo'
+export const BOTECO12_TIME_ZONE = 'America/Sao_Paulo'
 
 type LocalDateTime = {
   year: number
@@ -10,7 +10,7 @@ type LocalDateTime = {
 }
 
 const formatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: FANTASY12_TIME_ZONE,
+  timeZone: BOTECO12_TIME_ZONE,
   year: 'numeric', month: '2-digit', day: '2-digit',
   hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
 })

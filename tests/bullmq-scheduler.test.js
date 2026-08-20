@@ -16,8 +16,8 @@ const {
 } = require('../dist/jobs/default-job-options')
 const {
   listRoutableJobNames,
-  processFantasy12Job,
-} = require('../dist/jobs/processors/process-fantasy12-job')
+  processBoteco12Job,
+} = require('../dist/jobs/processors/process-boteco12-job')
 const {
   loadBullmqConfig,
   summarizeRedisUrl,
@@ -152,7 +152,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   }
 
   for (const name of listRoutableJobNames()) {
-    await processFantasy12Job({ name, id: 'job-1', attemptsMade: 0 })
+    await processBoteco12Job({ name, id: 'job-1', attemptsMade: 0 })
   }
 
   assert.deepEqual(calls.sort(), [
@@ -322,7 +322,7 @@ test('recuperacao mensal usa source reconcile e chama EnsureMonthlyRankingsServi
 
 test('processador rejeita job desconhecido sem vazar secrets', async () => {
   await assert.rejects(
-    () => processFantasy12Job({ name: 'unknown-job', id: 'x', attemptsMade: 1 }),
-    /Unknown Fantasy12 job name/
+    () => processBoteco12Job({ name: 'unknown-job', id: 'x', attemptsMade: 1 }),
+    /Unknown Boteco12 job name/
   )
 })

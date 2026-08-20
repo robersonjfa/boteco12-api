@@ -136,7 +136,7 @@ async function main() {
     users[role] = await prisma.user.create({
       data: {
         name: `[SCORETEST ${scenarioId}] ${label}`,
-        email: `scoretest-${scenarioId}-${role}@simulation.fantasy12.test`,
+        email: `scoretest-${scenarioId}-${role}@simulation.boteco12.test`,
         password: 'scoretest-account-no-login',
         nickname: `st${scenarioId.slice(-8)}${role[0]}`,
       },

@@ -60,7 +60,7 @@ export class ListAvailableBoloesService {
         ownerName:
           bolao.createdBy?.nickname?.trim() ||
           bolao.createdBy?.name?.trim() ||
-          'Fantasy12',
+          'Boteco12',
       });
     });
   }

@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       user_email:
-        description: Fantasy12 user email
+        description: Boteco12 user email
         required: true
         type: string
 

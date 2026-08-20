@@ -1,8 +1,8 @@
 import dotenv from 'dotenv'
 import { loadBullmqConfig, summarizeRedisUrl } from './jobs/config'
-import { createFantasy12Queue } from './jobs/create-queue'
-import { createFantasy12Worker } from './jobs/create-worker'
-import { registerFantasy12Schedules } from './jobs/register-schedules'
+import { createBoteco12Queue } from './jobs/create-queue'
+import { createBoteco12Worker } from './jobs/create-worker'
+import { registerBoteco12Schedules } from './jobs/register-schedules'
 import {
   closeSharedRedisConnection,
 } from './jobs/redis-connection'
@@ -23,12 +23,12 @@ async function main() {
       concurrency: config.BULLMQ_WORKER_CONCURRENCY,
       registerSchedules: config.BULLMQ_REGISTER_SCHEDULES,
     },
-    'Starting Fantasy12 BullMQ worker'
+    'Starting Boteco12 BullMQ worker'
   )
 
   await prisma.$queryRaw`SELECT 1`
 
-  const queue = createFantasy12Queue(config)
+  const queue = createBoteco12Queue(config)
   const state: WorkerHealthState = {
     startedAt: new Date().toISOString(),
     schedulesRegistered: false,
@@ -36,7 +36,7 @@ async function main() {
   }
 
   if (config.BULLMQ_REGISTER_SCHEDULES) {
-    await registerFantasy12Schedules(queue)
+    await registerBoteco12Schedules(queue)
     state.schedulesRegistered = true
   } else {
     logger.warn('BULLMQ_REGISTER_SCHEDULES=false — schedules not upserted')
@@ -61,7 +61,7 @@ async function main() {
     logger.error({ err }, 'Monthly rankings startup reconcile failed')
   }
 
-  const worker = createFantasy12Worker(config)
+  const worker = createBoteco12Worker(config)
   worker.on('completed', () => {
     state.lastJobAt = new Date().toISOString()
   })
@@ -76,7 +76,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     if (shuttingDown) return
     shuttingDown = true
-    logger.info({ signal }, 'Shutting down Fantasy12 worker')
+    logger.info({ signal }, 'Shutting down Boteco12 worker')
 
     try {
       await worker.close()
@@ -86,10 +86,10 @@ async function main() {
       })
       await closeSharedRedisConnection()
       await prisma.$disconnect()
-      logger.info('Fantasy12 worker stopped cleanly')
+      logger.info('Boteco12 worker stopped cleanly')
       process.exit(0)
     } catch (err) {
-      logger.error({ err }, 'Fantasy12 worker shutdown failed')
+      logger.error({ err }, 'Boteco12 worker shutdown failed')
       process.exit(1)
     }
   }
@@ -103,6 +103,6 @@ async function main() {
 }
 
 main().catch(err => {
-  logger.error({ err }, 'Fantasy12 worker failed to start')
+  logger.error({ err }, 'Boteco12 worker failed to start')
   process.exit(1)
 })

@@ -11,8 +11,8 @@
 
 ## Usuários
 
-- **alpha**: [SCORETEST 20260729011340] Alpha PRO (`scoretest-20260729011340-alpha@simulation.fantasy12.test`) — c677bfd3-1372-4818-80ab-76fb0b17b9b3
-- **beta**: [SCORETEST 20260729011340] Beta PRO (`scoretest-20260729011340-beta@simulation.fantasy12.test`) — 11eca094-813e-4551-8a69-26472270b9d5
+- **alpha**: [SCORETEST 20260729011340] Alpha PRO (`scoretest-20260729011340-alpha@simulation.boteco12.test`) — c677bfd3-1372-4818-80ab-76fb0b17b9b3
+- **beta**: [SCORETEST 20260729011340] Beta PRO (`scoretest-20260729011340-beta@simulation.boteco12.test`) — 11eca094-813e-4551-8a69-26472270b9d5
 
 ## Timeline
 

@@ -31,8 +31,8 @@ function parseArgs(argv) {
 function usage() {
   console.log(`
 Uso seguro:
-  npm run db:restore -- --file backups/postgres/fantasy12.dump --target-url "$RESTORE_DATABASE_URL" --dry-run
-  npm run db:restore -- --file backups/postgres/fantasy12.dump --target-url "$RESTORE_DATABASE_URL" ${CONFIRM_FLAG}
+  npm run db:restore -- --file backups/postgres/boteco12.dump --target-url "$RESTORE_DATABASE_URL" --dry-run
+  npm run db:restore -- --file backups/postgres/boteco12.dump --target-url "$RESTORE_DATABASE_URL" ${CONFIRM_FLAG}
 
 Regras de protecao:
   - nunca usa DATABASE_URL como alvo implicitamente

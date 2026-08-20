@@ -1,4 +1,4 @@
-export const FANTASY12_QUEUE_NAME = 'fantasy12-jobs' as const
+export const BOTECO12_QUEUE_NAME = 'boteco12-jobs' as const
 
 export const JOB_NAMES = {
   OPEN_SCHEDULED_ROUNDS: 'open-scheduled-rounds',
@@ -8,7 +8,7 @@ export const JOB_NAMES = {
   RECONCILE_MONTHLY_RANKINGS: 'reconcile-monthly-rankings',
 } as const
 
-export type Fantasy12JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]
+export type Boteco12JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]
 
 export const SCHEDULER_IDS = {
   OPEN_SCHEDULED_ROUNDS: 'scheduler:open-scheduled-rounds',

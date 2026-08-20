@@ -1,7 +1,7 @@
 # Especificação: automação de abertura e fechamento de rodada (palpites)
 
 > **Origem:** feedback do admin (áudio + print da tela **Nova Rodada**).  
-> **Projetos afetados:** `fantasy12-api`, `fantasy12-frontend`, `fantasy12-infra`.
+> **Projetos afetados:** `boteco12-api`, `boteco12-frontend`, `boteco12-infra`.
 
 ---
 
@@ -77,7 +77,7 @@ closeAt = min(matchTime dos 12 jogos) - 15 minutos
 
 ## 4. Estado atual no código (gap analysis)
 
-### Frontend — `fantasy12-frontend`
+### Frontend — `boteco12-frontend`
 
 | Arquivo | Situação |
 |---------|----------|
@@ -87,7 +87,7 @@ closeAt = min(matchTime dos 12 jogos) - 15 minutos
 
 **Gap:** UI não deixa claro que datas são agendamento automático. Mensagem pós-criação: *"Rodada criada"* — não avisa que palpites só liberam após abertura (manual hoje).
 
-### Backend — `fantasy12-api`
+### Backend — `boteco12-api`
 
 | Componente | Situação |
 |------------|----------|
@@ -272,7 +272,7 @@ Registrar execuções em `InternalJobRunnerService` e expor em `GET /api/admin/o
 
 ## 9. Arquivos prováveis a alterar
 
-### `fantasy12-api`
+### `boteco12-api`
 
 - `src/services/round/open-round.service.ts`
 - `src/services/round/close-round.service.ts`
@@ -283,13 +283,13 @@ Registrar execuções em `InternalJobRunnerService` e expor em `GET /api/admin/o
 - `docs/jobs-current.md`
 - `prisma/schema.prisma` (opcional: `openedAt`, `predictionsClosedAt`)
 
-### `fantasy12-frontend`
+### `boteco12-frontend`
 
 - `src/pages/AdminRound.tsx`
 - `src/pages/Dashboard.tsx`
 - `src/pages/Ticket.tsx` (mensagens de prazo)
 
-### `fantasy12-infra`
+### `boteco12-infra`
 
 - Cron/Cloud Scheduler para os dois jobs (1 min)
 

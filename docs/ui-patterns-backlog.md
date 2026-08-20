@@ -19,7 +19,7 @@ Conjuntos encontrados:
 Uso recomendado deste documento:
 
 - referencia de UX e padroes visuais
-- backlog oficial consolidado em [`docs/backlog-master.md`](/Users/roberson/dev/personal/fantasy12-api/docs/backlog-master.md)
+- backlog oficial consolidado em [`docs/backlog-master.md`](/Users/roberson/dev/personal/boteco12-api/docs/backlog-master.md)
 
 Ultima atualizacao:
 
@@ -27,7 +27,7 @@ Ultima atualizacao:
 
 ## Leitura geral
 
-Esse material não deve ser tratado apenas como mockup isolado. Ele já define uma direção clara de produto para o Fantasy12:
+Esse material não deve ser tratado apenas como mockup isolado. Ele já define uma direção clara de produto para o Boteco12:
 
 - experiência mobile-first
 - separação visual entre app do jogador, bar/loja e painel admin
@@ -158,7 +158,7 @@ Direção:
 - deixar o fluxo mais comercial e menos técnico
 - manter Menu Tatico com compra de duplas e super duplas para qualquer usuario
 
-4. Formalizar um mini design system do Fantasy12
+4. Formalizar um mini design system do Boteco12
 
 - tokens de cor
 - padrões de card

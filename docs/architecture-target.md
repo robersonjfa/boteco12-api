@@ -2,11 +2,11 @@
 
 ## Objetivo
 
-Levar a plataforma Fantasy12 para uma estrutura em que produto, operação e segurança estejam organizados de forma previsível.
+Levar a plataforma Boteco12 para uma estrutura em que produto, operação e segurança estejam organizados de forma previsível.
 
 ## Repositórios alvo
 
-### `fantasy12-api`
+### `boteco12-api`
 
 Responsabilidades:
 
@@ -23,7 +23,7 @@ Não deve concentrar:
 - infraestrutura de banco, proxy e observabilidade
 - segredos de ambiente versionados
 
-### `fantasy12-frontend`
+### `boteco12-frontend`
 
 Responsabilidades:
 
@@ -39,7 +39,7 @@ Não deve concentrar:
 - chamadas hardcoded fora da camada HTTP
 - contratos divergentes do backend
 
-### `fantasy12-infra`
+### `boteco12-infra`
 
 Responsabilidades:
 
@@ -53,7 +53,7 @@ Responsabilidades:
 - backup e restore
 - automações de jobs operacionais
 
-## Proposta de escopo inicial para `fantasy12-infra`
+## Proposta de escopo inicial para `boteco12-infra`
 
 Estrutura sugerida:
 
@@ -81,7 +81,7 @@ Conteúdo mínimo da v1:
 
 Fonte de verdade:
 
-- `schema.prisma` em `fantasy12-api`
+- `schema.prisma` em `boteco12-api`
 
 Princípios:
 

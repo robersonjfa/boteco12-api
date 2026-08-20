@@ -10,18 +10,18 @@ Ultima atualizacao:
 
 Objetivo:
 
-- manter um unico backlog oficial do Fantasy12
+- manter um unico backlog oficial do Boteco12
 - separar claramente produto, frontend, backend, operacao e seguranca
 - usar os outros documentos como insumo de analise, nao como backlogs paralelos
 
 Documentos de origem:
 
-- [`docs/roadmap.md`](/Users/roberson/dev/personal/fantasy12-api/docs/roadmap.md)
-- [`docs/user-profiles-alignment.md`](/Users/roberson/dev/personal/fantasy12-api/docs/user-profiles-alignment.md)
-- [`docs/ui-patterns-backlog.md`](/Users/roberson/dev/personal/fantasy12-api/docs/ui-patterns-backlog.md)
-- [`docs/security-review.md`](/Users/roberson/dev/personal/fantasy12-api/docs/security-review.md)
-- [`docs/updates-2026-05-18-review.md`](/Users/roberson/dev/personal/fantasy12-api/docs/updates-2026-05-18-review.md)
-- [`docs/updates-2026-05-22-review.md`](/Users/roberson/dev/personal/fantasy12-api/docs/updates-2026-05-22-review.md)
+- [`docs/roadmap.md`](/Users/roberson/dev/personal/boteco12-api/docs/roadmap.md)
+- [`docs/user-profiles-alignment.md`](/Users/roberson/dev/personal/boteco12-api/docs/user-profiles-alignment.md)
+- [`docs/ui-patterns-backlog.md`](/Users/roberson/dev/personal/boteco12-api/docs/ui-patterns-backlog.md)
+- [`docs/security-review.md`](/Users/roberson/dev/personal/boteco12-api/docs/security-review.md)
+- [`docs/updates-2026-05-18-review.md`](/Users/roberson/dev/personal/boteco12-api/docs/updates-2026-05-18-review.md)
+- [`docs/updates-2026-05-22-review.md`](/Users/roberson/dev/personal/boteco12-api/docs/updates-2026-05-22-review.md)
 
 ## Como ler este backlog
 
@@ -116,11 +116,11 @@ Status sugerido:
 
 Tarefas:
 
-- apontar `www.fantasy12.com` para `72.60.51.161`
-- apontar `api.fantasy12.com` para `72.60.51.161`
+- apontar `www.boteco12.com` para `72.60.51.161`
+- apontar `api.boteco12.com` para `72.60.51.161`
 - remover conflitos antigos de DNS e IPv6 nao utilizado
-- validar `https://www.fantasy12.com/login`
-- validar `https://api.fantasy12.com/health`
+- validar `https://www.boteco12.com/login`
+- validar `https://api.boteco12.com/health`
 
 Nota 2026-05-22:
 
@@ -139,7 +139,7 @@ Status sugerido:
 
 Tarefas:
 
-- manter `https://www.fantasy12.com` como origem oficial
+- manter `https://www.boteco12.com` como origem oficial
 - liberar temporariamente `https://f12-prd-frontend.x18arx.easypanel.host` enquanto o DNS estabiliza
 - revalidar login, sessao e cookies cross-origin
 
@@ -1465,7 +1465,7 @@ Nota 2026-06-07:
 
 ## P2. Arquitetura de frontend
 
-### 22. Criar mini design system do Fantasy12
+### 22. Criar mini design system do Boteco12
 
 Tipo:
 
@@ -2070,9 +2070,9 @@ Criterios de aceite:
 
 Os documentos abaixo continuam valiosos, mas agora devem ser lidos como analise de suporte:
 
-- [`docs/user-profiles-alignment.md`](/Users/roberson/dev/personal/fantasy12-api/docs/user-profiles-alignment.md)
-- [`docs/ui-patterns-backlog.md`](/Users/roberson/dev/personal/fantasy12-api/docs/ui-patterns-backlog.md)
-- [`docs/updates-2026-05-21-review.md`](/Users/roberson/dev/personal/fantasy12-api/docs/updates-2026-05-21-review.md)
+- [`docs/user-profiles-alignment.md`](/Users/roberson/dev/personal/boteco12-api/docs/user-profiles-alignment.md)
+- [`docs/ui-patterns-backlog.md`](/Users/roberson/dev/personal/boteco12-api/docs/ui-patterns-backlog.md)
+- [`docs/updates-2026-05-21-review.md`](/Users/roberson/dev/personal/boteco12-api/docs/updates-2026-05-21-review.md)
 
 A fonte oficial de prioridades passa a ser este arquivo.
 ### 38. Redesenhar navegacao mobile-first, dashboard de entrada e vitrine de premios
@@ -2082,7 +2082,7 @@ Prioridade: Alta
 Frente: Frontend mobile-first / conversao / usabilidade
 
 Objetivo:
-Simplificar o acesso mobile dos usuarios e deixar mais visiveis as areas que vendem a proposta do Fantasy12: Bar, Mesas, Ranking e Premios. A tela inicial deve ser mais leve, direta e orientada para a proxima acao do usuario.
+Simplificar o acesso mobile dos usuarios e deixar mais visiveis as areas que vendem a proposta do Boteco12: Bar, Mesas, Ranking e Premios. A tela inicial deve ser mais leve, direta e orientada para a proxima acao do usuario.
 
 Escopo funcional:
 
@@ -2111,7 +2111,7 @@ Escopo funcional:
   - explicar que os premios serao entregues conforme regras das rodadas/mesas/campanhas;
   - aumentar curiosidade e desejo de participar.
 - Conteudo inicial sugerido:
-  - titulo direto: "Premios Fantasy12";
+  - titulo direto: "Premios Boteco12";
   - lista/cards simples de premios previstos;
   - aviso de que disponibilidade, periodo e criterios podem variar por campanha.
 - A pagina precisa funcionar bem no mobile antes de qualquer refinamento desktop.

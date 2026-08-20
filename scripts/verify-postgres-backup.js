@@ -23,10 +23,10 @@ function parseArgs(argv) {
 function usage() {
   console.log(`
 Uso:
-  npm run db:backup:verify -- --file backups/postgres/fantasy12-manual.dump
+  npm run db:backup:verify -- --file backups/postgres/boteco12-manual.dump
 
 Opcional:
-  --manifest backups/postgres/fantasy12-manual.manifest.json
+  --manifest backups/postgres/boteco12-manual.manifest.json
 
 Validacoes:
   - arquivo existe

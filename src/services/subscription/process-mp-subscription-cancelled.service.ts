@@ -68,7 +68,7 @@ export class ProcessMpSubscriptionCancelledService {
      * 5️⃣ Identificar usuário
      *
      * REGRA FIXA:
-     * external_reference = userId (Fantasy12)
+     * external_reference = userId (Boteco12)
      */
     const userId: string | undefined = mpSubscription.external_reference;
     if (!userId) {

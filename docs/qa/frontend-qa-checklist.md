@@ -4,8 +4,8 @@ Data de referencia: 2026-06-14
 
 Ambientes principais:
 
-- Frontend publico: https://www.fantasy12.com
-- API publica: https://api.fantasy12.com/health
+- Frontend publico: https://www.boteco12.com
+- API publica: https://api.boteco12.com/health
 - Frontend EasyPanel: https://f12-prd-frontend.x18arx.easypanel.host
 - API EasyPanel: https://f12-prd-api.x18arx.easypanel.host/health
 
@@ -222,7 +222,7 @@ Sugestao de nomes:
 
 Ambiente:
 
-- https://www.fantasy12.com
+- https://www.boteco12.com
 
 Escopo executado sem credenciais autenticadas:
 

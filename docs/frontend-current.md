@@ -10,9 +10,9 @@ O frontend ativo está alinhado com a API principal e já contém as superfície
 
 Arquivos centrais:
 
-- `fantasy12-frontend/src/app/auth.tsx`
-- `fantasy12-frontend/src/app/AuthProvider.tsx`
-- `fantasy12-frontend/src/modules/auth/auth.service.ts`
+- `boteco12-frontend/src/app/auth.tsx`
+- `boteco12-frontend/src/app/AuthProvider.tsx`
+- `boteco12-frontend/src/modules/auth/auth.service.ts`
 
 Contrato ativo:
 
@@ -30,7 +30,7 @@ Modelo atual:
 
 Arquivo:
 
-- `fantasy12-frontend/src/app/router.tsx`
+- `boteco12-frontend/src/app/router.tsx`
 
 Rotas em uso:
 

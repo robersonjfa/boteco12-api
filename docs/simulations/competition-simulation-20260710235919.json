@@ -36,22 +36,22 @@
   "users": {
     "creator": {
       "id": "49abc8c9-cdd0-4e0c-8f53-be1f05677788",
-      "email": "sim-20260710235919-creator@simulation.fantasy12.test",
+      "email": "sim-20260710235919-creator@simulation.boteco12.test",
       "plan": "PRO_ANNUAL"
     },
     "early": {
       "id": "d6c41269-9ccf-4285-9f3d-c18aafdb7da7",
-      "email": "sim-20260710235919-early@simulation.fantasy12.test",
+      "email": "sim-20260710235919-early@simulation.boteco12.test",
       "plan": "PRO_MONTHLY"
     },
     "late": {
       "id": "73cd38e7-6e65-4a1d-b1bc-10c4a72464ec",
-      "email": "sim-20260710235919-late@simulation.fantasy12.test",
+      "email": "sim-20260710235919-late@simulation.boteco12.test",
       "plan": "PRO_MONTHLY"
     },
     "free": {
       "id": "78c3e100-7b3a-434e-9cfc-1068b68dfd88",
-      "email": "sim-20260710235919-free@simulation.fantasy12.test",
+      "email": "sim-20260710235919-free@simulation.boteco12.test",
       "plan": "FREE"
     }
   },

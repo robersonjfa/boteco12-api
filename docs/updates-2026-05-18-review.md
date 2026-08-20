@@ -6,7 +6,7 @@ Documento analisado:
 
 ## Objetivo
 
-Transformar as sugestões do PDF em uma matriz prática para execução no Fantasy12, separando:
+Transformar as sugestões do PDF em uma matriz prática para execução no Boteco12, separando:
 
 - o que já foi atendido
 - o que está parcial

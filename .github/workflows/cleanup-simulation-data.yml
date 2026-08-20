@@ -39,8 +39,8 @@ jobs:
             test -n "$DB_CONTAINER"
 
             if [ "${{ inputs.mode }}" = "APPLY" ]; then
-              BACKUP_DIR=/var/backups/fantasy12/simulation-cleanup
-              BACKUP_FILE="$BACKUP_DIR/fantasy12-pre-simulation-cleanup-${{ github.run_id }}-${{ github.run_attempt }}.dump"
+              BACKUP_DIR=/var/backups/boteco12/simulation-cleanup
+              BACKUP_FILE="$BACKUP_DIR/boteco12-pre-simulation-cleanup-${{ github.run_id }}-${{ github.run_attempt }}.dump"
               mkdir -p "$BACKUP_DIR"
               docker exec "$DB_CONTAINER" sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$BACKUP_FILE"
               test -s "$BACKUP_FILE"

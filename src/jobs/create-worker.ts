@@ -1,18 +1,18 @@
 import { Worker, WorkerOptions } from 'bullmq'
 import { BullmqConfig } from './config'
-import { FANTASY12_QUEUE_NAME } from './constants'
+import { BOTECO12_QUEUE_NAME } from './constants'
 import { getBullmqConnectionOptions } from './redis-connection'
-import { processFantasy12Job } from './processors/process-fantasy12-job'
+import { processBoteco12Job } from './processors/process-boteco12-job'
 import { logger } from '../lib/logger'
 
-export function createFantasy12Worker(config: BullmqConfig): Worker {
+export function createBoteco12Worker(config: BullmqConfig): Worker {
   const options: WorkerOptions = {
     connection: getBullmqConnectionOptions(config.REDIS_URL),
     prefix: config.BULLMQ_PREFIX,
     concurrency: config.BULLMQ_WORKER_CONCURRENCY,
   }
 
-  const worker = new Worker(FANTASY12_QUEUE_NAME, processFantasy12Job, options)
+  const worker = new Worker(BOTECO12_QUEUE_NAME, processBoteco12Job, options)
 
   worker.on('completed', job => {
     logger.info(

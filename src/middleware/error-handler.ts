@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 
 /**
- * Formato padrão de erro do Fantasy12 API:
+ * Formato padrão de erro do Boteco12 API:
  *
  *   {
  *     "error": "snake_case_code",     // chave estável p/ o frontend

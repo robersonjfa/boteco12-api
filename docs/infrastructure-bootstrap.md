@@ -1,12 +1,12 @@
-# Bootstrap do `fantasy12-infra`
+# Bootstrap do `boteco12-infra`
 
 ## Status
 
-O diretório irmão `/Users/roberson/dev/personal/fantasy12-infra` ainda não pôde ser criado automaticamente porque o diretório pai `.../personal` continua sem permissão de escrita para este processo.
+O diretório irmão `/Users/roberson/dev/personal/boteco12-infra` ainda não pôde ser criado automaticamente porque o diretório pai `.../personal` continua sem permissão de escrita para este processo.
 
 Para não bloquear o trabalho, o scaffold inicial foi gerado em:
 
-- `/tmp/fantasy12-infra`
+- `/tmp/boteco12-infra`
 
 ## Conteúdo preparado
 
@@ -19,9 +19,9 @@ Para não bloquear o trabalho, o scaffold inicial foi gerado em:
 
 ## Próximo passo
 
-Quando o diretório puder ser criado no workspace definitivo, mover o conteúdo de `/tmp/fantasy12-infra` para:
+Quando o diretório puder ser criado no workspace definitivo, mover o conteúdo de `/tmp/boteco12-infra` para:
 
-- `/Users/roberson/dev/personal/fantasy12-infra`
+- `/Users/roberson/dev/personal/boteco12-infra`
 
 ## Escopo da v1
 
@@ -33,6 +33,6 @@ Quando o diretório puder ser criado no workspace definitivo, mover o conteúdo 
 
 ## Observações
 
-- o `docker-compose.yml` atual usa bind mounts para `../fantasy12-api` e `../fantasy12-frontend`
+- o `docker-compose.yml` atual usa bind mounts para `../boteco12-api` e `../boteco12-frontend`
 - o compose foi pensado para desenvolvimento local, não para produção
 - antes de produção ainda faltam proxy, secrets management, backup/restore e pipeline de deploy

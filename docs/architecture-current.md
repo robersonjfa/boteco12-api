@@ -2,8 +2,8 @@
 
 ## Repositórios analisados
 
-- `fantasy12-api`: backend principal
-- `fantasy12-frontend`: frontend web
+- `boteco12-api`: backend principal
+- `boteco12-frontend`: frontend web
 
 ## Estado atual do backend
 
@@ -172,4 +172,4 @@ Lacunas principais:
 
 ## Diagnóstico resumido
 
-O Fantasy12 já tem base de produto e de domínio suficientemente rica para entrar em uma fase de consolidação. O maior risco hoje não é falta de funcionalidade, e sim inconsistência entre camadas, ausência de governança operacional e segurança ainda parcial.
+O Boteco12 já tem base de produto e de domínio suficientemente rica para entrar em uma fase de consolidação. O maior risco hoje não é falta de funcionalidade, e sim inconsistência entre camadas, ausência de governança operacional e segurança ainda parcial.

@@ -23,7 +23,7 @@ function main() {
     process.exit(1);
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fantasy12-baseline-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boteco12-baseline-'));
   const tmpFile = path.join(tmpDir, 'generated-fresh-schema.sql');
 
   try {

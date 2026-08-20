@@ -23,7 +23,7 @@ interface CreatePaymentParams {
 function getFrontendUrl() {
   return (
     process.env.FRONTEND_ORIGIN?.split(',')[0]?.trim()?.replace(/\/+$/, '') ||
-    'https://www.fantasy12.com'
+    'https://www.boteco12.com'
   )
 }
 
@@ -101,7 +101,7 @@ export class CreatePaymentService {
         {
           id: pkg.id,
           title: pkg.label,
-          description: `${pkg.coinsAmount + pkg.bonusCoins} tampinhas Fantasy12`,
+          description: `${pkg.coinsAmount + pkg.bonusCoins} tampinhas Boteco12`,
           quantity: 1,
           currency_id: 'BRL',
           unit_price: pkg.amountCents / 100,

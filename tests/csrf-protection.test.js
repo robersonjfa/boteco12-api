@@ -35,13 +35,13 @@ function run(middleware, overrides = {}) {
 }
 
 const middleware = createCsrfProtection({
-  allowedOrigins: ['https://www.fantasy12.com'],
+  allowedOrigins: ['https://www.boteco12.com'],
 })
 
 test('permite mutacao autenticada da origem oficial com JSON', () => {
   const result = run(middleware, {
     headers: {
-      origin: 'https://www.fantasy12.com',
+      origin: 'https://www.boteco12.com',
       'content-type': 'application/json; charset=utf-8',
       'content-length': '20',
     },
@@ -66,7 +66,7 @@ test('rejeita mutacao autenticada com origem ausente ou nao permitida', () => {
 
 test('aceita referer oficial quando Origin nao esta disponivel', () => {
   const result = run(middleware, {
-    headers: { referer: 'https://www.fantasy12.com/dashboard' },
+    headers: { referer: 'https://www.boteco12.com/dashboard' },
   })
   assert.equal(result.nextCalled, true)
 })
@@ -74,7 +74,7 @@ test('aceita referer oficial quando Origin nao esta disponivel', () => {
 test('rejeita corpo autenticado que nao seja JSON', () => {
   const result = run(middleware, {
     headers: {
-      origin: 'https://www.fantasy12.com',
+      origin: 'https://www.boteco12.com',
       'content-type': 'application/x-www-form-urlencoded',
       'content-length': '20',
     },

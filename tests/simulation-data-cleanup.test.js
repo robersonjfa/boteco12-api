@@ -10,7 +10,7 @@ const {
 test('identifica somente contas marcadas como simulacao', () => {
   assert.equal(isSimulationIdentity({
     name: '[SIM 20260710030052] creator',
-    email: 'sim-creator@simulation.fantasy12.test',
+    email: 'sim-creator@simulation.boteco12.test',
   }), true)
   assert.equal(isSimulationIdentity({
     name: '[SCORETEST 20260729] Alpha',

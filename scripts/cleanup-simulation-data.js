@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const SIMULATION_EMAIL_DOMAIN = '@simulation.fantasy12.test'
+const SIMULATION_EMAIL_DOMAIN = '@simulation.boteco12.test'
 const SIMULATION_NAME_PATTERN = /^\[(?:SIM|SIM6|SCORETEST)\s/i
 const APPLY_CONFIRMATION = 'DELETE_SIMULATION_DATA'
 

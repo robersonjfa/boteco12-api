@@ -11,7 +11,7 @@ const boolFromEnv = z.preprocess(value => {
 
 const bullmqEnvSchema = z.object({
   REDIS_URL: z.string().min(1, 'REDIS_URL is required for the BullMQ worker'),
-  BULLMQ_PREFIX: z.string().min(1).default('fantasy12'),
+  BULLMQ_PREFIX: z.string().min(1).default('boteco12'),
   BULLMQ_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
   BULLMQ_REGISTER_SCHEDULES: boolFromEnv.default(true),
   WORKER_HEALTH_PORT: z.coerce.number().int().positive().default(3002),
@@ -24,7 +24,7 @@ export function loadBullmqConfig(
 ): BullmqConfig {
   const parsed = bullmqEnvSchema.safeParse({
     REDIS_URL: env.REDIS_URL,
-    BULLMQ_PREFIX: env.BULLMQ_PREFIX ?? 'fantasy12',
+    BULLMQ_PREFIX: env.BULLMQ_PREFIX ?? 'boteco12',
     BULLMQ_WORKER_CONCURRENCY: env.BULLMQ_WORKER_CONCURRENCY ?? '1',
     BULLMQ_REGISTER_SCHEDULES: env.BULLMQ_REGISTER_SCHEDULES ?? 'true',
     WORKER_HEALTH_PORT: env.WORKER_HEALTH_PORT ?? '3002',

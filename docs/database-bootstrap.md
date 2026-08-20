@@ -2,7 +2,7 @@
 
 ## Regra oficial
 
-O Fantasy12 possui uma baseline consolidada e usa a cadeia normal do Prisma
+O Boteco12 possui uma baseline consolidada e usa a cadeia normal do Prisma
 em qualquer ambiente:
 
 ```sh

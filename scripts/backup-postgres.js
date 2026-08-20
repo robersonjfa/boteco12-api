@@ -39,8 +39,8 @@ Variaveis:
   BACKUP_UPLOAD_COMMAND        comando opcional de upload com {file} e {manifest}
 
 Saida:
-  fantasy12-<label>-<timestamp>.dump
-  fantasy12-<label>-<timestamp>.manifest.json
+  boteco12-<label>-<timestamp>.dump
+  boteco12-<label>-<timestamp>.manifest.json
 `)
 }
 
@@ -91,7 +91,7 @@ function main() {
   fs.mkdirSync(outputDir, { recursive: true })
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const baseName = `fantasy12-${safeLabel(args.label)}-${timestamp}`
+  const baseName = `boteco12-${safeLabel(args.label)}-${timestamp}`
   const backupFile = path.join(outputDir, `${baseName}.dump`)
   const manifestFile = path.join(outputDir, `${baseName}.manifest.json`)
   const pgDumpBin = process.env.PG_DUMP_BIN || 'pg_dump'
@@ -112,7 +112,7 @@ function main() {
   const stat = fs.statSync(backupFile)
   const manifest = {
     createdAt: new Date().toISOString(),
-    project: 'fantasy12-api',
+    project: 'boteco12-api',
     type: 'postgres-custom',
     schema,
     file: path.basename(backupFile),

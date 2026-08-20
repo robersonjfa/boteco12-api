@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Manter uma única origem confiável para criar um banco Fantasy12 do zero e
+Manter uma única origem confiável para criar um banco Boteco12 do zero e
 continuar evoluindo bancos existentes com o fluxo padrão do Prisma.
 
 ## Baseline

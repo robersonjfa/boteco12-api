@@ -49,7 +49,7 @@ npm run prisma:baseline:fresh:verify
 
 E versione o arquivo atualizado:
 
-- `/Users/roberson/dev/personal/fantasy12-api/prisma/baselines/current-fresh-schema.sql`
+- `/Users/roberson/dev/personal/boteco12-api/prisma/baselines/current-fresh-schema.sql`
 
 ## Ambientes novos
 
@@ -87,6 +87,6 @@ npm run prisma:migrate:deploy
 
 ## Referências
 
-- `/Users/roberson/dev/personal/fantasy12-api/docs/database-bootstrap.md`
-- `/Users/roberson/dev/personal/fantasy12-api/docs/migration-chain-audit.md`
-- `/Users/roberson/dev/personal/fantasy12-api/docs/migration-baseline-plan.md`
+- `/Users/roberson/dev/personal/boteco12-api/docs/database-bootstrap.md`
+- `/Users/roberson/dev/personal/boteco12-api/docs/migration-chain-audit.md`
+- `/Users/roberson/dev/personal/boteco12-api/docs/migration-baseline-plan.md`

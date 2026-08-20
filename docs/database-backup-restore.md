@@ -6,15 +6,15 @@ Ultima atualizacao:
 
 ## Objetivo
 
-Garantir que o banco do Fantasy12 possa ser recuperado a partir de backup validado, sem depender de acesso manual improvisado ao container.
+Garantir que o banco do Boteco12 possa ser recuperado a partir de backup validado, sem depender de acesso manual improvisado ao container.
 
 ## Politica inicial
 
 - Formato: `pg_dump --format=custom`
 - Escopo: schema `public` extraido da `DATABASE_URL`
 - Arquivos gerados:
-  - `fantasy12-<label>-<timestamp>.dump`
-  - `fantasy12-<label>-<timestamp>.manifest.json`
+  - `boteco12-<label>-<timestamp>.dump`
+  - `boteco12-<label>-<timestamp>.manifest.json`
 - Manifest inclui:
   - data de criacao
   - schema
@@ -58,8 +58,8 @@ Saida esperada:
 
 ```bash
 npm run db:backup:verify -- \
-  --file backups/postgres/fantasy12-pre-deploy-YYYY-MM-DDTHH-MM-SS.dump \
-  --manifest backups/postgres/fantasy12-pre-deploy-YYYY-MM-DDTHH-MM-SS.manifest.json
+  --file backups/postgres/boteco12-pre-deploy-YYYY-MM-DDTHH-MM-SS.dump \
+  --manifest backups/postgres/boteco12-pre-deploy-YYYY-MM-DDTHH-MM-SS.manifest.json
 ```
 
 Essa verificacao confirma:
@@ -76,7 +76,7 @@ Essa verificacao confirma:
 
 ```bash
 npm run db:restore -- \
-  --file backups/postgres/fantasy12-pre-deploy-YYYY-MM-DDTHH-MM-SS.dump \
+  --file backups/postgres/boteco12-pre-deploy-YYYY-MM-DDTHH-MM-SS.dump \
   --target-url "$RESTORE_DATABASE_URL" \
   --dry-run
 ```
@@ -85,7 +85,7 @@ npm run db:restore -- \
 
 ```bash
 npm run db:restore -- \
-  --file backups/postgres/fantasy12-pre-deploy-YYYY-MM-DDTHH-MM-SS.dump \
+  --file backups/postgres/boteco12-pre-deploy-YYYY-MM-DDTHH-MM-SS.dump \
   --target-url "$RESTORE_DATABASE_URL" \
   --yes-i-know-this-drops-data
 ```

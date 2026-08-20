@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Mapear o estado real de compatibilidade entre `fantasy12-api` e `fantasy12-frontend` para orientar a Fase 1 de consolidação.
+Mapear o estado real de compatibilidade entre `boteco12-api` e `boteco12-frontend` para orientar a Fase 1 de consolidação.
 
 ## Legenda
 
@@ -141,4 +141,4 @@ Ao fim da consolidação de integração:
 - frontend e backend passam a compartilhar um contrato único
 - sessão vira o mecanismo oficial sem ambiguidades
 - telas legadas deixam de influenciar a arquitetura ativa
-- o projeto fica pronto para entrar na criação do `fantasy12-infra` sem carregar inconsistências atuais
+- o projeto fica pronto para entrar na criação do `boteco12-infra` sem carregar inconsistências atuais

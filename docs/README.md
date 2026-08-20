@@ -1,11 +1,11 @@
-# Fantasy12 Docs
+# Boteco12 Docs
 
-Este diretório organiza o plano de maturidade da plataforma Fantasy12 com base no estado real dos projetos atuais.
+Este diretório organiza o plano de maturidade da plataforma Boteco12 com base no estado real dos projetos atuais.
 
 Arquivos:
 
-- `architecture-current.md`: fotografia do estado atual de `fantasy12-api` e `fantasy12-frontend`
-- `architecture-target.md`: arquitetura alvo e escopo do futuro `fantasy12-infra`
+- `architecture-current.md`: fotografia do estado atual de `boteco12-api` e `boteco12-frontend`
+- `architecture-target.md`: arquitetura alvo e escopo do futuro `boteco12-infra`
 - `backlog-master.md`: backlog oficial, incluindo o programa de seguranca `SEC-*`
 - `roadmap.md`: fases de execução com prioridades e entregáveis
 - `security-review.md`: avaliação inicial de segurança e hardening

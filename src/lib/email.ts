@@ -135,10 +135,10 @@ export async function sendPasswordResetEmail(opts: {
 }) {
   const { to, resetUrl, expiresInMinutes } = opts
 
-  const subject = 'Fantasy12 — redefinição de senha'
+  const subject = 'Boteco12 — redefinição de senha'
 
   const text = [
-    'Fantasy12',
+    'Boteco12',
     '',
     'Redefinição de senha',
     '',
@@ -149,8 +149,8 @@ export async function sendPasswordResetEmail(opts: {
     '',
     'Se você não fez essa solicitação, ignore este email — sua senha continua a mesma.',
     '',
-    '— Time Fantasy12',
-    'fantasy12.app@gmail.com',
+    '— Time Boteco12',
+    'boteco12.app@gmail.com',
   ].join('\n')
 
   const html = `<!DOCTYPE html>
@@ -174,7 +174,7 @@ export async function sendPasswordResetEmail(opts: {
             <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#f97316;text-transform:uppercase;letter-spacing:2px;">Segurança da conta</p>
             <h1 style="margin:0 0 24px;font-size:24px;font-weight:900;color:#0f172a;line-height:1.2;">Redefinição de senha</h1>
             <p style="margin:0 0 16px;font-size:15px;color:#475569;line-height:1.6;">
-              Recebemos uma solicitação para redefinir a senha da sua conta no Fantasy12.
+              Recebemos uma solicitação para redefinir a senha da sua conta no Boteco12.
             </p>
             <p style="margin:0 0 32px;font-size:15px;color:#475569;line-height:1.6;">
               Clique no botão abaixo para criar uma nova senha. Este link expira em <strong style="color:#0f172a;">${expiresInMinutes} minutos</strong>.
@@ -208,7 +208,7 @@ export async function sendPasswordResetEmail(opts: {
               Se você não solicitou a redefinição de senha, ignore este email — sua senha continua a mesma e nenhuma alteração foi feita.
             </p>
             <p style="margin:0;font-size:12px;color:#cbd5e1;">
-              © Fantasy12 · <a href="mailto:fantasy12.app@gmail.com" style="color:#94a3b8;text-decoration:none;">fantasy12.app@gmail.com</a>
+              © Boteco12 · <a href="mailto:boteco12.app@gmail.com" style="color:#94a3b8;text-decoration:none;">boteco12.app@gmail.com</a>
             </p>
           </td>
         </tr>

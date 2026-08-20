@@ -251,7 +251,7 @@ app.get('/health', async (_req, res) => {
 ====================================================== */
 app.get('/', (_req, res) => {
   res.json({
-    name: 'Fantasy12 API',
+    name: 'Boteco12 API',
     status: 'running',
     timestamp: new Date().toISOString(),
   })
@@ -267,11 +267,11 @@ const PORT = Number(process.env.PORT ?? 3001)
 async function start() {
   await ensureRedisSessionStoreReady()
   app.listen(PORT, '0.0.0.0', () => {
-    logger.info({ port: PORT }, 'Fantasy12 API rodando')
+    logger.info({ port: PORT }, 'Boteco12 API rodando')
   })
 }
 
 start().catch(error => {
-  logger.error({ err: error }, 'Falha ao iniciar Fantasy12 API')
+  logger.error({ err: error }, 'Falha ao iniciar Boteco12 API')
   process.exit(1)
 })

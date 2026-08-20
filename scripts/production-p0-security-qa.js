@@ -13,7 +13,7 @@ const {
 } = require('../dist/services/benefits/consume-benefits.service')
 
 const runId = String(process.env.P0_QA_RUN_ID || '').replace(/[^0-9]/g, '')
-const apiUrl = (process.env.P0_QA_API_URL || 'https://api.fantasy12.com')
+const apiUrl = (process.env.P0_QA_API_URL || 'https://api.boteco12.com')
   .replace(/\/$/, '')
 const allowedOrigins = String(
   process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_ORIGIN || ''
