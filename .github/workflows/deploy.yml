@@ -18,7 +18,6 @@ env:
   NODE_VERSION: '22'
   EASYPANEL_PROJECT: f12-prd
   EASYPANEL_SERVICE: api
-  EASYPANEL_CODE_DIR: /etc/easypanel/projects/f12-prd/api/code
   API_HEALTH_URL: ${{ vars.API_HEALTH_URL || 'https://api.boteco12.com/health' }}
 
 jobs:
@@ -94,122 +93,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Package release source
+      - name: Block automatic schema migrations
         run: |
           set -euo pipefail
+          BASE_SHA="${{ github.event.before }}"
+          if [ -z "$BASE_SHA" ] \
+            || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            BASE_SHA="HEAD^"
+          fi
+          if git diff --name-only "$BASE_SHA" HEAD -- prisma/schema.prisma prisma/migrations \
+            | grep -q .; then
+            echo "Schema changes require the production migration runbook before deploy." >&2
+            exit 1
+          fi
+
+      - name: Compute expected release version
+        run: |
           RELEASE_VERSION="$(node scripts/release-fingerprint.js)"
-          printf '%s\n' "$RELEASE_VERSION" > .release-version
           printf 'RELEASE_VERSION=%s\n' "$RELEASE_VERSION" >> "$GITHUB_ENV"
-          mkdir -p .release
-          tar --exclude-from=.deployignore -czf ".release/boteco12-api-${GITHUB_SHA}.tgz" .
-
-      - name: Upload release package to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-          source: ".release/boteco12-api-${{ github.sha }}.tgz"
-          target: /tmp
-          strip_components: 1
-
-      - name: Sync release into EasyPanel code directory
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-          script: |
-            set -eu
-            RELEASE="/tmp/boteco12-api-${{ github.sha }}.tgz"
-            STAGE="/tmp/boteco12-api-${{ github.sha }}"
-            CODE_DIR="${{ env.EASYPANEL_CODE_DIR }}"
-
-            rm -rf "$STAGE"
-            mkdir -p "$STAGE" "$CODE_DIR"
-            tar -xzf "$RELEASE" -C "$STAGE"
-
-            if command -v rsync >/dev/null 2>&1; then
-              rsync -a --delete \
-                --exclude '.env' \
-                --exclude '.env.*' \
-                --exclude 'node_modules' \
-                --exclude 'dist' \
-                "$STAGE"/ "$CODE_DIR"/
-            else
-              find "$CODE_DIR" -mindepth 1 -maxdepth 1 \
-                ! -name '.env' \
-                ! -name '.env.local' \
-                -exec rm -rf {} +
-              cp -a "$STAGE"/. "$CODE_DIR"/
-            fi
-
-            if [ ! -s "$CODE_DIR/.release-version" ]; then
-              echo "Synced release marker is missing" >&2
-              exit 1
-            fi
-
-            rm -rf "$STAGE" "$RELEASE"
-            echo "Release source synced to $CODE_DIR"
-
-      - name: Preflight production and apply database migrations
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-          script: |
-            set -eu
-            CODE_DIR="${{ env.EASYPANEL_CODE_DIR }}"
-            API_CONTAINER="$(docker ps --filter 'name=f12-prd_api' --format '{{.ID}}' | head -n 1)"
-            STAGED_PRISMA="/tmp/boteco12-prisma-${{ github.sha }}-${{ github.run_attempt }}"
-            MIGRATION_BACKUP="/tmp/boteco12-migration-history-v1-${{ github.run_id }}-${{ github.run_attempt }}.json"
-            BASELINE_MIGRATION="20260730000000_fantasy12_baseline_v2"
-
-            if [ -z "$API_CONTAINER" ]; then
-              echo "Active Boteco12 API container not found" >&2
-              exit 1
-            fi
-
-            docker cp "$CODE_DIR/scripts/preflight-production-deploy.js" "$API_CONTAINER:/app/scripts/preflight-production-deploy.js"
-            docker exec "$API_CONTAINER" node /app/scripts/preflight-production-deploy.js
-            docker exec "$API_CONTAINER" mkdir -p "$STAGED_PRISMA"
-            docker cp "$CODE_DIR/prisma/." "$API_CONTAINER:$STAGED_PRISMA/"
-            docker cp "$CODE_DIR/scripts/rebaseline-migration-history.js" "$API_CONTAINER:/app/scripts/rebaseline-migration-history.js"
-            set +e
-            docker exec \
-              -e "ALLOW_MIGRATION_BASELINE_CUTOVER=$BASELINE_MIGRATION" \
-              -e "MIGRATION_BASELINE_DIR=$STAGED_PRISMA/migrations" \
-              -e "MIGRATION_BASELINE_MANIFEST=$STAGED_PRISMA/migration-baseline-cutover-v2.json" \
-              -e "MIGRATION_HISTORY_BACKUP_PATH=$MIGRATION_BACKUP" \
-              "$API_CONTAINER" \
-              node /app/scripts/rebaseline-migration-history.js
-            CUTOVER_STATUS=$?
-            set -e
-
-            mkdir -p /var/backups/boteco12/migration-history
-            if docker exec "$API_CONTAINER" test -s "$MIGRATION_BACKUP"; then
-              docker cp \
-                "$API_CONTAINER:$MIGRATION_BACKUP" \
-                "/var/backups/boteco12/migration-history/"
-            fi
-
-            if [ "$CUTOVER_STATUS" -ne 0 ]; then
-              echo "Migration cutover diagnostic backup:"
-              docker exec "$API_CONTAINER" cat "$MIGRATION_BACKUP" || true
-              exit "$CUTOVER_STATUS"
-            fi
-
-            docker exec "$API_CONTAINER" \
-              ./node_modules/.bin/prisma migrate deploy \
-              --schema "$STAGED_PRISMA/schema.prisma"
-            docker exec "$API_CONTAINER" \
-              ./node_modules/.bin/prisma migrate status \
-              --schema "$STAGED_PRISMA/schema.prisma"
 
       - name: Trigger EasyPanel deploy
         env:
@@ -289,36 +194,3 @@ jobs:
           done
           echo "Timed out waiting for healthy API."
           exit 1
-
-      - name: Verify production runtime hardening
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-          script: |
-            set -eu
-            API_CONTAINER="$(docker ps --filter 'name=f12-prd_api' --format '{{.ID}}' | head -n 1)"
-            test -n "$API_CONTAINER"
-            test "$(docker exec "$API_CONTAINER" id -u)" -ne 0
-            test "$(docker exec "$API_CONTAINER" node -p 'process.versions.node.split(".")[0]')" = '22'
-            docker exec "$API_CONTAINER" test -f /app/dist/index.js
-            docker exec "$API_CONTAINER" test -f /app/dist/worker.js
-            docker exec "$API_CONTAINER" test -x /app/node_modules/.bin/prisma
-            docker exec "$API_CONTAINER" test ! -e /usr/local/bin/npm
-            docker exec "$API_CONTAINER" test ! -e /usr/local/bin/npx
-            docker exec "$API_CONTAINER" ./node_modules/.bin/prisma version
-            docker exec "$API_CONTAINER" node -e '
-              require("@prisma/client")
-              require("prisma/package.json")
-              for (const name of ["typescript", "ts-node-dev", "pino-pretty"]) {
-                try {
-                  require.resolve(name)
-                  throw new Error(`${name} must not exist in production`)
-                } catch (error) {
-                  if (error.code !== "MODULE_NOT_FOUND") throw error
-                }
-              }
-            '
-            echo 'Production container hardening verified.'

@@ -29,7 +29,7 @@ test('Prisma CLI é operacional e ferramentas de build continuam dev-only', () =
   assert.equal(pkg.engines.node, '>=22 <23')
 })
 
-test('CI verifica conteúdo, escaneia a imagem e valida o runtime produtivo', () => {
+test('CI verifica conteúdo, escaneia a imagem e exige healthcheck da release', () => {
   const workflow = read('.github/workflows/deploy.yml')
   assert.match(workflow, /NODE_VERSION: '22'/)
   assert.match(workflow, /verify-container-hardening\.sh/)
@@ -38,8 +38,11 @@ test('CI verifica conteúdo, escaneia a imagem e valida o runtime produtivo', ()
   assert.match(workflow, /--ignore-unfixed=false/)
   assert.match(workflow, /--pkg-types os,library/)
   assert.match(workflow, /--severity HIGH,CRITICAL/)
-  assert.match(workflow, /Verify production runtime hardening/)
-  assert.match(workflow, /docker exec "\$API_CONTAINER" id -u/)
+  assert.match(workflow, /Trigger EasyPanel deploy/)
+  assert.match(workflow, /Wait for healthy API/)
+  assert.match(workflow, /version.*RELEASE_VERSION/)
+  assert.doesNotMatch(workflow, /appleboy\/ssh-action/)
+  assert.doesNotMatch(workflow, /appleboy\/scp-action/)
 })
 
 test('verificação da imagem cobre API, worker, Prisma e dependências dev', () => {

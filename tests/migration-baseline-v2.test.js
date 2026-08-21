@@ -89,26 +89,19 @@ test('cutover protege histórico e prova que o schema funcional não mudou', () 
   assert.match(script, /flag: 'wx'/)
 })
 
-test('deploy faz cutover antes de executar migrations na pasta isolada', () => {
+test('deploy automático bloqueia mudanças de schema sem acesso operacional', () => {
   const workflow = fs.readFileSync(
     path.join(root, '.github', 'workflows', 'deploy.yml'),
     'utf8'
   )
-  const cutoverIndex = workflow.indexOf(
-    'node /app/scripts/rebaseline-migration-history.js'
+  assert.match(workflow, /Block automatic schema migrations/)
+  assert.match(workflow, /prisma\/schema\.prisma prisma\/migrations/)
+  assert.match(
+    workflow,
+    /Schema changes require the production migration runbook before deploy\./
   )
-  const deployIndex = workflow.indexOf(
-    './node_modules/.bin/prisma migrate deploy'
-  )
-
-  assert.notEqual(cutoverIndex, -1)
-  assert.notEqual(deployIndex, -1)
-  assert.ok(cutoverIndex < deployIndex)
-  assert.match(workflow, /STAGED_PRISMA="\/tmp\/boteco12-prisma-/)
-  assert.match(workflow, /MIGRATION_HISTORY_BACKUP_PATH/)
-  assert.match(workflow, /CUTOVER_STATUS=\$\?/)
-  assert.match(workflow, /Migration cutover diagnostic backup:/)
-  assert.match(workflow, /docker exec "\$API_CONTAINER" cat "\$MIGRATION_BACKUP"/)
+  assert.doesNotMatch(workflow, /prisma migrate deploy/)
+  assert.doesNotMatch(workflow, /rebaseline-migration-history\.js/)
 })
 
 test('bootstrap fresh usa migrate deploy e não reescreve histórico', () => {
