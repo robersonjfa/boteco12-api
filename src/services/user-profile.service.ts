@@ -26,6 +26,9 @@ export class UserProfileService {
       email: user.email,
       cpf: user.cpf,
       phone: user.phone,
+      birthDate: user.birthDate
+        ? user.birthDate.toISOString().slice(0, 10)
+        : null,
       bio: user.bio,
       profileImage: user.profileImage,
       proUpsellDisabled: user.proUpsellDisabled,

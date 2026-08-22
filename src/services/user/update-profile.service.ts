@@ -9,6 +9,7 @@ interface Input {
     name?: string
     nickname?: string
     phone?: string
+    birthDate?: Date
     bio?: string
     profileImage?: string | null
     addressPreference?: UserAddressPreference
@@ -28,6 +29,7 @@ export class UpdateProfileService {
           ...(data.name !== undefined && { name: data.name }),
           ...(data.nickname !== undefined && { nickname: data.nickname }),
           ...(data.phone !== undefined && { phone: data.phone }),
+          ...(data.birthDate !== undefined && { birthDate: data.birthDate }),
           ...(data.bio !== undefined && { bio: data.bio }),
           ...(data.profileImage !== undefined && {
             profileImage: data.profileImage,
@@ -42,6 +44,7 @@ export class UpdateProfileService {
           nickname: true,
           email: true,
           phone: true,
+          birthDate: true,
           bio: true,
           profileImage: true,
           addressPreference: true,

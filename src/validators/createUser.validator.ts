@@ -6,7 +6,7 @@ import { isAtLeastAge, parseDateOnly } from '../utils/age'
 
 const MIN_ADULT_AGE = 18
 
-const BirthDateSchema = z
+export const BirthDateSchema = z
   .string()
   .trim()
   .superRefine((value, ctx) => {

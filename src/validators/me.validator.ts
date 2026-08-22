@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { ProfileImageSchema } from './profile-image.validator'
 import { normalizeDigits } from '../security/identity'
 import { NewPasswordSchema } from './password.schema'
+import { BirthDateSchema } from './createUser.validator'
 
 export const UpdateProfileSchema = z
   .object({
@@ -10,6 +11,7 @@ export const UpdateProfileSchema = z
     phone: z.string().transform(normalizeDigits).pipe(z.string().min(10).max(15)).optional(),
     bio: z.string().max(280).optional(),
     profileImage: ProfileImageSchema.nullable().optional(),
+    birthDate: BirthDateSchema.optional(),
     addressPreference: z.enum([
       'UNSPECIFIED',
       'CUSTOMER_MASCULINE',
