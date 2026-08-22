@@ -61,8 +61,8 @@ COOKIE_SAME_SITE=none
 SESSION_IDLE_TTL_MIN=30
 SESSION_ABSOLUTE_TTL_HOURS=24
 REDIS_URL=redis://:PASSWORD@HOST:6379/0
-FRONTEND_ORIGIN=https://www.boteco12.com
-CORS_ALLOWED_ORIGINS=https://www.boteco12.com
+FRONTEND_ORIGIN=https://boteco12.com
+CORS_ALLOWED_ORIGINS=https://boteco12.com
 INTERNAL_JOB_SECRET=change-me-too
 RUN_DB_MIGRATIONS=false
 MP_ACCESS_TOKEN=APP_USR-...
@@ -155,21 +155,14 @@ O workflow CI/CD API é a trilha oficial para a API:
   - roda npm run ci:check
   - valida build da imagem Docker com npm run docker:build
 - em push para main ou execução manual:
-  - repete os checks
-  - empacota o código-fonte sem .env, node_modules, dist, backups ou artefatos locais
-  - sincroniza o pacote no diretório do serviço api do EasyPanel no VPS
-  - valida as variáveis obrigatórias e os invariantes financeiros na base ativa
-  - aplica as migrations com `prisma migrate deploy` e confirma o status
-  - chama deployService via RPC do EasyPanel
+  - repete os checks, constrói e escaneia a imagem de produção
+  - bloqueia o release quando houver mudança de schema ou migration pendente de runbook
+  - chama `deployService` via RPC do EasyPanel para API e worker
   - aguarda https://api.boteco12.com/health retornar api/db: ok e o fingerprint exato dos insumos de produção
 
 Segredos/variáveis necessários no GitHub:
 
 ~~~text
-VPS_HOST
-VPS_USER
-VPS_SSH_KEY
-VPS_SSH_PASSPHRASE
 EASYPANEL_URL
 EASYPANEL_EMAIL
 EASYPANEL_PASSWORD
@@ -189,20 +182,18 @@ https://api.boteco12.com/health
 
 Observações:
 
-- o startup continua com RUN_DB_MIGRATIONS=false; migrations são uma etapa explícita do workflow antes do deploy da aplicação
+- o startup continua com RUN_DB_MIGRATIONS=false; migrations são aplicadas manualmente pelo runbook antes do release
 - mudanças de schema devem passar por npm run prisma:schema:release:check; migrations incompatíveis exigem uma estratégia expand/contract
 - o workflow substitui o antigo deploy parcial que copiava apenas dist/ para dentro do container
-- a sincronização preserva .env e .env.local remotos quando existirem no diretório do serviço
 
 O workflow CI/CD frontend segue o mesmo padrão operacional:
 
-- em push para master ou execução manual:
+- em push para master:
   - instala dependências com npm ci
-  - roda npm run build como check
-  - empacota o código-fonte sem .env, node_modules, dist ou artefatos locais
-  - sincroniza o pacote no diretório do serviço frontend do EasyPanel no VPS
+  - roda testes unitários, typecheck, E2E, build e validação SEO
+- em execução manual aprovada, depois dos mesmos checks:
   - chama deployService via RPC do EasyPanel
-  - valida que a URL pública está servindo o bundle atualizado
+  - valida que a URL pública está servindo o fingerprint determinístico da revisão e o SEO esperado
 
 O frontend não deve mais publicar copiando dist/ diretamente para um container Nginx via
 NGINX_CONTAINER_ID. A fonte de verdade em produção é o serviço frontend do EasyPanel.
@@ -317,126 +308,24 @@ service: frontend  type: app
 service: postgres  type: postgres
 ```
 
-### 5. Sincronizar arquivos no VPS e acionar deploy
+### 5. Acionar o release oficial
 
-> **Comportamento confirmado em 2026-06-27:** o `deployService` do EasyPanel reconstrói a
-> imagem Docker a partir do diretório local `/etc/easypanel/projects/f12-prd/{service}/code/`
-> no VPS. Ele **nao** faz `git pull` do GitHub antes do build quando `autoDeploy: false`.
-> Por isso, é necessario copiar os arquivos alterados para o VPS antes de chamar o deploy.
+Os serviços `api`, `worker` e `frontend` usam os repositórios Boteco12 no GitHub como
+fonte. Não copie arquivos diretamente para o VPS. `autoDeploy=false` impede releases
+acidentais; os workflows autenticam no EasyPanel e chamam `deployService` depois dos gates.
 
-#### 5a. Copiar arquivos alterados para o VPS (obrigatório)
-
-Variáveis de contexto necessárias (ajuste `$CHANGED_FILES` conforme o que mudou):
-
-```bash
-VPS="root@72.60.51.161"
-VPS_KEY="~/.ssh/boteco12_vps"
-API_CODE="/etc/easypanel/projects/f12-prd/api/code"
-FE_CODE="/etc/easypanel/projects/f12-prd/frontend/code"
-LOCAL_API="/Users/roberson/dev/personal/boteco12-api"
-LOCAL_FE="/Users/roberson/dev/personal/boteco12-frontend"
-```
-
-Para a **API** (se houve mudança de código — exceto só docs):
-
-```bash
-# Copiar arquivos alterados da API para o VPS
-# Listar os arquivos com: git diff --name-only origin/main
-scp -i $VPS_KEY \
-  $LOCAL_API/src/path/to/changed.ts \
-  $VPS:$API_CODE/src/path/to/changed.ts
-```
-
-Para o **frontend** (listar arquivos com `git diff --name-only origin/master`):
-
-```bash
-# Exemplo: mudanças em componentes e páginas
-scp -i $VPS_KEY \
-  $LOCAL_FE/src/components/AppLayout.tsx \
-  $VPS:$FE_CODE/src/components/AppLayout.tsx
-
-scp -i $VPS_KEY \
-  $LOCAL_FE/src/pages/Dashboard.tsx \
-  $VPS:$FE_CODE/src/pages/Dashboard.tsx
-
-# Para novas páginas, verificar se o diretório existe no VPS antes
-scp -i $VPS_KEY \
-  $LOCAL_FE/src/pages/NovaPage.tsx \
-  $VPS:$FE_CODE/src/pages/NovaPage.tsx
-```
-
-A chave `~/.ssh/boteco12_vps` tem passphrase. Para evitar digitar repetidamente:
-
-```bash
-ssh-add ~/.ssh/boteco12_vps
-# digitar a passphrase uma vez; ela fica no agent até o fim da sessão
-```
-
-Para copiar **múltiplos arquivos de uma vez** sem digitar a passphrase a cada scp:
-
-```bash
-# Lista os arquivos diff, monta o rsync
-git -C $LOCAL_FE diff --name-only origin/master | while read f; do
-  scp -i $VPS_KEY "$LOCAL_FE/$f" "$VPS:$FE_CODE/$f"
-done
-```
-
-#### 5b. Acionar deploy via RPC
-
-Após sincronizar os arquivos no VPS, chamar `deployService` para reconstruir a imagem e reiniciar o container:
-
-```bash
-TOKEN=$(cat /tmp/easypanel-token.txt)
-
-printf '%s' '{"json":{"projectName":"f12-prd","serviceName":"api"}}' \
-  > /tmp/easypanel-deploy-api.json
-
-printf '%s' '{"json":{"projectName":"f12-prd","serviceName":"frontend"}}' \
-  > /tmp/easypanel-deploy-frontend.json
-
-curl -sS \
-  -X POST "$BASE/api/rpc/services/app/deployService" \
-  -H "content-type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  --data @/tmp/easypanel-deploy-api.json
-
-curl -sS \
-  -X POST "$BASE/api/rpc/services/app/deployService" \
-  -H "content-type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  --data @/tmp/easypanel-deploy-frontend.json
-```
-
-Conferir progresso:
-
-```bash
-curl -sS \
-  -X POST "$BASE/api/rpc/actions/listActions" \
-  -H "content-type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  --data '{"json":{}}' \
-  > /tmp/easypanel-actions.json
-```
-
-Deploy bem-sucedido aparece como:
-
-```text
-projectName: f12-prd
-serviceName: api|frontend
-type: deployment
-status: done
-```
-
-Builds reais demoram 2–5 min (npm install + tsc/vite). Se completar em menos de 30 s,
-o EasyPanel usou cache Docker com arquivos nao atualizados — verificar se o SCP foi feito
-corretamente antes de tentar de novo.
+- API e worker: push autorizado em `boteco12-api/main`.
+- Frontend: push em `boteco12-frontend/master` executa CI; o deploy exige
+  `workflow_dispatch` aprovado.
+- Recuperação direta pelo RPC do EasyPanel só é aceita quando o workflow normal estiver
+  indisponível e deve ser seguida pelos mesmos health checks e fingerprints.
 
 ### 6. Validacao pos-deploy
 
 ```bash
 curl -sS https://api.boteco12.com/health
-curl -sS -I https://www.boteco12.com | head -40
-curl -sS https://www.boteco12.com | head -40
+curl -sS -I https://boteco12.com | head -40
+curl -sS https://boteco12.com/release.txt
 ```
 
 Esperado:
@@ -524,14 +413,14 @@ Validacao manual dos jobs (recovery):
 
 ### 8. Migrations Prisma
 
-Producao esta configurada com `RUN_DB_MIGRATIONS=false`, então o startup da aplicação não altera o banco. O workflow oficial executa `prisma migrate deploy` explicitamente, antes de solicitar a nova revisão ao EasyPanel.
+Producao esta configurada com `RUN_DB_MIGRATIONS=false`, então o startup da aplicação não altera o banco. O workflow oficial bloqueia releases com alteração de schema; `prisma migrate deploy` é executado manualmente pelo runbook antes de publicar o código dependente.
 
 Antes de aplicar migration em producao:
 
 1. Confirmar backup recente do banco.
 2. Confirmar que o preflight de configuração e invariantes não encontrou dados inválidos.
 3. Rodar `npx prisma migrate status` contra o banco de producao.
-4. Aplicar migration em janela controlada (o workflow oficial faz esta etapa).
+4. Aplicar migration manualmente em janela controlada e confirmar o status antes do release.
 5. Validar que `/health` mostra `api: ok`, `db: ok` e o fingerprint esperado, além dos fluxos afetados.
 
 Para mudancas que apenas deixam de usar um valor antigo no codigo, como a remocao logica de `UserRole.PRO`, o deploy de codigo pode ficar saudavel mesmo antes de remover fisicamente o valor antigo do enum no banco.

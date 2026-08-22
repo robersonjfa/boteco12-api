@@ -11,6 +11,7 @@ export interface AuthRequest extends Request {
     id: string;
     role: UserRole;
     email?: string;
+    birthDate?: Date | null;
   };
 }
 
@@ -36,6 +37,7 @@ export async function authMiddleware(
         id: true,
         role: true,
         email: true,
+        birthDate: true,
         adminBlockedAt: true,
         sessionVersion: true,
       },
@@ -71,7 +73,21 @@ export async function authMiddleware(
       email: user.email,
       sessionVersion: user.sessionVersion,
     };
-    req.user = req.session.user as { id: string; role: UserRole; email?: string };
+    const requestPath = req.originalUrl.split('?')[0]
+    const canCompleteAdultProfile = requestPath === '/api/me'
+    if (!user.birthDate && !canCompleteAdultProfile) {
+      return res.status(403).json({
+        error: 'birth_date_required',
+        message: 'Informe uma data de nascimento válida no perfil para continuar.',
+      })
+    }
+
+    req.user = {
+      id: user.id,
+      role: user.role,
+      email: user.email,
+      birthDate: user.birthDate,
+    }
     return next();
   } catch (error) {
     return next(error);

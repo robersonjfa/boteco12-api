@@ -116,7 +116,7 @@ jobs:
           RELEASE_VERSION="$(node scripts/release-fingerprint.js)"
           printf 'RELEASE_VERSION=%s\n' "$RELEASE_VERSION" >> "$GITHUB_ENV"
 
-      - name: Trigger EasyPanel deploy
+      - name: Trigger EasyPanel API and worker deploys
         env:
           EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
           EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
@@ -170,12 +170,14 @@ jobs:
           const token = login?.json?.token
           if (!token) throw new Error('EasyPanel login did not return a token')
 
-          await rpc('/api/rpc/services/app/deployService', {
-            projectName: process.env.EASYPANEL_PROJECT || 'f12-prd',
-            serviceName: process.env.EASYPANEL_SERVICE || 'api',
-          }, token)
+          for (const serviceName of ['api', 'worker']) {
+            await rpc('/api/rpc/services/app/deployService', {
+              projectName: process.env.EASYPANEL_PROJECT || 'f12-prd',
+              serviceName,
+            }, token)
+            console.log(`EasyPanel deploy requested for ${serviceName}.`)
+          }
 
-          console.log('EasyPanel deploy requested.')
           NODE
 
       - name: Wait for healthy API

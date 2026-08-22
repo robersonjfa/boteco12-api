@@ -1,6 +1,7 @@
 import http from 'http'
 import { pingRedis } from './redis-connection'
 import { logger } from '../lib/logger'
+import { releaseVersion } from '../lib/release-version'
 
 export type WorkerHealthState = {
   startedAt: string
@@ -34,6 +35,7 @@ export function createWorkerHealthServer(
             worker: redisOk ? 'ok' : 'error',
             redis: redisOk ? 'ok' : 'error',
             ready,
+            version: releaseVersion,
             ...state,
             timestamp: new Date().toISOString(),
           })
@@ -46,6 +48,7 @@ export function createWorkerHealthServer(
             worker: 'error',
             redis: 'error',
             ready: false,
+            version: releaseVersion,
             timestamp: new Date().toISOString(),
           })
         )

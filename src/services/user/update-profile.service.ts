@@ -23,13 +23,46 @@ interface Input {
 export class UpdateProfileService {
   static async execute({ userId, data }: Input) {
     try {
+      if (data.birthDate !== undefined) {
+        const current = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { birthDate: true },
+        })
+
+        if (!current) {
+          throw AppError.notFound('Usuário', 'user_not_found')
+        }
+
+        if (
+          current.birthDate &&
+          current.birthDate.getTime() !== data.birthDate.getTime()
+        ) {
+          throw AppError.conflict(
+            'A data de nascimento já foi confirmada. Procure o suporte para corrigir esse dado.',
+            'birth_date_already_confirmed'
+          )
+        }
+
+        if (!current.birthDate) {
+          const confirmed = await prisma.user.updateMany({
+            where: { id: userId, birthDate: null },
+            data: { birthDate: data.birthDate },
+          })
+          if (confirmed.count !== 1) {
+            throw AppError.conflict(
+              'A data de nascimento já foi confirmada. Procure o suporte para corrigir esse dado.',
+              'birth_date_already_confirmed'
+            )
+          }
+        }
+      }
+
       const updated = await prisma.user.update({
         where: { id: userId },
         data: {
           ...(data.name !== undefined && { name: data.name }),
           ...(data.nickname !== undefined && { nickname: data.nickname }),
           ...(data.phone !== undefined && { phone: data.phone }),
-          ...(data.birthDate !== undefined && { birthDate: data.birthDate }),
           ...(data.bio !== undefined && { bio: data.bio }),
           ...(data.profileImage !== undefined && {
             profileImage: data.profileImage,

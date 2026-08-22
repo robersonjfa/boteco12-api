@@ -45,14 +45,22 @@ test('perfil aceita data de nascimento adulta e rejeita menor de 18 anos', () =>
 
 test('salva a data de nascimento validada no perfil autenticado', async t => {
   const originalUpdate = prisma.user.update
+  const originalUpdateMany = prisma.user.updateMany
+  const originalFindUnique = prisma.user.findUnique
   t.after(() => {
     prisma.user.update = originalUpdate
+    prisma.user.updateMany = originalUpdateMany
+    prisma.user.findUnique = originalFindUnique
   })
 
-  let received
+  let confirmation
+  prisma.user.findUnique = async () => ({ birthDate: null })
+  prisma.user.updateMany = async input => {
+    confirmation = input
+    return { count: 1 }
+  }
   prisma.user.update = async input => {
-    received = input
-    return { id: input.where.id, birthDate: input.data.birthDate }
+    return { id: input.where.id, birthDate }
   }
 
   const birthDate = UpdateProfileSchema.parse({ birthDate: '1990-01-15' }).birthDate
@@ -61,9 +69,33 @@ test('salva a data de nascimento validada no perfil autenticado', async t => {
     data: { birthDate },
   })
 
-  assert.equal(received.where.id, 'user-authenticated')
-  assert.equal(received.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
-  assert.equal(received.select.birthDate, true)
+  assert.equal(confirmation.where.id, 'user-authenticated')
+  assert.equal(confirmation.where.birthDate, null)
+  assert.equal(confirmation.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
+})
+
+test('data de nascimento confirmada não pode ser alterada pelo perfil', async t => {
+  const originalFindUnique = prisma.user.findUnique
+  const originalUpdate = prisma.user.update
+  t.after(() => {
+    prisma.user.findUnique = originalFindUnique
+    prisma.user.update = originalUpdate
+  })
+
+  prisma.user.findUnique = async () => ({
+    birthDate: new Date('1990-01-15T00:00:00Z'),
+  })
+  prisma.user.update = async () => {
+    throw new Error('update não deveria ser chamado')
+  }
+
+  await assert.rejects(
+    UpdateProfileService.execute({
+      userId: 'user-authenticated',
+      data: { birthDate: new Date('1989-05-20T00:00:00Z') },
+    }),
+    error => error.code === 'birth_date_already_confirmed' && error.statusCode === 409
+  )
 })
 
 test('valida somente a preferência booleana do modal PRO', () => {
