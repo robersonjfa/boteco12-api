@@ -11,6 +11,9 @@ const {
 const {
   AssertActiveProUserService,
 } = require('../dist/services/subscription/assert-active-pro-user.service')
+const {
+  ListUserBoloesService,
+} = require('../dist/services/bolao/list-user-boloes.service')
 
 test('assinante cria Mesa com Tampinhas como rascunho por capacidade e rodadas', async t => {
   const originalAssertPro = AssertActiveProUserService.execute
@@ -172,4 +175,48 @@ test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t
   assert.equal(update.data.status, 'ACTIVE')
   assert.ok(update.data.publishedAt instanceof Date)
   assert.equal(result.status, 'ACTIVE')
+})
+
+test('dono encontra seus rascunhos mesmo sem participar da Mesa', async t => {
+  const originalParticipantFindMany = prisma.rankingParticipant.findMany
+  const originalRankingFindMany = prisma.ranking.findMany
+  t.after(() => {
+    prisma.rankingParticipant.findMany = originalParticipantFindMany
+    prisma.ranking.findMany = originalRankingFindMany
+  })
+
+  prisma.rankingParticipant.findMany = async () => []
+  prisma.ranking.findMany = async () => [{
+    id: 'draft-owned',
+    name: 'Rascunho do Balcão',
+    description: 'Configuração ainda não publicada.',
+    status: 'DRAFT',
+    entryFee: 10,
+    accessCost: 10,
+    category: 'PAID',
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    sponsorPrizePool: 0,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    grossCollected: 0,
+    platformFee: 0,
+    prizePool: 0,
+    rewardPool: 0,
+    settledAt: null,
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: null,
+    currentParticipants: 0,
+    maxParticipants: 50,
+    createdByUserId: 'subscriber-1',
+  }]
+
+  const mesas = await ListUserBoloesService.execute({ userId: 'subscriber-1' })
+
+  assert.equal(mesas.length, 1)
+  assert.equal(mesas[0].id, 'draft-owned')
+  assert.equal(mesas[0].isOwner, true)
+  assert.equal(mesas[0].status, 'DRAFT')
 })
