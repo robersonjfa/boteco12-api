@@ -10,7 +10,8 @@ import { withMesaFinancialNames } from './mesa-financial-names'
  */
 export class ListUserBoloesService {
   static async execute({ userId }: { userId: string }) {
-    const participations = await prisma.rankingParticipant.findMany({
+    const [participations, ownedMesas] = await Promise.all([
+      prisma.rankingParticipant.findMany({
       where: {
         userId,
         status: 'APPROVED',
@@ -26,6 +27,10 @@ export class ListUserBoloesService {
             entryFee: true,
             accessCost: true,
             category: true,
+            eligibility: true,
+            registrationCloseMode: true,
+            durationMode: true,
+            durationRounds: true,
             sponsorPrizePool: true,
             prizeDistribution: true,
             grossCollected: true,
@@ -43,9 +48,14 @@ export class ListUserBoloesService {
         },
       },
       orderBy: { createdAt: 'desc' },
-    })
+      }),
+      prisma.ranking.findMany({
+        where: { type: RankingType.BOLAO, createdByUserId: userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
 
-    return participations.map(p => withMesaFinancialNames({
+    const participating = participations.map(p => withMesaFinancialNames({
       id: p.ranking.id,
       name: p.ranking.name,
       description: p.ranking.description,
@@ -53,6 +63,10 @@ export class ListUserBoloesService {
       entryFee: p.ranking.entryFee,
       accessCost: p.ranking.accessCost,
       category: p.ranking.category,
+      eligibility: p.ranking.eligibility,
+      registrationCloseMode: p.ranking.registrationCloseMode,
+      durationMode: p.ranking.durationMode,
+      durationRounds: p.ranking.durationRounds,
       sponsorPrizePool: p.ranking.sponsorPrizePool,
       prizeDistribution: p.ranking.prizeDistribution,
       grossCollected: p.ranking.grossCollected,
@@ -69,5 +83,39 @@ export class ListUserBoloesService {
       myPosition: p.position,
       myScore: p.score,
     }))
+
+    const participatingIds = new Set(participating.map(item => item.id))
+    const owned = ownedMesas
+      .filter(mesa => !participatingIds.has(mesa.id))
+      .map(mesa => withMesaFinancialNames({
+        id: mesa.id,
+        name: mesa.name,
+        description: mesa.description,
+        status: mesa.status,
+        entryFee: mesa.entryFee,
+        accessCost: mesa.accessCost,
+        category: mesa.category,
+        eligibility: mesa.eligibility,
+        registrationCloseMode: mesa.registrationCloseMode,
+        durationMode: mesa.durationMode,
+        durationRounds: mesa.durationRounds,
+        sponsorPrizePool: mesa.sponsorPrizePool,
+        prizeDistribution: mesa.prizeDistribution,
+        grossCollected: mesa.grossCollected,
+        platformFee: mesa.platformFee,
+        prizePool: mesa.prizePool,
+        rewardPool: mesa.rewardPool,
+        settledAt: mesa.settledAt,
+        startDate: mesa.startDate,
+        entryEndDate: mesa.entryEndDate,
+        endDate: mesa.endDate,
+        participants: mesa.currentParticipants,
+        maxParticipants: mesa.maxParticipants,
+        isOwner: true,
+        myPosition: null,
+        myScore: 0,
+      }))
+
+    return [...owned, ...participating]
   }
 }
