@@ -20,7 +20,19 @@ CREATE TYPE "RankingStatus" AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED');
 CREATE TYPE "RankingParticipantStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateEnum
-CREATE TYPE "MesaCategory" AS ENUM ('PAID', 'SPONSORED_FREE');
+CREATE TYPE "MesaCategory" AS ENUM ('PAID', 'FREE', 'SPONSORED_FREE');
+
+-- CreateEnum
+CREATE TYPE "MesaEligibility" AS ENUM ('ALL', 'SUBSCRIBERS_ONLY', 'FREE_ONLY');
+
+-- CreateEnum
+CREATE TYPE "MesaRegistrationCloseMode" AS ENUM ('CAPACITY', 'DATE');
+
+-- CreateEnum
+CREATE TYPE "MesaDurationMode" AS ENUM ('ROUNDS', 'DATE');
+
+-- CreateEnum
+CREATE TYPE "UserAddressPreference" AS ENUM ('UNSPECIFIED', 'CUSTOMER_MASCULINE', 'CUSTOMER_FEMININE');
 
 -- CreateEnum
 CREATE TYPE "SubscriptionPlan" AS ENUM ('MONTHLY', 'ANNUAL');
@@ -61,6 +73,7 @@ CREATE TABLE "users" (
     "birthDate" DATE,
     "scoreTotal" INTEGER NOT NULL DEFAULT 0,
     "proUpsellDisabled" BOOLEAN NOT NULL DEFAULT false,
+    "addressPreference" "UserAddressPreference" NOT NULL DEFAULT 'UNSPECIFIED',
     "failedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
     "lockedUntil" TIMESTAMP(3),
     "sessionVersion" INTEGER NOT NULL DEFAULT 0,
@@ -177,6 +190,12 @@ CREATE TABLE "rankings" (
     "entryFee" INTEGER NOT NULL DEFAULT 0,
     "accessCost" INTEGER DEFAULT 0,
     "category" "MesaCategory" NOT NULL DEFAULT 'PAID',
+    "eligibility" "MesaEligibility" NOT NULL DEFAULT 'SUBSCRIBERS_ONLY',
+    "registrationCloseMode" "MesaRegistrationCloseMode" NOT NULL DEFAULT 'CAPACITY',
+    "durationMode" "MesaDurationMode" NOT NULL DEFAULT 'DATE',
+    "durationRounds" INTEGER,
+    "registrationClosedAt" TIMESTAMP(3),
+    "publishedAt" TIMESTAMP(3),
     "sponsorPrizePool" INTEGER NOT NULL DEFAULT 0,
     "maxParticipants" INTEGER,
     "currentParticipants" INTEGER NOT NULL DEFAULT 0,

@@ -1,4 +1,4 @@
-import { MesaCategory, Prisma } from '@prisma/client'
+import { MesaCategory, MesaRegistrationCloseMode, Prisma } from '@prisma/client'
 import { BolaoPrizeService } from './bolao-prize.service'
 import { MesaCategoryRules } from './mesa-category-rules'
 
@@ -20,6 +20,7 @@ export type InspectableMesa = {
   entryFee: number
   accessCost?: number | null
   category?: MesaCategory
+  registrationCloseMode?: MesaRegistrationCloseMode
   sponsorPrizePool?: number
   prizeDistribution: Prisma.JsonValue | null
   grossCollected: number
@@ -47,10 +48,12 @@ export class MesaIntegrityService {
     const issues: MesaIntegrityIssue[] = []
     const accessCost = mesa.accessCost ?? mesa.entryFee
     const rewardPool = mesa.rewardPool ?? mesa.prizePool
+    const paid = MesaCategoryRules.isPaid(mesa)
     const sponsored = MesaCategoryRules.isSponsored(mesa)
+    const free = MesaCategoryRules.isFree(mesa)
     const approved = mesa.participants.filter(item => item.status === 'APPROVED')
 
-    if (!sponsored) {
+    if (paid) {
       if (!Number.isInteger(accessCost) || accessCost <= 0) {
         issues.push({
           code: 'INVALID_PAID_ACCESS_COST',
@@ -65,7 +68,7 @@ export class MesaIntegrityService {
           details: { sponsorPrizePool: mesa.sponsorPrizePool ?? 0 },
         })
       }
-    } else {
+    } else if (sponsored) {
       if (accessCost !== 0) {
         issues.push({
           code: 'INVALID_SPONSORED_ACCESS_COST',
@@ -80,14 +83,23 @@ export class MesaIntegrityService {
           details: { sponsorPrizePool: mesa.sponsorPrizePool ?? 0 },
         })
       }
+    } else if (accessCost !== 0 || (mesa.sponsorPrizePool ?? 0) !== 0) {
+      issues.push({
+        code: 'INVALID_FREE_FINANCIAL_TERMS',
+        message: 'Mesa Free não possui cobrança nem recompensa em Tampinhas',
+      })
     }
 
-    if (mesa.maxParticipants == null) {
+    const requiresCapacity =
+      (mesa.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY) ===
+      MesaRegistrationCloseMode.CAPACITY
+    if (requiresCapacity && mesa.maxParticipants == null) {
       issues.push({
         code: 'MISSING_PARTICIPANT_LIMIT',
         message: 'Limite obrigatório de participantes ausente',
       })
-    } else if (!Number.isInteger(mesa.maxParticipants) || mesa.maxParticipants <= 0) {
+    } else if (mesa.maxParticipants != null &&
+      (!Number.isInteger(mesa.maxParticipants) || mesa.maxParticipants <= 0)) {
       issues.push({
         code: 'INVALID_PARTICIPANT_LIMIT',
         message: 'Limite de participantes inválido',
@@ -133,13 +145,15 @@ export class MesaIntegrityService {
       issues.push({ code: 'MISSING_PRIZE_RULES', message: 'Observações/regras da Mesa ausentes' })
     }
 
-    try {
-      BolaoPrizeService.fromJson(mesa.prizeDistribution)
-    } catch {
-      issues.push({ code: 'INVALID_PRIZE_DISTRIBUTION', message: 'Distribuição de vencedores inválida' })
+    if (!free) {
+      try {
+        BolaoPrizeService.fromJson(mesa.prizeDistribution)
+      } catch {
+        issues.push({ code: 'INVALID_PRIZE_DISTRIBUTION', message: 'Distribuição de vencedores inválida' })
+      }
     }
 
-    const unpaid = sponsored ? [] : approved.filter(item =>
+    const unpaid = !paid ? [] : approved.filter(item =>
       !item.entryPaidAt || item.entryFeePaid !== accessCost
     )
     if (unpaid.length > 0) {
@@ -150,7 +164,7 @@ export class MesaIntegrityService {
       })
     }
 
-    const expectedGross = sponsored ? 0 : approved
+    const expectedGross = !paid ? 0 : approved
       .filter(item => item.entryPaidAt && item.entryFeePaid === accessCost)
       .reduce((total, item) => total + item.entryFeePaid, 0)
     if (mesa.grossCollected !== expectedGross) {
@@ -163,7 +177,9 @@ export class MesaIntegrityService {
 
     const totals = sponsored
       ? { platformFee: 0, prizePool: mesa.sponsorPrizePool ?? 0 }
-      : BolaoPrizeService.calculatePool(mesa.grossCollected)
+      : free
+        ? { platformFee: 0, prizePool: 0 }
+        : BolaoPrizeService.calculatePool(mesa.grossCollected)
     if (mesa.platformFee !== totals.platformFee || rewardPool !== totals.prizePool) {
       issues.push({
         code: 'PRIZE_TOTALS_MISMATCH',
@@ -185,7 +201,7 @@ export class MesaIntegrityService {
       select: {
         id: true, name: true, status: true, endDate: true,
         description: true, entryFee: true, accessCost: true, category: true,
-        sponsorPrizePool: true, prizeDistribution: true,
+        sponsorPrizePool: true, registrationCloseMode: true, prizeDistribution: true,
         grossCollected: true, platformFee: true, prizePool: true, rewardPool: true, settledAt: true,
         maxParticipants: true, currentParticipants: true,
         participants: {

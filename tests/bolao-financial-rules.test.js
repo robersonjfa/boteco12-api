@@ -137,7 +137,10 @@ test('Mesa exige acesso positivo e uma distribuicao que some 100%', async t => {
   )
 })
 
-test('toda Mesa exige limite de usuarios positivo', async () => {
+test('Mesa por capacidade exige limite de freguesia positivo', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  t.after(() => { AssertActiveProUserService.execute = originalAssertPro })
+  AssertActiveProUserService.execute = async () => mockProUser()
   await assert.rejects(
     CreateBolaoService.execute(createInput({ maxParticipants: undefined })),
     { message: 'Informe um limite de usuários maior que zero' }
@@ -155,7 +158,7 @@ test('admin cria Mesa vazia sem debitar fichas do criador', async t => {
     prisma.user.findUnique = originalFindUnique
     prisma.$transaction = originalTransaction
   })
-  prisma.user.findUnique = async () => ({ id: 'creator-1' })
+  prisma.user.findUnique = async () => mockProUser()
 
   let rankingData
   let walletTouched = false
@@ -218,7 +221,7 @@ test('admin cria Mesa FREE patrocinada sem custo e com premio financiado', async
     prisma.user.findUnique = originalFindUnique
     prisma.$transaction = originalTransaction
   })
-  prisma.user.findUnique = async () => ({ id: 'creator-1' })
+  prisma.user.findUnique = async () => mockProUser()
 
   let rankingData
   prisma.$transaction = async callback => callback({
@@ -372,7 +375,7 @@ test('acesso à Mesa exige assinatura PRO ativa e saldo de tampinhas', async t =
   assert.equal(rankingUpdates[0].prizePool, 20)
 })
 
-test('usuário FREE não entra na Mesa e não inicia débito', async t => {
+test('freguês Na Calçada não entra em Mesa exclusiva para assinantes nem inicia débito', async t => {
   const originalAssertPro = AssertActiveProUserService.execute
   const originalTransaction = prisma.$transaction
   t.after(() => {
@@ -389,11 +392,31 @@ test('usuário FREE não entra na Mesa e não inicia débito', async t => {
     throw error
   }
 
-  let transactionStarted = false
-  prisma.$transaction = async () => {
-    transactionStarted = true
-    throw new Error('a transação não deve iniciar para usuário FREE')
-  }
+  let walletTouched = false
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'mesa-1',
+        type: 'BOLAO',
+        status: 'ACTIVE',
+        category: 'PAID',
+        eligibility: 'SUBSCRIBERS_ONLY',
+        accessCost: 10,
+        entryFee: 10,
+        sponsorPrizePool: 0,
+        maxParticipants: 50,
+        currentParticipants: 0,
+        createdByUserId: 'creator-1',
+        startDate: new Date('2020-01-01T00:00:00Z'),
+        entryEndDate: null,
+        endDate: null,
+      }),
+    },
+    wallet: {
+      findUnique: async () => { walletTouched = true },
+      updateMany: async () => { walletTouched = true },
+    },
+  })
 
   await assert.rejects(
     JoinBolaoService.execute({ rankingId: 'mesa-1', userId: 'free-user' }),
@@ -403,7 +426,7 @@ test('usuário FREE não entra na Mesa e não inicia débito', async t => {
       return true
     }
   )
-  assert.equal(transactionStarted, false)
+  assert.equal(walletTouched, false)
 })
 
 test('entrada sem fichas não cria participante nem altera o caixa da Mesa', async t => {

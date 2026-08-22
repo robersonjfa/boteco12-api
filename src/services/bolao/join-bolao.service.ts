@@ -67,7 +67,7 @@ export class JoinBolaoService {
       await this.assertEligibility(bolao.eligibility, userId);
 
       BolaoRegistrationWindowService.assertOpen(bolao);
-      if (bolao.registrationCloseMode === 'CAPACITY') {
+      if ((bolao.registrationCloseMode ?? 'CAPACITY') === 'CAPACITY') {
         MesaCategoryRules.assertCapacity(bolao);
       }
 
@@ -107,7 +107,9 @@ export class JoinBolaoService {
         });
       }
 
-      const seatReservedByCapacity = true;
+      const approvedAt = new Date();
+      const seatReservedByCapacity =
+        (bolao.registrationCloseMode ?? 'CAPACITY') === 'CAPACITY';
       if (seatReservedByCapacity) {
         const reservation = await tx.ranking.updateMany({
           where: {
@@ -116,6 +118,9 @@ export class JoinBolaoService {
           },
           data: {
             currentParticipants: { increment: 1 },
+            ...(bolao.currentParticipants + 1 === bolao.maxParticipants
+              ? { registrationClosedAt: approvedAt }
+              : {}),
             ...(isPaid ? { grossCollected: { increment: accessCost } } : {}),
           },
         });
@@ -124,7 +129,6 @@ export class JoinBolaoService {
         }
       }
 
-      const approvedAt = new Date();
       const participant = existingParticipant
         ? await tx.rankingParticipant.update({
             where: { id: existingParticipant.id },

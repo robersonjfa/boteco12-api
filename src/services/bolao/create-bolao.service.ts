@@ -58,6 +58,7 @@ export class CreateBolaoService {
       entryFee: input.entryFee,
       sponsorPrizePool: input.sponsorPrizePool,
       maxParticipants: input.maxParticipants,
+      registrationCloseMode: input.registrationCloseMode,
     })
     const accessCost = terms.accessCost
     const description = MesaCategoryRules.isFree(terms)

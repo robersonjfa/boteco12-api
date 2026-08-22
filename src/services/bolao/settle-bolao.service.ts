@@ -22,9 +22,10 @@ export class SettleBolaoService {
   ) {
     if (ranking.settledAt) return
 
-    const prizeDistribution = BolaoPrizeService.fromJson(
-      ranking.prizeDistribution
-    )
+    const free = MesaCategoryRules.isFree(ranking)
+    const prizeDistribution = free
+      ? []
+      : BolaoPrizeService.fromJson(ranking.prizeDistribution)
     const sponsored = MesaCategoryRules.isSponsored(ranking)
     const totals = sponsored
       ? {
@@ -32,7 +33,9 @@ export class SettleBolaoService {
           platformFee: 0,
           prizePool: ranking.sponsorPrizePool ?? 0,
         }
-      : BolaoPrizeService.calculatePool(ranking.grossCollected)
+      : free
+        ? { grossCollected: 0, platformFee: 0, prizePool: 0 }
+        : BolaoPrizeService.calculatePool(ranking.grossCollected)
     const payouts = BolaoPrizeService.calculatePayouts({
       prizePool: totals.prizePool,
       prizeDistribution,

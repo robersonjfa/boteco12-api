@@ -135,6 +135,20 @@ test('integridade aceita participantes sem débito em Mesa FREE patrocinada', ()
   assert.deepEqual(issues, [])
 })
 
+test('integridade aceita Mesa Free por data sem limite nem recompensa', () => {
+  const issues = MesaIntegrityService.inspect({
+    id: 'mesa-free-date', category: 'FREE', registrationCloseMode: 'DATE',
+    description: 'Mesa aberta para a resenha, sem recompensa em tampinhas.',
+    entryFee: 0, accessCost: 0, sponsorPrizePool: 0,
+    maxParticipants: null, currentParticipants: 1, prizeDistribution: [],
+    grossCollected: 0, platformFee: 0, prizePool: 0, rewardPool: 0,
+    settledAt: null,
+    participants: [{ status: 'APPROVED', entryFeePaid: 0, entryPaidAt: null }],
+  })
+
+  assert.deepEqual(issues, [])
+})
+
 test('diagnóstico de Mesa detecta divergência de participantes e capacidade', () => {
   const base = {
     id: 'mesa-capacidade',
@@ -229,12 +243,14 @@ test('nova criação rejeita data final de inscrição legada', () => {
   assert.equal(result.success, false)
 })
 
-test('data legada de inscrição não antecipa o fechamento da Mesa', () => {
-  assert.doesNotThrow(() => BolaoRegistrationWindowService.assertOpen({
+test('data de inscrição encerra novas entradas antes do fim da Mesa', () => {
+  assert.throws(() => BolaoRegistrationWindowService.assertOpen({
     startDate: new Date('2026-01-01T00:00:00.000Z'),
     entryEndDate: new Date('2026-01-15T00:00:00.000Z'),
     endDate: new Date('2099-02-01T00:00:00.000Z'),
-  }, new Date('2026-01-16T00:00:00.000Z')))
+  }, new Date('2026-01-16T00:00:00.000Z')), {
+    message: 'As inscrições para esta competição foram encerradas.',
+  })
 })
 
 test('diagnóstico administrativo informa execução e Mesas vencidas sem liquidação', async () => {

@@ -1,4 +1,4 @@
-import { MesaCategory } from '@prisma/client'
+import { MesaCategory, MesaRegistrationCloseMode } from '@prisma/client'
 
 export type MesaCategoryTerms = {
   category?: MesaCategory | null
@@ -6,6 +6,7 @@ export type MesaCategoryTerms = {
   entryFee?: number | null
   sponsorPrizePool?: number | null
   maxParticipants?: number | null
+  registrationCloseMode?: MesaRegistrationCloseMode | null
 }
 
 export class MesaCategoryRules {
@@ -38,6 +39,13 @@ export class MesaCategoryRules {
     const sponsorPrizePool = value.sponsorPrizePool ?? 0
     const maxParticipants = value.maxParticipants
 
+    const registrationCloseMode = value.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY
+    if (
+      registrationCloseMode === MesaRegistrationCloseMode.CAPACITY &&
+      (!Number.isInteger(maxParticipants) || maxParticipants! <= 0)
+    ) {
+      throw new Error('Informe um limite de usuários maior que zero')
+    }
     if (maxParticipants != null && (!Number.isInteger(maxParticipants) || maxParticipants <= 0)) {
       throw new Error('Informe um limite de usuários maior que zero')
     }
@@ -62,7 +70,7 @@ export class MesaCategoryRules {
       }
     }
 
-    return { category, accessCost, sponsorPrizePool, maxParticipants }
+    return { category, accessCost, sponsorPrizePool, maxParticipants, registrationCloseMode }
   }
 
   static assertCapacity(value: MesaCategoryTerms & { currentParticipants: number }) {

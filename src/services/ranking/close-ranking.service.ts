@@ -26,6 +26,7 @@ export class CloseRankingService {
           entryFee: true,
           accessCost: true,
           category: true,
+          registrationCloseMode: true,
           sponsorPrizePool: true,
           platformFee: true,
           prizePool: true,

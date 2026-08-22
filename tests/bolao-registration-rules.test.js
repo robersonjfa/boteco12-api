@@ -30,6 +30,7 @@ function mockProAccess(t) {
 }
 
 test('criacao da Mesa nao vincula rodada e nao auto-inscreve o criador', async t => {
+  mockProAccess(t)
   const originalFindUnique = prisma.user.findUnique
   const originalTransaction = prisma.$transaction
   t.after(() => {
@@ -77,7 +78,7 @@ test('criacao da Mesa nao vincula rodada e nao auto-inscreve o criador', async t
 
   assert.equal(rankingRoundCreated, false)
   assert.equal(participantCreated, false)
-  assert.equal(rankingData.status, 'ACTIVE')
+  assert.equal(rankingData.status, 'DRAFT')
   assert.equal(rankingData.maxParticipants, 100)
   assert.equal(rankingData.currentParticipants, 0)
   assert.equal(rankingData.grossCollected, 0)
@@ -91,6 +92,7 @@ test('criacao da Mesa nao vincula rodada e nao auto-inscreve o criador', async t
 })
 
 test('bloqueia criacao de Mesa quando o termino das entradas ja passou', async t => {
+  mockProAccess(t)
   const originalFindUnique = prisma.user.findUnique
   const originalTransaction = prisma.$transaction
   t.after(() => {

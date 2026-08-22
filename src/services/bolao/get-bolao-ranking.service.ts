@@ -8,7 +8,7 @@ type ExecuteInput = {
 };
 
 function displayName(user: { nickname?: string | null; name?: string | null } | null | undefined) {
-  return user?.nickname?.trim() || user?.name?.trim() || 'Jogador';
+  return user?.nickname?.trim() || user?.name?.trim() || 'Pessoa da freguesia';
 }
 
 export class GetBolaoRankingService {
@@ -95,7 +95,7 @@ export class GetBolaoRankingService {
             const info = userInfoById.get(row.userId);
             return {
               userId: row.userId,
-              name: info?.name ?? 'Jogador',
+              name: info?.name ?? 'Pessoa da freguesia',
               isOwner: row.userId === ownerId,
               isMe: row.userId === viewerUserId,
               score: row.score,
@@ -117,6 +117,12 @@ export class GetBolaoRankingService {
         entryFee: bolao.entryFee,
         accessCost: bolao.accessCost,
         category: bolao.category,
+        eligibility: bolao.eligibility,
+        registrationCloseMode: bolao.registrationCloseMode,
+        durationMode: bolao.durationMode,
+        durationRounds: bolao.durationRounds,
+        registrationClosedAt: bolao.registrationClosedAt,
+        publishedAt: bolao.publishedAt,
         sponsorPrizePool: bolao.sponsorPrizePool,
         prizeDistribution: bolao.prizeDistribution,
         grossCollected: bolao.grossCollected,

@@ -1,9 +1,13 @@
 import { prisma } from '../../lib/prisma';
 import { CloseRankingService } from './close-ranking.service';
+import { MesaLifecycleService } from '../bolao/mesa-lifecycle.service';
 
 export class CloseExpiredRankingsService {
   async execute(): Promise<{ closed: number }> {
     const now = new Date();
+
+    await MesaLifecycleService.closeDueRegistrations(prisma, now);
+    await MesaLifecycleService.finishDueRoundMesas(prisma);
 
     /**
      * 1️⃣ Buscar rankings expirados

@@ -140,6 +140,69 @@ test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando pos
   assert.equal(result.status, 'APPROVED')
 })
 
+test('último lugar encerra as inscrições por capacidade no instante da reserva', async t => {
+  const originalTransaction = prisma.$transaction
+  t.after(() => { prisma.$transaction = originalTransaction })
+
+  let reservationData
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'mesa-last-seat', type: 'BOLAO', status: 'ACTIVE', category: 'FREE',
+        eligibility: 'ALL', registrationCloseMode: 'CAPACITY', entryFee: 0,
+        accessCost: 0, sponsorPrizePool: 0, maxParticipants: 2,
+        currentParticipants: 1, createdByUserId: 'owner',
+        startDate: new Date('2020-01-01T00:00:00.000Z'), entryEndDate: null, endDate: null,
+      }),
+      updateMany: async ({ data }) => { reservationData = data; return { count: 1 } },
+    },
+    rankingParticipant: {
+      findUnique: async () => null,
+      create: async ({ data }) => ({ id: 'last-seat', ...data }),
+    },
+    user: { findUnique: async () => ({ scoreTotal: 0, subscription: null }) },
+    userScoreHistory: { findFirst: async () => null },
+    auditLog: { create: async () => ({}) },
+  })
+
+  await JoinBolaoService.execute({ rankingId: 'mesa-last-seat', userId: 'customer' })
+
+  assert.equal(reservationData.currentParticipants.increment, 1)
+  assert.ok(reservationData.registrationClosedAt instanceof Date)
+})
+
+test('Mesa com inscrições por data aceita entrada sem exigir capacidade', async t => {
+  const originalTransaction = prisma.$transaction
+  t.after(() => { prisma.$transaction = originalTransaction })
+
+  let directUpdateData
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'mesa-date', type: 'BOLAO', status: 'ACTIVE', category: 'FREE',
+        eligibility: 'ALL', registrationCloseMode: 'DATE', entryFee: 0,
+        accessCost: 0, sponsorPrizePool: 0, maxParticipants: null,
+        currentParticipants: 3, createdByUserId: 'owner',
+        startDate: new Date('2020-01-01T00:00:00.000Z'),
+        entryEndDate: new Date('2099-12-31T02:59:59.000Z'), endDate: null,
+      }),
+      updateMany: async () => { throw new Error('não deve reservar por capacidade') },
+      update: async ({ data }) => { directUpdateData = data; return { grossCollected: 0 } },
+    },
+    rankingParticipant: {
+      findUnique: async () => null,
+      create: async ({ data }) => ({ id: 'date-seat', ...data }),
+    },
+    user: { findUnique: async () => ({ scoreTotal: 0, subscription: null }) },
+    userScoreHistory: { findFirst: async () => null },
+    auditLog: { create: async () => ({}) },
+  })
+
+  await JoinBolaoService.execute({ rankingId: 'mesa-date', userId: 'customer' })
+
+  assert.equal(directUpdateData.currentParticipants.increment, 1)
+})
+
 test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t => {
   const { PublishMesaService } = require('../dist/services/bolao/publish-mesa.service')
   const originalAssertPro = AssertActiveProUserService.execute
