@@ -135,3 +135,36 @@ test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando pos
   assert.equal(participantCreated, true)
   assert.equal(result.status, 'APPROVED')
 })
+
+test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t => {
+  const { PublishMesaService } = require('../dist/services/bolao/publish-mesa.service')
+  const originalFindUnique = prisma.ranking.findUnique
+  const originalUpdate = prisma.ranking.update
+  t.after(() => {
+    prisma.ranking.findUnique = originalFindUnique
+    prisma.ranking.update = originalUpdate
+  })
+
+  prisma.ranking.findUnique = async () => ({
+    id: 'draft-1',
+    type: 'BOLAO',
+    status: 'DRAFT',
+    createdByUserId: 'subscriber-1',
+  })
+
+  let update
+  prisma.ranking.update = async input => {
+    update = input
+    return { ...input.data, id: input.where.id }
+  }
+
+  const result = await PublishMesaService.execute({
+    rankingId: 'draft-1',
+    requestedByUserId: 'subscriber-1',
+  })
+
+  assert.equal(update.where.id, 'draft-1')
+  assert.equal(update.data.status, 'ACTIVE')
+  assert.ok(update.data.publishedAt instanceof Date)
+  assert.equal(result.status, 'ACTIVE')
+})
