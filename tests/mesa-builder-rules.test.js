@@ -1,0 +1,137 @@
+const assert = require('node:assert/strict')
+const test = require('node:test')
+
+const { prisma } = require('../dist/lib/prisma')
+const {
+  CreateBolaoService,
+} = require('../dist/services/bolao/create-bolao.service')
+const {
+  JoinBolaoService,
+} = require('../dist/services/bolao/join-bolao.service')
+const {
+  AssertActiveProUserService,
+} = require('../dist/services/subscription/assert-active-pro-user.service')
+
+test('assinante cria Mesa com Tampinhas como rascunho por capacidade e rodadas', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
+  })
+
+  let subscriptionChecked = false
+  AssertActiveProUserService.execute = async userId => {
+    subscriptionChecked = true
+    return { id: userId }
+  }
+  prisma.user.findUnique = async () => ({ id: 'subscriber-1' })
+
+  let rankingData
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      create: async ({ data }) => {
+        rankingData = data
+        return data
+      },
+    },
+    auditLog: { create: async () => ({}) },
+  })
+
+  const result = await CreateBolaoService.execute({
+    name: 'Mesa da Freguesia',
+    description: 'Primeiro lugar recebe toda a recompensa líquida.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: null,
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: 50,
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    createdByUserId: 'subscriber-1',
+  })
+
+  assert.equal(subscriptionChecked, true)
+  assert.equal(rankingData.status, 'DRAFT')
+  assert.equal(rankingData.eligibility, 'ALL')
+  assert.equal(rankingData.registrationCloseMode, 'CAPACITY')
+  assert.equal(rankingData.durationMode, 'ROUNDS')
+  assert.equal(rankingData.durationRounds, 5)
+  assert.equal(rankingData.entryEndDate, null)
+  assert.equal(rankingData.endDate, null)
+  assert.equal(result.status, 'DRAFT')
+})
+
+test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando possui tampinhas', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.$transaction = originalTransaction
+  })
+
+  AssertActiveProUserService.execute = async () => {
+    const error = new Error('assinatura não deveria ser exigida nesta Mesa')
+    error.code = 'pro_subscription_required'
+    throw error
+  }
+
+  let participantCreated = false
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'mesa-all',
+        type: 'BOLAO',
+        status: 'ACTIVE',
+        category: 'PAID',
+        eligibility: 'ALL',
+        entryFee: 10,
+        accessCost: 10,
+        sponsorPrizePool: 0,
+        maxParticipants: 20,
+        currentParticipants: 1,
+        createdByUserId: 'subscriber-owner',
+        startDate: new Date('2020-01-01T00:00:00.000Z'),
+        entryEndDate: null,
+        endDate: null,
+      }),
+      updateMany: async () => ({ count: 1 }),
+      update: async ({ data }) => data,
+    },
+    rankingParticipant: {
+      findUnique: async () => null,
+      create: async ({ data }) => {
+        participantCreated = true
+        return { id: 'participant-sidewalk', ...data }
+      },
+    },
+    user: {
+      findUnique: async () => ({
+        scoreTotal: 0,
+        subscription: null,
+      }),
+    },
+    wallet: {
+      findUnique: async () => ({ id: 'wallet-sidewalk', balance: 20 }),
+      updateMany: async () => ({ count: 1 }),
+    },
+    walletLedger: { create: async () => ({}) },
+    userScoreHistory: { findFirst: async () => null },
+    auditLog: { create: async () => ({}) },
+  })
+
+  const result = await JoinBolaoService.execute({
+    rankingId: 'mesa-all',
+    userId: 'sidewalk-user',
+  })
+
+  assert.equal(participantCreated, true)
+  assert.equal(result.status, 'APPROVED')
+})

@@ -10,6 +10,26 @@ const {
 } = require('../dist/services/user/update-user-preferences.service')
 const { UserRepository } = require('../dist/repositories/user.repository')
 const { UserProfileService } = require('../dist/services/user-profile.service')
+const { UpdateProfileSchema } = require('../dist/validators/me.validator')
+
+test('valida a preferência opcional de tratamento da freguesia', () => {
+  assert.equal(
+    UpdateProfileSchema.parse({ addressPreference: 'CUSTOMER_MASCULINE' }).addressPreference,
+    'CUSTOMER_MASCULINE'
+  )
+  assert.equal(
+    UpdateProfileSchema.parse({ addressPreference: 'CUSTOMER_FEMININE' }).addressPreference,
+    'CUSTOMER_FEMININE'
+  )
+  assert.equal(
+    UpdateProfileSchema.parse({ addressPreference: 'UNSPECIFIED' }).addressPreference,
+    'UNSPECIFIED'
+  )
+  assert.throws(
+    () => UpdateProfileSchema.parse({ addressPreference: 'INFER_FROM_NAME' }),
+    /Invalid option/
+  )
+})
 
 test('valida somente a preferência booleana do modal PRO', () => {
   assert.deepEqual(
@@ -62,6 +82,7 @@ test('expõe a preferência persistida no contrato de /api/me', async t => {
     phone: null,
     bio: null,
     profileImage: null,
+    addressPreference: 'CUSTOMER_FEMININE',
     proUpsellDisabled: true,
     role: 'NORMAL',
     subscription: null,
@@ -71,4 +92,5 @@ test('expõe a preferência persistida no contrato de /api/me', async t => {
 
   const profile = await new UserProfileService().execute('user-1')
   assert.equal(profile.proUpsellDisabled, true)
+  assert.equal(profile.addressPreference, 'CUSTOMER_FEMININE')
 })
