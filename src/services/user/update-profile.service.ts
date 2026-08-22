@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
 import { Prisma } from '@prisma/client'
+import { UserAddressPreference } from '@prisma/client'
 
 interface Input {
   userId: string
@@ -10,6 +11,7 @@ interface Input {
     phone?: string
     bio?: string
     profileImage?: string | null
+    addressPreference?: UserAddressPreference
   }
 }
 
@@ -30,6 +32,9 @@ export class UpdateProfileService {
           ...(data.profileImage !== undefined && {
             profileImage: data.profileImage,
           }),
+          ...(data.addressPreference !== undefined && {
+            addressPreference: data.addressPreference,
+          }),
         },
         select: {
           id: true,
@@ -39,6 +44,7 @@ export class UpdateProfileService {
           phone: true,
           bio: true,
           profileImage: true,
+          addressPreference: true,
           role: true,
         },
       })

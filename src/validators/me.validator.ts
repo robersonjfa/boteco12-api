@@ -10,6 +10,11 @@ export const UpdateProfileSchema = z
     phone: z.string().transform(normalizeDigits).pipe(z.string().min(10).max(15)).optional(),
     bio: z.string().max(280).optional(),
     profileImage: ProfileImageSchema.nullable().optional(),
+    addressPreference: z.enum([
+      'UNSPECIFIED',
+      'CUSTOMER_MASCULINE',
+      'CUSTOMER_FEMININE',
+    ]).optional(),
   }).strict()
   .refine(obj => Object.keys(obj).length > 0, {
     message: 'Nenhum campo para atualizar',

@@ -61,7 +61,30 @@ enum RankingParticipantStatus {
 
 enum MesaCategory {
   PAID
+  FREE
   SPONSORED_FREE
+}
+
+enum MesaEligibility {
+  ALL
+  SUBSCRIBERS_ONLY
+  FREE_ONLY
+}
+
+enum MesaRegistrationCloseMode {
+  CAPACITY
+  DATE
+}
+
+enum MesaDurationMode {
+  ROUNDS
+  DATE
+}
+
+enum UserAddressPreference {
+  UNSPECIFIED
+  CUSTOMER_MASCULINE
+  CUSTOMER_FEMININE
 }
 
 enum SubscriptionPlan {
@@ -131,6 +154,7 @@ model User {
   birthDate    DateTime? @db.Date
   scoreTotal   Int     @default(0)
   proUpsellDisabled Boolean @default(false)
+  addressPreference UserAddressPreference @default(UNSPECIFIED)
 
   // Anti brute-force por conta (independente de IP)
   failedLoginAttempts Int       @default(0)
@@ -347,6 +371,12 @@ model Ranking {
   entryFee            Int  @default(0)
   accessCost          Int? @default(0)
   category            MesaCategory @default(PAID)
+  eligibility         MesaEligibility @default(SUBSCRIBERS_ONLY)
+  registrationCloseMode MesaRegistrationCloseMode @default(CAPACITY)
+  durationMode        MesaDurationMode @default(DATE)
+  durationRounds      Int?
+  registrationClosedAt DateTime?
+  publishedAt         DateTime?
   sponsorPrizePool    Int @default(0)
   maxParticipants     Int?
   currentParticipants Int  @default(0)

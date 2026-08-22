@@ -8,20 +8,31 @@ import {
 import { normalizeMesaPrizeRules } from './mesa-prize-rules'
 import { BolaoRegistrationWindowService } from './bolao-registration-window.service'
 import { withMesaFinancialNames } from './mesa-financial-names'
-import { MesaCategory } from '@prisma/client'
+import {
+  MesaCategory,
+  MesaDurationMode,
+  MesaEligibility,
+  MesaRegistrationCloseMode,
+} from '@prisma/client'
 import { MesaCategoryRules } from './mesa-category-rules'
+import { AssertActiveProUserService } from '../subscription/assert-active-pro-user.service'
 
 type CreateBolaoInput = {
   name: string
   description: string
   startDate: Date
-  endDate: Date
+  endDate: Date | null
+  entryEndDate?: Date | null
   category?: MesaCategory
   accessCost?: number
   /** @deprecated Compatibility input. Use accessCost. */
   entryFee?: number
   sponsorPrizePool?: number
-  maxParticipants: number
+  maxParticipants?: number | null
+  eligibility?: MesaEligibility
+  registrationCloseMode?: MesaRegistrationCloseMode
+  durationMode?: MesaDurationMode
+  durationRounds?: number | null
   prizeDistribution: PrizeDistributionItem[]
   createdByUserId: string
 }
@@ -40,6 +51,7 @@ export class CreateBolaoService {
       prizeDistribution,
       createdByUserId,
     } = input
+    await AssertActiveProUserService.execute(createdByUserId)
     const terms = MesaCategoryRules.validate({
       category: input.category,
       accessCost: input.accessCost,
@@ -48,7 +60,9 @@ export class CreateBolaoService {
       maxParticipants: input.maxParticipants,
     })
     const accessCost = terms.accessCost
-    const description = normalizeMesaPrizeRules(rawDescription)
+    const description = MesaCategoryRules.isFree(terms)
+      ? rawDescription.trim()
+      : normalizeMesaPrizeRules(rawDescription)
 
     const user = await prisma.user.findUnique({
       where: { id: createdByUserId },
@@ -63,12 +77,17 @@ export class CreateBolaoService {
       throw new Error('O nome da Mesa deve ter pelo menos 3 caracteres')
     }
 
-    if (endDate <= startDate) {
+    if (input.entryEndDate && input.entryEndDate <= startDate) {
+      throw new Error('O fechamento das inscrições deve ser posterior ao início')
+    }
+
+    if (endDate && endDate <= (input.entryEndDate ?? startDate)) {
       throw new Error('A data de fim deve ser posterior à data de início')
     }
 
-    const validatedPrizeDistribution =
-      BolaoPrizeService.validateDistribution(prizeDistribution)
+    const validatedPrizeDistribution = MesaCategoryRules.isFree(terms)
+      ? []
+      : BolaoPrizeService.validateDistribution(prizeDistribution)
 
     try {
       BolaoRegistrationWindowService.assertNotClosed({
@@ -84,9 +103,9 @@ export class CreateBolaoService {
       )
     }
 
-    const durationDays = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const durationDays = endDate
+      ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      : null
     const emptyPool = BolaoPrizeService.calculatePool(0)
 
     const result = await prisma.$transaction(async tx => {
@@ -96,12 +115,16 @@ export class CreateBolaoService {
           name,
           description,
           type: 'BOLAO',
-          status: 'ACTIVE',
+          status: 'DRAFT',
           category: terms.category,
           entryFee: accessCost,
           accessCost,
           sponsorPrizePool: terms.sponsorPrizePool,
           maxParticipants: terms.maxParticipants,
+          eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
+          registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
+          durationMode: input.durationMode ?? MesaDurationMode.DATE,
+          durationRounds: input.durationRounds ?? null,
           currentParticipants: 0,
           durationDays,
           prizeDistribution: validatedPrizeDistribution,
@@ -113,8 +136,8 @@ export class CreateBolaoService {
             ? terms.sponsorPrizePool
             : emptyPool.prizePool,
           startDate,
-          entryEndDate: null,
-          endDate,
+          entryEndDate: input.entryEndDate ?? null,
+          endDate: endDate ?? null,
           createdByUserId,
         },
       })
@@ -133,10 +156,14 @@ export class CreateBolaoService {
             category: terms.category,
             sponsorPrizePool: terms.sponsorPrizePool,
             maxParticipants: terms.maxParticipants,
+            eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
+            registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
+            durationMode: input.durationMode ?? MesaDurationMode.DATE,
+            durationRounds: input.durationRounds ?? null,
             durationDays,
             startDate: startDate.toISOString(),
-            entryEndDate: null,
-            endDate: endDate.toISOString(),
+            entryEndDate: input.entryEndDate?.toISOString() ?? null,
+            endDate: endDate?.toISOString() ?? null,
             prizeDistribution: validatedPrizeDistribution,
             createdByAdmin: true,
             autoJoinedCreator: false,

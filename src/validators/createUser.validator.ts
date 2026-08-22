@@ -45,6 +45,11 @@ export const CreateUserSchema = z.object({
   password: NewPasswordSchema,
   birthDate: BirthDateSchema,
   profileImage: ProfileImageSchema.optional(),
+  addressPreference: z.enum([
+    'UNSPECIFIED',
+    'CUSTOMER_MASCULINE',
+    'CUSTOMER_FEMININE',
+  ]).default('UNSPECIFIED'),
 }).strict();
 
 export type CreateUserDTO = z.infer<typeof CreateUserSchema>;

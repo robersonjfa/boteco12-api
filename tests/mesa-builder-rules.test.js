@@ -102,6 +102,7 @@ test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando pos
         entryEndDate: null,
         endDate: null,
       }),
+      findUniqueOrThrow: async () => ({ grossCollected: 10 }),
       updateMany: async () => ({ count: 1 }),
       update: async ({ data }) => data,
     },
@@ -138,12 +139,16 @@ test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando pos
 
 test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t => {
   const { PublishMesaService } = require('../dist/services/bolao/publish-mesa.service')
+  const originalAssertPro = AssertActiveProUserService.execute
   const originalFindUnique = prisma.ranking.findUnique
   const originalUpdate = prisma.ranking.update
   t.after(() => {
     prisma.ranking.findUnique = originalFindUnique
     prisma.ranking.update = originalUpdate
+    AssertActiveProUserService.execute = originalAssertPro
   })
+
+  AssertActiveProUserService.execute = async userId => ({ id: userId })
 
   prisma.ranking.findUnique = async () => ({
     id: 'draft-1',

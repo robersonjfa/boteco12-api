@@ -29,6 +29,7 @@ export class UserProfileService {
       bio: user.bio,
       profileImage: user.profileImage,
       proUpsellDisabled: user.proUpsellDisabled,
+      addressPreference: user.addressPreference,
       role: user.role,
       isPro: hasActiveProSubscription(user.subscription),
       isAnnualPro: hasAnnualProSubscription(user.subscription),

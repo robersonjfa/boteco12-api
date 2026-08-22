@@ -17,8 +17,6 @@ export class JoinBolaoService {
     input: JoinBolaoInput,
     transaction?: Prisma.TransactionClient
   ) {
-    await AssertActiveProUserService.execute(input.userId);
-
     if (transaction) {
       return this.executeInTransaction(transaction, input);
     }
@@ -39,6 +37,8 @@ export class JoinBolaoService {
           entryFee: true,
           accessCost: true,
           category: true,
+          eligibility: true,
+          registrationCloseMode: true,
           sponsorPrizePool: true,
           maxParticipants: true,
           currentParticipants: true,
@@ -64,8 +64,12 @@ export class JoinBolaoService {
       const accessCost = bolao.accessCost ?? bolao.entryFee;
       const isPaid = MesaCategoryRules.isPaid(bolao);
 
+      await this.assertEligibility(bolao.eligibility, userId);
+
       BolaoRegistrationWindowService.assertOpen(bolao);
-      MesaCategoryRules.assertCapacity(bolao);
+      if (bolao.registrationCloseMode === 'CAPACITY') {
+        MesaCategoryRules.assertCapacity(bolao);
+      }
 
       if (bolao.createdByUserId === userId) {
         throw new Error('O criador já administra esta Mesa');
@@ -203,5 +207,27 @@ export class JoinBolaoService {
         rankingId,
         participantId: participant.id,
       };
+  }
+
+  private static async assertEligibility(
+    eligibility: 'ALL' | 'SUBSCRIBERS_ONLY' | 'FREE_ONLY' | null | undefined,
+    userId: string
+  ) {
+    const rule = eligibility ?? 'SUBSCRIBERS_ONLY';
+    if (rule === 'ALL') return;
+
+    if (rule === 'SUBSCRIBERS_ONLY') {
+      await AssertActiveProUserService.execute(userId);
+      return;
+    }
+
+    try {
+      await AssertActiveProUserService.execute(userId);
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'pro_subscription_required') return;
+      throw error;
+    }
+
+    throw new Error('Esta Mesa é exclusiva para quem está Na Calçada');
   }
 }

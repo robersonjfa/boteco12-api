@@ -7,15 +7,20 @@ const PrizeDistributionItemSchema = z.object({
 
 const CreateMesaBaseSchema = z.object({
   name: z.string().trim().min(3).max(120),
-  description: z.string().trim().min(1).max(2000),
+  description: z.string().trim().min(1).max(500),
   startDate: z.iso.datetime(),
-  endDate: z.iso.datetime(),
-  category: z.enum(['PAID', 'SPONSORED_FREE']).default('PAID'),
+  entryEndDate: z.iso.datetime().nullable().optional(),
+  endDate: z.iso.datetime().nullable().optional(),
+  category: z.enum(['PAID', 'FREE', 'SPONSORED_FREE']).default('PAID'),
+  eligibility: z.enum(['ALL', 'SUBSCRIBERS_ONLY', 'FREE_ONLY']).default('SUBSCRIBERS_ONLY'),
+  registrationCloseMode: z.enum(['CAPACITY', 'DATE']).default('CAPACITY'),
+  durationMode: z.enum(['ROUNDS', 'DATE']).default('DATE'),
+  durationRounds: z.number().int().positive().max(1000).nullable().optional(),
   accessCost: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   entryFee: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   sponsorPrizePool: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
-  maxParticipants: z.number().int().positive().max(1_000_000),
-  prizeDistribution: z.array(PrizeDistributionItemSchema).min(1).max(100),
+  maxParticipants: z.number().int().positive().max(1_000_000).nullable().optional(),
+  prizeDistribution: z.array(PrizeDistributionItemSchema).max(10).default([]),
 }).strict()
 
 export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) => {
@@ -32,10 +37,49 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
     ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Informe o custo de acesso da Mesa' })
   }
   if (input.category !== 'PAID' && accessCost !== 0) {
-    ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Mesa FREE não pode cobrar Tampinhas' })
+    ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Esta categoria não pode cobrar Tampinhas' })
   }
-  if (input.category !== 'PAID' && (input.sponsorPrizePool ?? 0) <= 0) {
+  if (input.category === 'SPONSORED_FREE' && (input.sponsorPrizePool ?? 0) <= 0) {
     ctx.addIssue({ code: 'custom', path: ['sponsorPrizePool'], message: 'Informe a premiação patrocinada' })
+  }
+  if (input.category !== 'SPONSORED_FREE' && (input.sponsorPrizePool ?? 0) !== 0) {
+    ctx.addIssue({ code: 'custom', path: ['sponsorPrizePool'], message: 'Esta categoria não utiliza premiação patrocinada' })
+  }
+
+  if (input.category === 'PAID' && input.registrationCloseMode !== 'CAPACITY') {
+    ctx.addIssue({ code: 'custom', path: ['registrationCloseMode'], message: 'Mesa com Tampinhas fecha inscrições por capacidade' })
+  }
+  if (input.category === 'PAID' && input.durationMode !== 'ROUNDS') {
+    ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa com Tampinhas dura por quantidade de rodadas' })
+  }
+
+  if (input.registrationCloseMode === 'CAPACITY' && !input.maxParticipants) {
+    ctx.addIssue({ code: 'custom', path: ['maxParticipants'], message: 'Informe os lugares disponíveis' })
+  }
+  if (input.registrationCloseMode === 'DATE' && !input.entryEndDate) {
+    ctx.addIssue({ code: 'custom', path: ['entryEndDate'], message: 'Informe o fechamento das inscrições' })
+  }
+  if (input.durationMode === 'ROUNDS' && !input.durationRounds) {
+    ctx.addIssue({ code: 'custom', path: ['durationRounds'], message: 'Informe a quantidade de rodadas' })
+  }
+  if (input.durationMode === 'DATE' && !input.endDate) {
+    ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'Informe o encerramento da Mesa' })
+  }
+
+  const startDate = new Date(input.startDate)
+  if (input.entryEndDate && new Date(input.entryEndDate) <= startDate) {
+    ctx.addIssue({ code: 'custom', path: ['entryEndDate'], message: 'O fechamento deve ser posterior ao início das inscrições' })
+  }
+  const competitionStartsAfter = input.entryEndDate ? new Date(input.entryEndDate) : startDate
+  if (input.endDate && new Date(input.endDate) <= competitionStartsAfter) {
+    ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'O encerramento deve ser posterior às inscrições' })
+  }
+
+  if (input.category === 'FREE' && input.prizeDistribution.length > 0) {
+    ctx.addIssue({ code: 'custom', path: ['prizeDistribution'], message: 'Mesa Free não possui recompensa em Tampinhas' })
+  }
+  if (input.category !== 'FREE' && input.prizeDistribution.length === 0) {
+    ctx.addIssue({ code: 'custom', path: ['prizeDistribution'], message: 'Informe a distribuição da recompensa' })
   }
   if (
     input.accessCost != null &&

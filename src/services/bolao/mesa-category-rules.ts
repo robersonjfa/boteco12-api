@@ -18,7 +18,11 @@ export class MesaCategoryRules {
   }
 
   static isSponsored(value: MesaCategoryTerms) {
-    return !this.isPaid(value)
+    return this.category(value) === MesaCategory.SPONSORED_FREE
+  }
+
+  static isFree(value: MesaCategoryTerms) {
+    return this.category(value) === MesaCategory.FREE
   }
 
   static hasCapacity(value: MesaCategoryTerms) {
@@ -34,7 +38,7 @@ export class MesaCategoryRules {
     const sponsorPrizePool = value.sponsorPrizePool ?? 0
     const maxParticipants = value.maxParticipants
 
-    if (!Number.isInteger(maxParticipants) || maxParticipants! <= 0) {
+    if (maxParticipants != null && (!Number.isInteger(maxParticipants) || maxParticipants <= 0)) {
       throw new Error('Informe um limite de usuários maior que zero')
     }
 
@@ -45,12 +49,16 @@ export class MesaCategoryRules {
       if (sponsorPrizePool !== 0) {
         throw new Error('Mesa com Tampinhas não utiliza premiação patrocinada')
       }
-    } else {
+    } else if (category === MesaCategory.SPONSORED_FREE) {
       if (accessCost !== 0) {
         throw new Error('Mesa FREE não pode cobrar Tampinhas')
       }
       if (!Number.isInteger(sponsorPrizePool) || sponsorPrizePool <= 0) {
         throw new Error('Informe a premiação patrocinada em Tampinhas')
+      }
+    } else {
+      if (accessCost !== 0 || sponsorPrizePool !== 0) {
+        throw new Error('Mesa Free não possui cobrança nem recompensa em Tampinhas')
       }
     }
 
