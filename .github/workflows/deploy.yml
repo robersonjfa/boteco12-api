@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -47,7 +47,7 @@ jobs:
 
       - name: Publish security gate report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: security-gates-${{ github.sha }}
           path: .artifacts/security-gates.json
@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build Docker image
         run: docker build -t "boteco12-api:${GITHUB_SHA}" .
@@ -92,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -170,12 +170,28 @@ jobs:
           const token = login?.json?.token
           if (!token) throw new Error('EasyPanel login did not return a token')
 
+          const inventory = await rpc(
+            '/api/rpc/projects/listProjectsAndServices',
+            {},
+            token
+          )
+          const services = inventory?.json?.services || []
+
           for (const serviceName of ['api', 'worker']) {
-            await rpc('/api/rpc/services/app/deployService', {
+            const service = services.find(item =>
+              item.projectName === (process.env.EASYPANEL_PROJECT || 'f12-prd') &&
+              item.name === serviceName
+            )
+            if (!service) throw new Error(`EasyPanel service ${serviceName} was not found`)
+
+            const isCompose = String(service.type).toLowerCase().includes('compose')
+            const serviceKind = isCompose ? 'compose' : 'app'
+            await rpc(`/api/rpc/services/${serviceKind}/deployService`, {
               projectName: process.env.EASYPANEL_PROJECT || 'f12-prd',
               serviceName,
+              ...(isCompose ? { forceRebuild: true } : {}),
             }, token)
-            console.log(`EasyPanel deploy requested for ${serviceName}.`)
+            console.log(`EasyPanel deploy requested for ${serviceName} (${serviceKind}).`)
           }
 
           NODE

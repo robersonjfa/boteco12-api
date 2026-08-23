@@ -40,6 +40,8 @@ test('CI verifica conteúdo, escaneia a imagem e exige healthcheck da release', 
   assert.match(workflow, /--severity HIGH,CRITICAL/)
   assert.match(workflow, /Trigger EasyPanel API and worker deploys/)
   assert.match(workflow, /\['api', 'worker'\]/)
+  assert.match(workflow, /projects\/listProjectsAndServices/)
+  assert.match(workflow, /serviceKind = isCompose \? 'compose' : 'app'/)
   assert.match(workflow, /Wait for healthy API/)
   assert.match(workflow, /version.*RELEASE_VERSION/)
   assert.doesNotMatch(workflow, /appleboy\/ssh-action/)
