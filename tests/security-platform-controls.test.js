@@ -104,7 +104,7 @@ test('workflow publica relatório e bloqueia deploy antes dos gates', () => {
   )
   assert.match(workflow, /pull_request:\s*\n\s*branches: \[main\]/)
   assert.match(workflow, /run: npm run ci:check/)
-  assert.match(workflow, /uses: actions\/upload-artifact@v4/)
+  assert.match(workflow, /uses: actions\/upload-artifact@v7/)
   assert.match(workflow, /path: \.artifacts\/security-gates\.json/)
   assert.match(workflow, /docker-build:[\s\S]+needs: ci/)
   assert.match(workflow, /deploy:[\s\S]+needs: \[ci, docker-build\]/)
