@@ -18,6 +18,7 @@ env:
   NODE_VERSION: '22'
   EASYPANEL_PROJECT: f12-prd
   EASYPANEL_SERVICE: api
+  EASYPANEL_WORKER_SERVICE: worker-managed
   API_HEALTH_URL: ${{ vars.API_HEALTH_URL || 'https://api.boteco12.com/health' }}
 
 jobs:
@@ -181,7 +182,10 @@ jobs:
               : []
           )
 
-          for (const serviceName of ['api', 'worker']) {
+          for (const serviceName of [
+            process.env.EASYPANEL_SERVICE || 'api',
+            process.env.EASYPANEL_WORKER_SERVICE || 'worker-managed',
+          ]) {
             const service = services.find(item =>
               item.projectName === (process.env.EASYPANEL_PROJECT || 'f12-prd') &&
               item.name === serviceName
