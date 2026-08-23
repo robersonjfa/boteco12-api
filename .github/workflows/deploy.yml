@@ -175,7 +175,11 @@ jobs:
             {},
             token
           )
-          const services = inventory?.json?.services || []
+          const services = Object.entries(inventory?.json || {}).flatMap(
+            ([collection, items]) => Array.isArray(items)
+              ? items.map(item => ({ ...item, collection }))
+              : []
+          )
 
           for (const serviceName of ['api', 'worker']) {
             const service = services.find(item =>
@@ -184,7 +188,8 @@ jobs:
             )
             if (!service) throw new Error(`EasyPanel service ${serviceName} was not found`)
 
-            const isCompose = String(service.type).toLowerCase().includes('compose')
+            const serviceDescriptor = `${service.type || ''} ${service.collection || ''}`
+            const isCompose = serviceDescriptor.toLowerCase().includes('compose')
             const serviceKind = isCompose ? 'compose' : 'app'
             await rpc(`/api/rpc/services/${serviceKind}/deployService`, {
               projectName: process.env.EASYPANEL_PROJECT || 'f12-prd',
