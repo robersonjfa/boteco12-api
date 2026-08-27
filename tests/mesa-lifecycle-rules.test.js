@@ -44,3 +44,32 @@ test('duração por rodadas só termina após a quantidade definida estar apurad
   assert.deepEqual(await MesaLifecycleService.finishDueRoundMesas(tx), ['mesa-rounds'])
   assert.equal(rankingUpdates[0].data.endDate, fifthRoundClose)
 })
+
+test('Mesa Free antecipa a data limite quando a última rodada é apurada', async () => {
+  const registrationClosedAt = new Date('2026-08-01T02:59:59.000Z')
+  const deadline = new Date('2026-09-30T02:59:59.000Z')
+  const lastRoundClose = new Date('2026-08-20T23:00:00.000Z')
+  let rankingUpdate
+  const tx = {
+    ranking: {
+      findMany: async () => [{
+        id: 'mesa-free', category: 'FREE', endDate: deadline,
+        registrationClosedAt, durationRounds: 2,
+      }],
+      updateMany: async input => { rankingUpdate = input; return { count: 1 } },
+    },
+    round: {
+      findMany: async () => [
+        { closeAt: new Date('2026-08-10T23:00:00.000Z') },
+        { closeAt: lastRoundClose },
+      ],
+    },
+  }
+
+  assert.deepEqual(await MesaLifecycleService.finishDueRoundMesas(tx), ['mesa-free'])
+  assert.equal(rankingUpdate.data.endDate, lastRoundClose)
+  assert.deepEqual(rankingUpdate.where.OR, [
+    { endDate: null },
+    { endDate: { gt: lastRoundClose } },
+  ])
+})

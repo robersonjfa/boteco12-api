@@ -49,6 +49,7 @@ export class MesaIntegrityService {
     const accessCost = mesa.accessCost ?? mesa.entryFee
     const rewardPool = mesa.rewardPool ?? mesa.prizePool
     const paid = MesaCategoryRules.isPaid(mesa)
+    const hasPaidEntry = MesaCategoryRules.hasPaidEntry(mesa)
     const sponsored = MesaCategoryRules.isSponsored(mesa)
     const free = MesaCategoryRules.isFree(mesa)
     const approved = mesa.participants.filter(item => item.status === 'APPROVED')
@@ -69,10 +70,10 @@ export class MesaIntegrityService {
         })
       }
     } else if (sponsored) {
-      if (accessCost !== 0) {
+      if (!Number.isInteger(accessCost) || accessCost < 0) {
         issues.push({
           code: 'INVALID_SPONSORED_ACCESS_COST',
-          message: 'Mesa FREE patrocinada não pode cobrar Tampinhas',
+          message: 'Mesa Patrocinada deve possuir entrada gratuita ou um custo válido em Tampinhas',
           details: { accessCost },
         })
       }
@@ -153,7 +154,7 @@ export class MesaIntegrityService {
       }
     }
 
-    const unpaid = !paid ? [] : approved.filter(item =>
+    const unpaid = !hasPaidEntry ? [] : approved.filter(item =>
       !item.entryPaidAt || item.entryFeePaid !== accessCost
     )
     if (unpaid.length > 0) {
@@ -164,7 +165,7 @@ export class MesaIntegrityService {
       })
     }
 
-    const expectedGross = !paid ? 0 : approved
+    const expectedGross = !hasPaidEntry ? 0 : approved
       .filter(item => item.entryPaidAt && item.entryFeePaid === accessCost)
       .reduce((total, item) => total + item.entryFeePaid, 0)
     if (mesa.grossCollected !== expectedGross) {
@@ -176,7 +177,13 @@ export class MesaIntegrityService {
     }
 
     const totals = sponsored
-      ? { platformFee: 0, prizePool: mesa.sponsorPrizePool ?? 0 }
+      ? (() => {
+          const entryTotals = BolaoPrizeService.calculatePool(mesa.grossCollected)
+          return {
+            platformFee: entryTotals.platformFee,
+            prizePool: (mesa.sponsorPrizePool ?? 0) + entryTotals.prizePool,
+          }
+        })()
       : free
         ? { platformFee: 0, prizePool: 0 }
         : BolaoPrizeService.calculatePool(mesa.grossCollected)

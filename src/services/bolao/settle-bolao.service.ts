@@ -28,11 +28,13 @@ export class SettleBolaoService {
       : BolaoPrizeService.fromJson(ranking.prizeDistribution)
     const sponsored = MesaCategoryRules.isSponsored(ranking)
     const totals = sponsored
-      ? {
-          grossCollected: 0,
-          platformFee: 0,
-          prizePool: ranking.sponsorPrizePool ?? 0,
-        }
+      ? (() => {
+          const entryTotals = BolaoPrizeService.calculatePool(ranking.grossCollected)
+          return {
+            ...entryTotals,
+            prizePool: (ranking.sponsorPrizePool ?? 0) + entryTotals.prizePool,
+          }
+        })()
       : free
         ? { grossCollected: 0, platformFee: 0, prizePool: 0 }
         : BolaoPrizeService.calculatePool(ranking.grossCollected)

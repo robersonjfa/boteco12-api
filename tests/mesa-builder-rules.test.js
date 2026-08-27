@@ -14,6 +14,97 @@ const {
 const {
   ListUserBoloesService,
 } = require('../dist/services/bolao/list-user-boloes.service')
+const { CreateMesaSchema } = require('../dist/validators/bolao.validator')
+
+test('Mesa Free exige rodadas e data limite de proteção', () => {
+  const base = {
+    name: 'Mesa Free da Freguesia',
+    description: 'Mesa gratuita com prazo de proteção.',
+    startDate: '2099-08-01T03:00:00.000Z',
+    category: 'FREE',
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    maxParticipants: 50,
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    accessCost: 0,
+    sponsorPrizePool: 0,
+    prizeDistribution: [],
+  }
+
+  assert.equal(CreateMesaSchema.safeParse(base).success, false)
+  assert.equal(CreateMesaSchema.safeParse({
+    ...base,
+    endDate: '2099-09-01T02:59:59.000Z',
+  }).success, true)
+  assert.equal(CreateMesaSchema.safeParse({
+    ...base,
+    durationMode: 'DATE',
+    durationRounds: null,
+    endDate: '2099-09-01T02:59:59.000Z',
+  }).success, false)
+})
+
+test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
+  })
+
+  AssertActiveProUserService.execute = async () => {
+    throw new Error('assinatura não deveria ser consultada para Mesa Free')
+  }
+  prisma.user.findUnique = async () => ({ id: 'free-user', role: 'NORMAL' })
+  prisma.$transaction = async callback => callback({
+    ranking: { create: async ({ data }) => data },
+    auditLog: { create: async () => ({}) },
+  })
+
+  const result = await CreateBolaoService.execute({
+    name: 'Mesa Free da Calçada',
+    description: 'Mesa aberta e gratuita para a freguesia.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    endDate: new Date('2099-09-01T02:59:59.000Z'),
+    category: 'FREE',
+    accessCost: 0,
+    sponsorPrizePool: 0,
+    maxParticipants: 50,
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [],
+    createdByUserId: 'free-user',
+  })
+
+  assert.equal(result.category, 'FREE')
+  assert.equal(result.endDate.toISOString(), '2099-09-01T02:59:59.000Z')
+})
+
+test('usuário comum não cria Mesa Patrocinada', async t => {
+  const originalFindUnique = prisma.user.findUnique
+  t.after(() => { prisma.user.findUnique = originalFindUnique })
+  prisma.user.findUnique = async () => ({ id: 'normal-user', role: 'NORMAL' })
+
+  await assert.rejects(CreateBolaoService.execute({
+    name: 'Mesa Patrocinada Indevida',
+    description: 'Premiação patrocinada distribuída ao encerramento.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    endDate: null,
+    category: 'SPONSORED_FREE',
+    accessCost: 0,
+    sponsorPrizePool: 100,
+    maxParticipants: 50,
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    createdByUserId: 'normal-user',
+  }), { code: 'sponsored_mesa_admin_only' })
+})
 
 test('assinante cria Mesa com Tampinhas como rascunho por capacidade e rodadas', async t => {
   const originalAssertPro = AssertActiveProUserService.execute
@@ -237,6 +328,34 @@ test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t
   assert.equal(update.where.id, 'draft-1')
   assert.equal(update.data.status, 'ACTIVE')
   assert.ok(update.data.publishedAt instanceof Date)
+  assert.equal(result.status, 'ACTIVE')
+})
+
+test('usuário Na Calçada publica sua Mesa Free sem assinatura PRO', async t => {
+  const { PublishMesaService } = require('../dist/services/bolao/publish-mesa.service')
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalFindUnique = prisma.ranking.findUnique
+  const originalUpdate = prisma.ranking.update
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.ranking.findUnique = originalFindUnique
+    prisma.ranking.update = originalUpdate
+  })
+
+  AssertActiveProUserService.execute = async () => {
+    throw new Error('assinatura não deveria ser consultada para Mesa Free')
+  }
+  prisma.ranking.findUnique = async () => ({
+    id: 'free-draft', type: 'BOLAO', status: 'DRAFT', category: 'FREE',
+    createdByUserId: 'free-owner',
+  })
+  prisma.ranking.update = async input => ({ ...input.data, id: input.where.id })
+
+  const result = await PublishMesaService.execute({
+    rankingId: 'free-draft',
+    requestedByUserId: 'free-owner',
+  })
+
   assert.equal(result.status, 'ACTIVE')
 })
 

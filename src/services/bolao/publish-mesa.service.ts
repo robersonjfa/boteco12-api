@@ -9,14 +9,13 @@ type PublishMesaInput = {
 
 export class PublishMesaService {
   static async execute({ rankingId, requestedByUserId }: PublishMesaInput) {
-    await AssertActiveProUserService.execute(requestedByUserId)
-
     const mesa = await prisma.ranking.findUnique({
       where: { id: rankingId },
       select: {
         id: true,
         type: true,
         status: true,
+        category: true,
         createdByUserId: true,
       },
     })
@@ -29,6 +28,9 @@ export class PublishMesaService {
     }
     if (mesa.status !== 'DRAFT') {
       throw AppError.conflict('A Mesa já foi publicada', 'mesa_already_published')
+    }
+    if (mesa.category === 'PAID') {
+      await AssertActiveProUserService.execute(requestedByUserId)
     }
 
     const publishedAt = new Date()

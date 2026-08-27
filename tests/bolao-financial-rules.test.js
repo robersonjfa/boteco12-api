@@ -24,6 +24,7 @@ const VALID_PRIZES = [
 function mockProUser() {
   return {
     id: 'creator-1',
+    role: 'ADMIN',
     subscription: {
       status: 'ACTIVE',
       plan: 'MONTHLY',
@@ -298,6 +299,60 @@ test('entrada em Mesa FREE nao debita Tampinhas', async t => {
 
   assert.equal(participantData.entryFeePaid, 0)
   assert.equal(participantData.entryPaidAt, null)
+})
+
+test('Mesa Patrocinada paga cobra entrada e soma o líquido ao aporte', async t => {
+  const originalTransaction = prisma.$transaction
+  t.after(() => { prisma.$transaction = originalTransaction })
+
+  let walletDebited = 0
+  let participantData
+  let financialData
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'mesa-sponsored-paid', type: 'BOLAO', status: 'ACTIVE',
+        category: 'SPONSORED_FREE', eligibility: 'ALL',
+        registrationCloseMode: 'CAPACITY', entryFee: 10, accessCost: 10,
+        sponsorPrizePool: 100, maxParticipants: 50, currentParticipants: 0,
+        createdByUserId: 'admin-1', startDate: new Date('2020-01-01T00:00:00Z'),
+        entryEndDate: null, endDate: null,
+      }),
+      updateMany: async () => ({ count: 1 }),
+      findUniqueOrThrow: async () => ({ grossCollected: 10 }),
+      update: async ({ data }) => { financialData = data; return { grossCollected: 10 } },
+    },
+    rankingParticipant: {
+      findUnique: async () => null,
+      create: async ({ data }) => {
+        participantData = data
+        return { id: 'sponsored-participant', ...data }
+      },
+    },
+    wallet: {
+      findUnique: async () => ({ id: 'wallet-sponsored', balance: 20 }),
+      updateMany: async ({ data }) => {
+        walletDebited = data.balance.decrement
+        return { count: 1 }
+      },
+    },
+    walletLedger: { create: async () => ({}) },
+    user: { findUnique: async () => ({ scoreTotal: 0, subscription: null }) },
+    userScoreHistory: { findFirst: async () => null },
+    auditLog: { create: async () => ({}) },
+  })
+
+  await JoinBolaoService.execute({
+    rankingId: 'mesa-sponsored-paid',
+    userId: 'customer-1',
+  })
+
+  assert.equal(walletDebited, 10)
+  assert.equal(participantData.entryFeePaid, 10)
+  assert.ok(participantData.entryPaidAt instanceof Date)
+  assert.equal(financialData.platformFee, 1)
+  assert.equal(financialData.prizePool, 109)
+  assert.equal(financialData.rewardPool, 109)
 })
 
 test('acesso à Mesa exige assinatura PRO ativa e saldo de tampinhas', async t => {

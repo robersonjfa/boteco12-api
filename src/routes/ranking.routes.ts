@@ -40,7 +40,7 @@ router.get('/mesas/me', authMiddleware, ListUserBoloesController.handle);
 router.get('/mesas/available', authMiddleware, ListAvailableBoloesController.handle);
 router.get('/boloes/me', authMiddleware, ListUserBoloesController.handle);
 router.get('/boloes/available', authMiddleware, ListAvailableBoloesController.handle);
-// Criação de Mesa é exclusiva do admin: POST /api/admin/mesas
+// Usuários criam PAID/FREE; a camada de domínio reserva Patrocinada ao admin.
 router.post('/mesas', authMiddleware, validateRequest(CreateMesaSchema), CreateBolaoController.handle);
 router.post('/mesas/:rankingId/publish', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), PublishMesaController.handle);
 

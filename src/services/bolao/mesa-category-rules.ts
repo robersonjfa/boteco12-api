@@ -26,6 +26,10 @@ export class MesaCategoryRules {
     return this.category(value) === MesaCategory.FREE
   }
 
+  static hasPaidEntry(value: MesaCategoryTerms) {
+    return (value.accessCost ?? value.entryFee ?? 0) > 0
+  }
+
   static hasCapacity(value: MesaCategoryTerms) {
     return value.maxParticipants != null
   }
@@ -58,8 +62,8 @@ export class MesaCategoryRules {
         throw new Error('Mesa com Tampinhas não utiliza premiação patrocinada')
       }
     } else if (category === MesaCategory.SPONSORED_FREE) {
-      if (accessCost !== 0) {
-        throw new Error('Mesa FREE não pode cobrar Tampinhas')
+      if (!Number.isInteger(accessCost) || accessCost < 0) {
+        throw new Error('O acesso em tampinhas deve ser um número inteiro não negativo')
       }
       if (!Number.isInteger(sponsorPrizePool) || sponsorPrizePool <= 0) {
         throw new Error('Informe a premiação patrocinada em Tampinhas')

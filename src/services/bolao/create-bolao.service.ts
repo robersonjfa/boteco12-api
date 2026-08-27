@@ -51,7 +51,6 @@ export class CreateBolaoService {
       prizeDistribution,
       createdByUserId,
     } = input
-    await AssertActiveProUserService.execute(createdByUserId)
     const terms = MesaCategoryRules.validate({
       category: input.category,
       accessCost: input.accessCost,
@@ -67,11 +66,20 @@ export class CreateBolaoService {
 
     const user = await prisma.user.findUnique({
       where: { id: createdByUserId },
-      select: { id: true },
+      select: { id: true, role: true },
     })
 
     if (!user) {
       throw AppError.notFound('Usuário', 'user_not_found')
+    }
+    if (MesaCategoryRules.isSponsored(terms) && user.role !== 'ADMIN') {
+      throw AppError.forbidden(
+        'Somente administradores podem criar Mesas Patrocinadas',
+        'sponsored_mesa_admin_only'
+      )
+    }
+    if (MesaCategoryRules.isPaid(terms)) {
+      await AssertActiveProUserService.execute(createdByUserId)
     }
 
     if (!name || name.trim().length < 3) {
@@ -166,7 +174,7 @@ export class CreateBolaoService {
             entryEndDate: input.entryEndDate?.toISOString() ?? null,
             endDate: endDate?.toISOString() ?? null,
             prizeDistribution: validatedPrizeDistribution,
-            createdByAdmin: true,
+            createdByAdmin: user.role === 'ADMIN',
             autoJoinedCreator: false,
           },
         },

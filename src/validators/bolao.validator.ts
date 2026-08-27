@@ -36,7 +36,7 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
   if (input.category === 'PAID' && accessCost <= 0) {
     ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Informe o custo de acesso da Mesa' })
   }
-  if (input.category !== 'PAID' && accessCost !== 0) {
+  if (input.category === 'FREE' && accessCost !== 0) {
     ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Esta categoria não pode cobrar Tampinhas' })
   }
   if (input.category === 'SPONSORED_FREE' && (input.sponsorPrizePool ?? 0) <= 0) {
@@ -51,6 +51,12 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
   }
   if (input.category === 'PAID' && input.durationMode !== 'ROUNDS') {
     ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa com Tampinhas dura por quantidade de rodadas' })
+  }
+  if (input.category === 'FREE' && input.durationMode !== 'ROUNDS') {
+    ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa Free dura por quantidade de rodadas' })
+  }
+  if (input.category === 'FREE' && !input.endDate) {
+    ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'Informe a data limite de proteção da Mesa Free' })
   }
 
   if (input.registrationCloseMode === 'CAPACITY' && !input.maxParticipants) {

@@ -218,8 +218,8 @@ test('diagnóstico rejeita combinações inválidas de categoria, acesso e prêm
   const sponsored = MesaIntegrityService.inspect({
     ...base,
     category: 'SPONSORED_FREE',
-    entryFee: 5,
-    accessCost: 5,
+    entryFee: -1,
+    accessCost: -1,
     sponsorPrizePool: 0,
   })
   assert.ok(sponsored.some(issue => issue.code === 'INVALID_SPONSORED_ACCESS_COST'))

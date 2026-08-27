@@ -5,6 +5,8 @@ type MesaLifecycleClient = {
       entryEndDate?: Date | null
       registrationClosedAt?: Date | null
       durationRounds?: number | null
+      category?: 'PAID' | 'FREE' | 'SPONSORED_FREE'
+      endDate?: Date | null
     }>>
     updateMany(args: unknown): Promise<{ count: number }>
   }
@@ -45,9 +47,18 @@ export class MesaLifecycleService {
         durationMode: 'ROUNDS',
         durationRounds: { not: null },
         registrationClosedAt: { not: null },
-        endDate: null,
+        OR: [
+          { endDate: null },
+          { category: 'FREE', endDate: { not: null } },
+        ],
       },
-      select: { id: true, registrationClosedAt: true, durationRounds: true },
+      select: {
+        id: true,
+        category: true,
+        endDate: true,
+        registrationClosedAt: true,
+        durationRounds: true,
+      },
     })
     const finished: string[] = []
 
@@ -66,7 +77,11 @@ export class MesaLifecycleService {
       if (!lastRound?.closeAt) continue
 
       const update = await tx.ranking.updateMany({
-        where: { id: mesa.id, status: 'ACTIVE', endDate: null },
+        where: {
+          id: mesa.id,
+          status: 'ACTIVE',
+          OR: [{ endDate: null }, { endDate: { gt: lastRound.closeAt } }],
+        },
         data: { endDate: lastRound.closeAt },
       })
       if (update.count === 1) finished.push(mesa.id)

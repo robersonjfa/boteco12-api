@@ -62,7 +62,7 @@ export class JoinBolaoService {
       }
 
       const accessCost = bolao.accessCost ?? bolao.entryFee;
-      const isPaid = MesaCategoryRules.isPaid(bolao);
+      const hasPaidEntry = MesaCategoryRules.hasPaidEntry(bolao);
 
       await this.assertEligibility(bolao.eligibility, userId);
 
@@ -99,7 +99,7 @@ export class JoinBolaoService {
         baselineAt
       );
 
-      if (isPaid) {
+      if (hasPaidEntry) {
         await BolaoEntryPaymentService.debit(tx, {
           rankingId,
           userId,
@@ -121,7 +121,7 @@ export class JoinBolaoService {
             ...(bolao.currentParticipants + 1 === bolao.maxParticipants
               ? { registrationClosedAt: approvedAt }
               : {}),
-            ...(isPaid ? { grossCollected: { increment: accessCost } } : {}),
+            ...(hasPaidEntry ? { grossCollected: { increment: accessCost } } : {}),
           },
         });
         if (reservation.count !== 1) {
@@ -138,8 +138,8 @@ export class JoinBolaoService {
               rejectedAt: null,
               approvedAt,
               approvedByUserId: userId,
-              entryFeePaid: isPaid ? accessCost : 0,
-              entryPaidAt: isPaid ? approvedAt : null,
+              entryFeePaid: hasPaidEntry ? accessCost : 0,
+              entryPaidAt: hasPaidEntry ? approvedAt : null,
             },
           })
         : await tx.rankingParticipant.create({
@@ -151,12 +151,12 @@ export class JoinBolaoService {
               status: 'APPROVED',
               approvedAt,
               approvedByUserId: userId,
-              entryFeePaid: isPaid ? accessCost : 0,
-              entryPaidAt: isPaid ? approvedAt : null,
+              entryFeePaid: hasPaidEntry ? accessCost : 0,
+              entryPaidAt: hasPaidEntry ? approvedAt : null,
             },
           });
 
-      if (!seatReservedByCapacity || isPaid) {
+      if (!seatReservedByCapacity || hasPaidEntry) {
         const financialRanking = seatReservedByCapacity
           ? await tx.ranking.findUniqueOrThrow({
               where: { id: rankingId },
@@ -166,21 +166,23 @@ export class JoinBolaoService {
               where: { id: rankingId },
               data: {
                 currentParticipants: { increment: 1 },
-                ...(isPaid ? { grossCollected: { increment: accessCost } } : {}),
+                ...(hasPaidEntry ? { grossCollected: { increment: accessCost } } : {}),
               },
               select: { grossCollected: true },
             });
 
-        if (isPaid) {
+        if (hasPaidEntry) {
           const financialTotals = BolaoPrizeService.calculatePool(
             financialRanking.grossCollected
           );
+          const rewardPool = financialTotals.prizePool +
+            (MesaCategoryRules.isSponsored(bolao) ? bolao.sponsorPrizePool : 0);
           await tx.ranking.update({
             where: { id: rankingId },
             data: {
               platformFee: financialTotals.platformFee,
-              prizePool: financialTotals.prizePool,
-              rewardPool: financialTotals.prizePool,
+              prizePool: rewardPool,
+              rewardPool,
             },
           });
         }

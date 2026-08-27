@@ -114,7 +114,7 @@ test('fechamento credita os vencedores, persiste totais e não liquida duas veze
   assert.equal(audits.length, 1)
 })
 
-test('Mesa FREE patrocinada premia somente vencedores PRO no encerramento', async () => {
+test('Mesa patrocinada soma aporte e entradas líquidas e premia somente vencedores PRO', async () => {
   const ledgers = []
   const tx = {
     user: {
@@ -151,7 +151,7 @@ test('Mesa FREE patrocinada premia somente vencedores PRO no encerramento', asyn
   await SettleBolaoService.execute(tx, {
     id: 'mesa-free',
     category: 'SPONSORED_FREE',
-    grossCollected: 0,
+    grossCollected: 10,
     sponsorPrizePool: 100,
     prizeDistribution: [
       { position: 1, percentage: 70 },
@@ -163,7 +163,7 @@ test('Mesa FREE patrocinada premia somente vencedores PRO no encerramento', asyn
     { userId: 'b', position: 2 },
   ], new Date('2026-08-20T00:00:00Z'))
 
-  assert.deepEqual(ledgers.map(item => item.amount), [70])
+  assert.deepEqual(ledgers.map(item => item.amount), [76])
 })
 
 test('Mesa FREE patrocinada nao premia assinatura EXPIRED com validade futura', async () => {
