@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const path = require('node:path')
 const test = require('node:test')
 
 const {
@@ -52,4 +54,18 @@ test('hashPassword só aceita senha dentro da política', async () => {
   await assert.rejects(() => hashPassword('abcdefg1'), /maiúscula/i)
   const hash = await hashPassword('Abcdefg1')
   assert.match(hash, /^\$f12-sha256\$/)
+})
+
+test('seed exige senha inicial explícita e usa o hash canônico', () => {
+  const pkg = require('../package.json')
+  const seed = fs.readFileSync(
+    path.resolve(__dirname, '../prisma/seed.js'),
+    'utf8'
+  )
+
+  assert.match(seed, /process\.env\.SEED_ADMIN_PASSWORD/)
+  assert.match(seed, /hashPassword\(initialPassword\)/)
+  assert.doesNotMatch(seed, /bcrypt\.hash\(['"]123456/)
+  assert.match(pkg.scripts['seed:app'], /npm run build/)
+  assert.match(pkg.prisma.seed, /npm run build/)
 })

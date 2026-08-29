@@ -11,6 +11,8 @@ Garantir que o banco do Boteco12 possa ser recuperado a partir de backup validad
 ## Politica inicial
 
 - Formato: `pg_dump --format=custom`
+- Compatibilidade: a imagem da API inclui `pg_dump` e `pg_restore` 16, alinhados
+  ao PostgreSQL 16 usado pela plataforma
 - Escopo: schema `public` extraido da `DATABASE_URL`
 - Arquivos gerados:
   - `boteco12-<label>-<timestamp>.dump`
@@ -36,7 +38,7 @@ Garantir que o banco do Boteco12 possa ser recuperado a partir de backup validad
 DATABASE_URL=postgresql://...
 BACKUP_DIR=backups/postgres
 BACKUP_RETENTION="daily-7 weekly-4 monthly-3"
-BACKUP_UPLOAD_COMMAND='rclone copy "{file}" remote:f12-backups/postgres && rclone copy "{manifest}" remote:f12-backups/postgres'
+BACKUP_UPLOAD_COMMAND='rclone copy "{file}" remote:boteco12-backups/postgres && rclone copy "{manifest}" remote:boteco12-backups/postgres'
 RESTORE_DATABASE_URL=postgresql://...
 ```
 
@@ -115,7 +117,7 @@ Essa excecao deve ser usada apenas com janela de manutencao, backup novo validad
 No provedor ou cron externo:
 
 ```cron
-15 3 * * * cd /app && npm run db:backup -- --label daily >> /var/log/f12-backup.log 2>&1
+15 3 * * * cd /app && npm run db:backup -- --label daily >> /var/log/boteco12-backup.log 2>&1
 ```
 
 Se usar armazenamento externo, configurar `BACKUP_UPLOAD_COMMAND` no ambiente do job.
@@ -141,3 +143,19 @@ Se usar armazenamento externo, configurar `BACKUP_UPLOAD_COMMAND` no ambiente do
    - `payment_webhook_events`
    - `subscriptions`
 5. Registrar tempo de restore e pendencias encontradas.
+
+## Evidência local de 2026-08-29
+
+O ciclo completo foi executado em dois bancos locais descartáveis PostgreSQL
+16.15:
+
+- bootstrap aplicou as 14 migrations ativas;
+- dump custom foi gerado com `pg_dump 16.15`;
+- manifest e SHA-256 foram validados;
+- dry-run e restore real concluíram sem erros com `pg_restore 16.15`;
+- `prisma migrate status` confirmou o schema atualizado no banco restaurado;
+- origem e restauração mantiveram 14 migrations, 1 usuário, 153 times e 3
+  pacotes de pagamento.
+
+Essa evidência valida as ferramentas e o procedimento, mas não substitui o
+teste periódico com uma cópia recente do backup de produção.

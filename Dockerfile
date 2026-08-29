@@ -1,3 +1,5 @@
+FROM postgres:16-alpine AS postgres-client
+
 ############################
 # STAGE 1 — BUILD
 ############################
@@ -31,7 +33,7 @@ FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates curl openssl \
+RUN apk add --no-cache ca-certificates curl krb5-libs openldap openssl postgresql-client \
   && mkdir -p /app/backups \
   && chown -R node:node /app \
   && rm -rf \
@@ -44,6 +46,13 @@ RUN apk add --no-cache ca-certificates curl openssl \
     /usr/local/bin/yarnpkg \
     /usr/local/bin/pnpm \
     /usr/local/bin/pnpx
+
+# Keep backup/restore tooling on the same major as the PostgreSQL server.
+# Newer pg_dump versions may emit settings unsupported by PostgreSQL 16.
+COPY --from=postgres-client /usr/local/bin/pg_dump /usr/local/bin/pg_dump
+COPY --from=postgres-client /usr/local/bin/pg_restore /usr/local/bin/pg_restore
+COPY --from=postgres-client /usr/local/lib/libpq.so.5.16 /usr/local/lib/libpq.so.5.16
+RUN ln -sf libpq.so.5.16 /usr/local/lib/libpq.so.5
 
 COPY --from=build --chown=node:node /app/package*.json ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules

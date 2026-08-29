@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
+const { hashPassword } = require('../dist/security/password')
 const { seedTeams } = require('./seed-teams')
 
 const prisma = new PrismaClient()
@@ -7,18 +7,26 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🔹 Seeding Admin User')
 
-  const passwordHash = await bcrypt.hash('123456', 10)
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@boteco12.com'
+  let user = await prisma.user.findUnique({ where: { email: adminEmail } })
 
-  const user = await prisma.user.upsert({
-    where: { email: 'admin@boteco12.com' },
-    update: {},
-    create: {
-      name: 'Admin',
-      email: 'admin@boteco12.com',
-      password: passwordHash,
-      role: 'ADMIN',
-    },
-  })
+  if (!user) {
+    const initialPassword = process.env.SEED_ADMIN_PASSWORD
+    if (!initialPassword) {
+      throw new Error(
+        'SEED_ADMIN_PASSWORD é obrigatória para criar o primeiro administrador'
+      )
+    }
+
+    user = await prisma.user.create({
+      data: {
+        name: 'Admin',
+        email: adminEmail,
+        password: await hashPassword(initialPassword),
+        role: 'ADMIN',
+      },
+    })
+  }
 
   const adminRole = await prisma.adminRole.findUnique({
     where: { name: 'ADMIN' }

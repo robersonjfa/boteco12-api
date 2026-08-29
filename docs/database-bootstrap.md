@@ -28,6 +28,17 @@ Esse comando:
 4. aplica a baseline consolidada completa;
 5. executa os seeds administrativos e da aplicação.
 
+Para criar o primeiro administrador, o bootstrap exige uma senha explícita e
+compatível com a política canônica:
+
+```sh
+SEED_ADMIN_EMAIL=admin@boteco12.com
+SEED_ADMIN_PASSWORD='<senha-forte-fornecida-por-secret>'
+```
+
+`SEED_ADMIN_PASSWORD` não possui fallback e não deve ser versionada. Se o
+administrador já existir, o seed idempotente não altera sua senha.
+
 Para preparar o schema sem seeds:
 
 ```sh
