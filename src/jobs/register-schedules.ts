@@ -4,6 +4,7 @@ import {
   EVERY_MINUTE_MS,
   JOB_NAMES,
   RECONCILE_MONTHLY_CRON,
+  REVALIDATE_SUBSCRIPTIONS_CRON,
   SCHEDULE_TIMEZONE,
   SCHEDULER_IDS,
 } from './constants'
@@ -45,6 +46,12 @@ export function getRequiredSchedules(): RegisteredSchedule[] {
       schedulerId: SCHEDULER_IDS.RECONCILE_MONTHLY_RANKINGS,
       jobName: JOB_NAMES.RECONCILE_MONTHLY_RANKINGS,
       pattern: RECONCILE_MONTHLY_CRON,
+      tz: SCHEDULE_TIMEZONE,
+    },
+    {
+      schedulerId: SCHEDULER_IDS.REVALIDATE_SUBSCRIPTIONS,
+      jobName: JOB_NAMES.REVALIDATE_SUBSCRIPTIONS,
+      pattern: REVALIDATE_SUBSCRIPTIONS_CRON,
       tz: SCHEDULE_TIMEZONE,
     },
   ]

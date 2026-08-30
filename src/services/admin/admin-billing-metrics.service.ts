@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import {
+  Prisma,
   PaymentStatus,
   WalletTransactionType,
   SubscriptionStatus,
@@ -18,6 +19,11 @@ import {
  */
 export class AdminBillingMetricsService {
   static async execute() {
+    const now = new Date();
+    const effectivelyActive = {
+      status: SubscriptionStatus.ACTIVE,
+      OR: [{ endAt: null }, { endAt: { gt: now } }],
+    } satisfies Prisma.SubscriptionWhereInput;
     /**
      * ======================
      * PAGAMENTOS
@@ -69,7 +75,7 @@ export class AdminBillingMetricsService {
       annualSubscriptions,
     ] = await prisma.$transaction([
       prisma.subscription.count({
-        where: { status: SubscriptionStatus.ACTIVE },
+        where: effectivelyActive,
       }),
       prisma.subscription.count({
         where: { status: SubscriptionStatus.CANCELLED },
@@ -79,13 +85,13 @@ export class AdminBillingMetricsService {
       }),
       prisma.subscription.count({
         where: {
-          status: SubscriptionStatus.ACTIVE,
+          ...effectivelyActive,
           plan: SubscriptionPlan.MONTHLY,
         },
       }),
       prisma.subscription.count({
         where: {
-          status: SubscriptionStatus.ACTIVE,
+          ...effectivelyActive,
           plan: SubscriptionPlan.ANNUAL,
         },
       }),

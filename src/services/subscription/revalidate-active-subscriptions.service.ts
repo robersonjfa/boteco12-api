@@ -18,9 +18,23 @@ import { MercadoPagoClient } from '../../lib/mercado-pago.client';
  * - Não altera histórico
  */
 export class RevalidateActiveSubscriptionsService {
-  static async execute(): Promise<void> {
+  static async execute(now = new Date()) {
+    const expiredFixedTerm = await prisma.subscription.updateMany({
+      where: {
+        status: 'ACTIVE',
+        endAt: { lte: now },
+        externalSubscriptionId: null,
+      },
+      data: { status: 'EXPIRED' },
+    });
+
     if (!process.env.MP_ACCESS_TOKEN) {
-      return;
+      return {
+        expiredFixedTerm: expiredFixedTerm.count,
+        revalidatedExternal: 0,
+        updatedExternal: 0,
+        failedExternal: 0,
+      };
     }
 
     const mpClient = new MercadoPagoClient(process.env.MP_ACCESS_TOKEN);
@@ -37,6 +51,9 @@ export class RevalidateActiveSubscriptionsService {
         },
       },
     });
+
+    let updatedExternal = 0;
+    let failedExternal = 0;
 
     for (const subscription of activeSubscriptions) {
       try {
@@ -75,7 +92,7 @@ export class RevalidateActiveSubscriptionsService {
                 : subscription.endAt,
             },
           });
-
+          updatedExternal += 1;
         }
       } catch (error) {
         /**
@@ -86,7 +103,15 @@ export class RevalidateActiveSubscriptionsService {
           subscription.id,
           error
         );
+        failedExternal += 1;
       }
     }
+
+    return {
+      expiredFixedTerm: expiredFixedTerm.count,
+      revalidatedExternal: activeSubscriptions.length,
+      updatedExternal,
+      failedExternal,
+    };
   }
 }

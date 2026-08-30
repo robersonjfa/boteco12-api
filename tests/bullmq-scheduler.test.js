@@ -6,6 +6,7 @@ const {
   SCHEDULER_IDS,
   SCHEDULE_TIMEZONE,
   ENSURE_MONTHLY_CRON,
+  REVALIDATE_SUBSCRIPTIONS_CRON,
   EVERY_MINUTE_MS,
 } = require('../dist/jobs/constants')
 const {
@@ -38,6 +39,9 @@ const {
   EnsureMonthlyRankingsJobService,
 } = require('../dist/services/jobs/ensure-monthly-rankings.job.service')
 const {
+  RevalidateSubscriptionsJobService,
+} = require('../dist/services/jobs/revalidate-subscriptions.job.service')
+const {
   CloseExpiredRankingsService,
 } = require('../dist/services/ranking/close-expired-rankings.service')
 const {
@@ -63,6 +67,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
     SCHEDULER_IDS.ENSURE_MONTHLY_RANKINGS,
     SCHEDULER_IDS.OPEN_SCHEDULED_ROUNDS,
     SCHEDULER_IDS.RECONCILE_MONTHLY_RANKINGS,
+    SCHEDULER_IDS.REVALIDATE_SUBSCRIPTIONS,
   ].sort())
 
   assert.ok(names.includes(JOB_NAMES.OPEN_SCHEDULED_ROUNDS))
@@ -70,12 +75,19 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   assert.ok(names.includes(JOB_NAMES.CLOSE_EXPIRED_RANKINGS))
   assert.ok(names.includes(JOB_NAMES.ENSURE_MONTHLY_RANKINGS))
   assert.ok(names.includes(JOB_NAMES.RECONCILE_MONTHLY_RANKINGS))
+  assert.ok(names.includes(JOB_NAMES.REVALIDATE_SUBSCRIPTIONS))
 
   const monthly = schedules.find(
     item => item.schedulerId === SCHEDULER_IDS.ENSURE_MONTHLY_RANKINGS
   )
   assert.equal(monthly.pattern, ENSURE_MONTHLY_CRON)
   assert.equal(monthly.tz, SCHEDULE_TIMEZONE)
+
+  const subscriptions = schedules.find(
+    item => item.schedulerId === SCHEDULER_IDS.REVALIDATE_SUBSCRIPTIONS
+  )
+  assert.equal(subscriptions.pattern, REVALIDATE_SUBSCRIPTIONS_CRON)
+  assert.equal(subscriptions.tz, SCHEDULE_TIMEZONE)
 
   const everyMinute = schedules.filter(item => item.everyMs === EVERY_MINUTE_MS)
   assert.equal(everyMinute.length, 3)
@@ -119,12 +131,14 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   const originalClose = CloseScheduledRoundsJobService.execute
   const originalExpired = CloseExpiredRankingsJobService.execute
   const originalMonthly = EnsureMonthlyRankingsJobService.execute
+  const originalSubscriptions = RevalidateSubscriptionsJobService.execute
 
   t.after(() => {
     OpenScheduledRoundsJobService.execute = originalOpen
     CloseScheduledRoundsJobService.execute = originalClose
     CloseExpiredRankingsJobService.execute = originalExpired
     EnsureMonthlyRankingsJobService.execute = originalMonthly
+    RevalidateSubscriptionsJobService.execute = originalSubscriptions
   })
 
   OpenScheduledRoundsJobService.execute = async () => {
@@ -150,6 +164,10 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
       execution: { id: '1', status: 'SUCCESS' },
     }
   }
+  RevalidateSubscriptionsJobService.execute = async () => {
+    calls.push('subscriptions')
+    return { executionId: '1', status: 'SUCCESS', result: null }
+  }
 
   for (const name of listRoutableJobNames()) {
     await processBoteco12Job({ name, id: 'job-1', attemptsMade: 0 })
@@ -161,6 +179,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
     'monthly:reconcile',
     'monthly:schedule',
     'open',
+    'subscriptions',
   ].sort())
 })
 

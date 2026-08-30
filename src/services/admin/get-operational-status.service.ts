@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma'
 import { AlertDispatcherService } from '../alerts/alert-dispatcher.service'
+import { approvedWalletCreditNotCreditedWhere } from '../alerts/payment-anomaly-rules'
 
 function minutesSince(value: Date | null) {
   if (!value) return null
@@ -41,10 +42,7 @@ export class GetOperationalStatusService {
         },
       }),
       prisma.payment.count({
-        where: {
-          status: 'APPROVED',
-          isCredited: false,
-        },
+        where: approvedWalletCreditNotCreditedWhere,
       }),
       prisma.paymentWebhookEvent.findFirst({
         orderBy: { receivedAt: 'desc' },
@@ -56,7 +54,12 @@ export class GetOperationalStatusService {
       prisma.paymentWebhookEvent.count({
         where: { receivedAt: { gte: twentyFourHoursAgo } },
       }),
-      prisma.subscription.count({ where: { status: 'ACTIVE' } }),
+      prisma.subscription.count({
+        where: {
+          status: 'ACTIVE',
+          OR: [{ endAt: null }, { endAt: { gt: now } }],
+        },
+      }),
       prisma.subscription.count({
         where: {
           status: 'ACTIVE',

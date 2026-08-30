@@ -32,7 +32,9 @@ Ultima atualizacao:
   - conferir webhook recebido e reconciliar pagamento antes de creditar manualmente
 - `active_subscription_past_end`
   - assinatura marcada como ativa apesar da vigencia encerrada
-  - rodar revalidacao de assinaturas e revisar status no admin
+  - o worker expira assinaturas de prazo fixo no minuto 10 de cada hora
+  - assinaturas recorrentes continuam sendo revalidadas no Mercado Pago
+  - se persistir depois da próxima execução, revisar status no admin
 - `internal_job_failed_last_24h`
   - um job interno falhou nas ultimas 24h
   - abrir `Admin > Operacao`, identificar `lastExecution` e conferir `InternalJobExecution`
