@@ -344,8 +344,8 @@ Dados confirmados:
 ```text
 host: 72.60.51.161
 user: root
-key: ~/.ssh/boteco12_vps
 hostname remoto: srv969089
+autenticacao local: chave carregada no SSH agent
 ```
 
 Comando padrao:
@@ -354,13 +354,12 @@ Comando padrao:
 ssh root@72.60.51.161
 ```
 
-Se o `~/.ssh/config` local estiver apontando para outro agent SSH, force a chave/agent correto:
+Se o `~/.ssh/config` local estiver apontando para outro agent SSH, force o agent
+correto. Este é o caminho operacional confirmado em 30 de agosto de 2026:
 
 ```bash
 ssh \
-  -o IdentitiesOnly=yes \
   -o IdentityAgent="$SSH_AUTH_SOCK" \
-  -i ~/.ssh/boteco12_vps \
   root@72.60.51.161
 ```
 
@@ -370,19 +369,20 @@ Para comandos nao interativos:
 ssh \
   -o BatchMode=yes \
   -o ConnectTimeout=20 \
-  -o StrictHostKeyChecking=no \
-  -o IdentitiesOnly=yes \
+  -o StrictHostKeyChecking=yes \
   -o IdentityAgent="$SSH_AUTH_SOCK" \
-  -i ~/.ssh/boteco12_vps \
   root@72.60.51.161 \
   'hostname && whoami'
 ```
 
 Observacoes:
 
-- A chave privada local tem passphrase; desbloqueie com `ssh-add ~/.ssh/boteco12_vps` quando necessario.
+- Confirme a chave disponível no agent com `ssh-add -l`; não presuma que o
+  arquivo privado existe em um caminho fixo no disco.
+- Em 30 de agosto de 2026, o acesso pelo agent retornou `srv969089` / `root`.
 - Nao registrar passphrase, `INTERNAL_JOB_SECRET`, tokens Easypanel ou senhas neste documento.
-- A chave publica esperada no painel Hostinger aparece como `boteco12-vps`.
+- O comentário da chave no agent ou no painel pode manter o nome legado sem
+  afetar o acesso; não renomear ou substituir a chave durante o cutover.
 
 Comandos uteis no VPS:
 
