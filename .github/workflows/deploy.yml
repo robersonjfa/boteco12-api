@@ -41,9 +41,13 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npx prisma generate
 
       - name: Run CI checks
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm run ci:check
 
       - name: Publish security gate report
