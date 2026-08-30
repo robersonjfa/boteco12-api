@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'NORMAL');
 
@@ -555,6 +558,9 @@ CREATE INDEX "teams_type_idx" ON "teams"("type");
 CREATE UNIQUE INDEX "rounds_number_key" ON "rounds"("number");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "rounds_single_open_idx" ON "rounds"("status") WHERE ("status" = 'OPEN');
+
+-- CreateIndex
 CREATE INDEX "round_matches_roundId_idx" ON "round_matches"("roundId");
 
 -- CreateIndex
@@ -792,7 +798,7 @@ ALTER TABLE "ranking_snapshots" ADD CONSTRAINT "ranking_snapshots_roundId_fkey" 
 ALTER TABLE "ranking_snapshots" ADD CONSTRAINT "ranking_snapshots_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "PaymentPackage"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "PaymentPackage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -819,7 +825,7 @@ ALTER TABLE "bolao_invites" ADD CONSTRAINT "bolao_invites_createdByUserId_fkey" 
 ALTER TABLE "payments" ADD CONSTRAINT "payments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "payments" ADD CONSTRAINT "payments_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "PaymentPackage"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "payments" ADD CONSTRAINT "payments_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "PaymentPackage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AdminRolePermission" ADD CONSTRAINT "AdminRolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "AdminRole"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

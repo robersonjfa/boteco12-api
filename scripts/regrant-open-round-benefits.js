@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client')
+const { createPrismaClient } = require('./lib/prisma-client')
 
-const prisma = new PrismaClient()
+const prisma = createPrismaClient()
 
 function hasActiveProSubscription(subscription) {
   if (!subscription) return false

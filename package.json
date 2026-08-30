@@ -32,7 +32,7 @@
     "prisma:migrate:audit:chain:report": "node scripts/audit-migration-chain.js --report-only",
     "prisma:migrate:audit:chain:baseline": "node scripts/audit-migration-chain.js --baseline-check",
     "prisma:db:push": "npx prisma db push",
-    "prisma:baseline:fresh:generate": "mkdir -p prisma/baselines && npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/baselines/current-fresh-schema.sql",
+    "prisma:baseline:fresh:generate": "mkdir -p prisma/baselines && npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/baselines/current-fresh-schema.sql",
     "prisma:baseline:fresh:verify": "node scripts/verify-fresh-baseline.js",
     "prisma:migration:policy:check": "node scripts/check-migration-policy.js",
     "prisma:schema:release:check": "npm run prisma:migrate:audit:chain:baseline && npm run prisma:baseline:fresh:verify && npm run prisma:migration:policy:check && npm run product:rules:check && npm run build",
@@ -63,13 +63,15 @@
   },
   "overrides": {
     "brace-expansion": "1.1.18",
+    "deepmerge-ts": "8.0.2",
     "follow-redirects": "1.16.0",
     "form-data": "4.0.6",
     "path-to-regexp": "0.1.13",
     "picomatch": "2.3.2"
   },
   "dependencies": {
-    "@prisma/client": "^5.11.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "axios": "^1.18.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
@@ -84,7 +86,7 @@
     "nodemailer": "^9.0.3",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
-    "prisma": "^5.22.0",
+    "prisma": "^7.10.0",
     "zod": "^4.3.4"
   },
   "devDependencies": {

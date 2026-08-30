@@ -34,7 +34,7 @@ function main() {
         'migrate',
         'diff',
         '--from-empty',
-        '--to-schema-datamodel',
+        '--to-schema',
         schemaPath,
         '--script',
       ],

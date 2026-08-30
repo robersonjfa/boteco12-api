@@ -22,7 +22,7 @@ test('imagem usa Node LTS, multi-stage e usuário não-root', () => {
   assert.doesNotMatch(dockerfile, /FROM node:20/)
 })
 
-test('Prisma CLI é operacional e ferramentas de build continuam dev-only', () => {
+test('Prisma CLI é operacional e dependências diretas de build continuam dev-only', () => {
   const pkg = require('../package.json')
   assert.ok(pkg.dependencies.prisma)
   assert.equal(pkg.devDependencies.prisma, undefined)
@@ -55,7 +55,7 @@ test('CI verifica conteúdo, escaneia a imagem e exige healthcheck da release', 
   assert.doesNotMatch(workflow, /appleboy\/scp-action/)
 })
 
-test('verificação da imagem cobre API, worker, Prisma e dependências dev', () => {
+test('verificação da imagem cobre API, worker, Prisma e dependências de runtime', () => {
   const verifier = read('scripts/verify-container-hardening.sh')
   assert.match(verifier, /id -u/)
   assert.match(verifier, /dist\/index\.js/)

@@ -1,7 +1,8 @@
-const { PrismaClient, RoundStatus } = require('@prisma/client')
+const { RoundStatus } = require('@prisma/client')
+const { createPrismaClient } = require('../scripts/lib/prisma-client')
 const bcrypt = require('bcryptjs')
 
-const prisma = new PrismaClient()
+const prisma = createPrismaClient()
 
 async function ensureAdminUser() {
   const passwordHash = await bcrypt.hash('123456', 10)

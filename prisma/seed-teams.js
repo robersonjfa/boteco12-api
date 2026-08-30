@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const { createPrismaClient } = require('../scripts/lib/prisma-client')
 
 function club(countryCode, slug, name, shortName, country, aliases = [], logoUrl) {
   return {
@@ -306,7 +306,7 @@ async function runFromCli() {
     return
   }
 
-  const prisma = new PrismaClient()
+  const prisma = createPrismaClient()
   try {
     const result = await seedTeams(prisma)
     console.log(

@@ -3,12 +3,12 @@
 //////////////////////////////////////////////////////
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 //////////////////////////////////////////////////////
@@ -262,6 +262,7 @@ model Round {
   rankingSnapshots RankingSnapshot[]
   roundBenefits    RoundBenefit[]
 
+  @@unique([status], map: "rounds_single_open_idx", where: { status: "OPEN" })
   @@map("rounds")
 }
 
@@ -537,7 +538,7 @@ model Subscription {
   subscriptionPackageId  String? @db.Text
 
   packageId String?         @db.Text
-  package   PaymentPackage? @relation(fields: [packageId], references: [id])
+  package   PaymentPackage? @relation(fields: [packageId], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -680,7 +681,7 @@ model Payment {
   status PaymentStatus @default(PENDING)
 
   packageId String?         @db.Text
-  package   PaymentPackage? @relation(fields: [packageId], references: [id])
+  package   PaymentPackage? @relation(fields: [packageId], references: [id], onDelete: Restrict)
 
   subscriptionPlan SubscriptionPlan?
   subscriptionPackageId String? @db.Text

@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client')
+const { createPrismaClient } = require('../scripts/lib/prisma-client')
 
-const prisma = new PrismaClient()
+const prisma = createPrismaClient()
 
 const permissions = [
   'COMPETITION_READ',

@@ -1,8 +1,8 @@
-const { PrismaClient } = require('@prisma/client')
+const { createPrismaClient } = require('../scripts/lib/prisma-client')
 const { hashPassword } = require('../dist/security/password')
 const { seedTeams } = require('./seed-teams')
 
-const prisma = new PrismaClient()
+const prisma = createPrismaClient()
 
 async function main() {
   console.log('🔹 Seeding Admin User')

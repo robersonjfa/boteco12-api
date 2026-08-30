@@ -17,7 +17,7 @@ COPY . .
 # Identifica exatamente os insumos servidos pelo endpoint /health.
 RUN node scripts/release-fingerprint.js > .release-version
 
-RUN npx prisma generate
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build npx prisma generate
 RUN npm run build
 
 # Prisma CLI permanece como dependência operacional; compiladores, tipos,
@@ -55,6 +55,7 @@ COPY --from=postgres-client /usr/local/lib/libpq.so.5.16 /usr/local/lib/libpq.so
 RUN ln -sf libpq.so.5.16 /usr/local/lib/libpq.so.5
 
 COPY --from=build --chown=node:node /app/package*.json ./
+COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma

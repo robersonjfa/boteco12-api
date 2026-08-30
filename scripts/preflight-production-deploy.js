@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const { createPrismaClient } = require('./lib/prisma-client')
 
 const requiredEnvironment = [
   'SESSION_SECRET',
@@ -19,7 +19,7 @@ if (missingEnvironment.length > 0) {
   process.exit(1)
 }
 
-const prisma = new PrismaClient()
+const prisma = createPrismaClient()
 
 const invariantQueries = [
   [

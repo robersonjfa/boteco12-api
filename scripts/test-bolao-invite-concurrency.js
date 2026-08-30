@@ -2,12 +2,12 @@
 
 const assert = require('node:assert/strict')
 const { randomUUID } = require('node:crypto')
-const { PrismaClient } = require('@prisma/client')
+const { createPrismaClient } = require('./lib/prisma-client')
 const {
   reserveBolaoInviteUse,
 } = require('../dist/services/bolao/bolao-invite-reservation')
 
-const prisma = new PrismaClient()
+const prisma = createPrismaClient()
 
 async function main() {
   const suffix = randomUUID()

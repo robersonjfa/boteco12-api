@@ -11,17 +11,20 @@ docker run --rm --entrypoint sh "$IMAGE" -c '
   test -f dist/index.js
   test -f dist/worker.js
   test -f scripts/start-production.sh
+  test -f prisma.config.ts
   test -f prisma/schema.prisma
   test -x node_modules/.bin/prisma
   test ! -e /usr/local/bin/npm
   test ! -e /usr/local/bin/npx
-  test ! -d node_modules/typescript
+  # Prisma 7 loads prisma.config.ts through its own TypeScript dependency.
+  test -d node_modules/typescript
   test ! -d node_modules/ts-node-dev
   test ! -d node_modules/pino-pretty
   pg_dump --version | grep -q " 16\."
   pg_restore --version | grep -q " 16\."
   node -e "require(\"@prisma/client\"); require(\"prisma/package.json\")"
-  ./node_modules/.bin/prisma version >/dev/null
+  DATABASE_URL=postgresql://verify:verify@localhost:5432/verify \
+    ./node_modules/.bin/prisma version >/dev/null
 '
 
 HEALTHCHECK="$(docker inspect --format '{{json .Config.Healthcheck.Test}}' "$IMAGE")"
