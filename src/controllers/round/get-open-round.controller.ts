@@ -8,9 +8,7 @@ export class GetOpenRoundController {
       const round = await GetOpenRoundService.execute()
 
       if (!round) {
-        return res.status(404).json({
-          error: 'No open round'
-        })
+        return res.json(null)
       }
 
       return res.json(round)
