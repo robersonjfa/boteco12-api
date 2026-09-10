@@ -425,6 +425,24 @@ Antes de aplicar migration em producao:
 
 Para mudancas que apenas deixam de usar um valor antigo no codigo, como a remocao logica de `UserRole.PRO`, o deploy de codigo pode ficar saudavel mesmo antes de remover fisicamente o valor antigo do enum no banco.
 
+### 8.1 Rollback de release
+
+O rollback da API e do worker deve manter os dois serviços na mesma revisão.
+
+1. Registrar o fingerprint com falha retornado por `/health` e o último commit saudável.
+2. Confirmar se a release aplicou migration. Se não houve mudança de schema, criar um
+   `git revert` dos commits da release com falha e enviar o revert para `main`; o workflow
+   normal valida e publica a revisão revertida nos dois serviços.
+3. Acompanhar o deploy até `/health` da API e `/ready` do worker responderem com o mesmo
+   fingerprint saudável.
+4. Executar novamente o workflow `Production migration preflight` e validar os fluxos
+   afetados.
+
+Se houve migration, não reverter o schema automaticamente. Confirmar primeiro que a versão
+anterior do código é compatível com o schema atual; quando não for, priorizar correção para
+frente. Restore de banco exige decisão de incidente, backup validado e alvo explícito conforme
+`docs/database-backup-restore.md`.
+
 ## 9. BullMQ worker (substitui cron de aplicacao)
 
 ### Arquitetura

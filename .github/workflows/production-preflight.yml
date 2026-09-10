@@ -13,242 +13,34 @@ jobs:
     environment: production
 
     steps:
-      - name: Validate production SSH access configuration
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate EasyPanel access configuration
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
+          EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
         run: |
           set -eu
           missing=''
-          for name in VPS_HOST VPS_USER VPS_SSH_KEY; do
+          for name in EASYPANEL_URL EASYPANEL_EMAIL EASYPANEL_PASSWORD; do
             eval "value=\${$name:-}"
             if [ -z "$value" ]; then
               missing="${missing}${missing:+, }${name}"
             fi
           done
           if [ -n "$missing" ]; then
-            echo "Missing production SSH secrets: $missing" >&2
+            echo "Missing EasyPanel secrets: $missing" >&2
             exit 1
           fi
 
-      - name: Run read-only production preflight
-        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-          script: |
-            set -u
-            failures=0
-
-            API_CONTAINER="$(docker ps --filter 'name=f12-prd_api' --format '{{.ID}}' | head -n 1)"
-            WORKER_CONTAINER="$(docker ps --filter 'name=f12-prd_worker-managed' --format '{{.ID}}' | head -n 1)"
-
-            if [ -z "$API_CONTAINER" ]; then
-              echo 'api_container=missing'
-              failures=1
-            else
-              echo 'api_container=running'
-              docker inspect --format 'api_state={{.State.Status}} api_health={{if .State.Health}}{{.State.Health.Status}}{{else}}not_configured{{end}}' "$API_CONTAINER"
-            fi
-
-            if [ -z "$WORKER_CONTAINER" ]; then
-              echo 'worker_container=missing'
-              failures=1
-            else
-              echo 'worker_container=running'
-              docker inspect --format 'worker_state={{.State.Status}} worker_health={{if .State.Health}}{{.State.Health.Status}}{{else}}not_configured{{end}}' "$WORKER_CONTAINER"
-            fi
-
-            if [ -n "$API_CONTAINER" ] && [ -n "$WORKER_CONTAINER" ]; then
-              echo '=== RELEASE CONSISTENCY ==='
-              api_release="$(docker exec "$API_CONTAINER" node -e "process.stdout.write(require('fs').readFileSync('/app/.release-version', 'utf8').trim())" 2>/dev/null)"
-              api_release_exit=$?
-              worker_release="$(docker exec "$WORKER_CONTAINER" node -e "process.stdout.write(require('fs').readFileSync('/app/.release-version', 'utf8').trim())" 2>/dev/null)"
-              worker_release_exit=$?
-              if [ "$api_release_exit" -eq 0 ] \
-                && [ "$worker_release_exit" -eq 0 ] \
-                && printf '%s' "$api_release" | grep -Eq '^[a-f0-9]{64}$' \
-                && printf '%s' "$worker_release" | grep -Eq '^[a-f0-9]{64}$'; then
-                echo "api_release=$api_release"
-                echo "worker_release=$worker_release"
-                if [ "$api_release" != "$worker_release" ]; then
-                  echo 'release_consistency=mismatch'
-                  failures=1
-                else
-                  echo 'release_consistency=ok'
-                fi
-              else
-                echo 'release_consistency=unavailable'
-                failures=1
-              fi
-            fi
-
-            if [ -n "$API_CONTAINER" ]; then
-              echo '=== API HEALTH ==='
-              if ! docker exec -i "$API_CONTAINER" node <<'NODE'
-            const port = process.env.PORT || '3001'
-            fetch(`http://127.0.0.1:${port}/health`)
-              .then(async response => {
-                const body = await response.json()
-                console.log(JSON.stringify({
-                  httpStatus: response.status,
-                  api: body.api ?? null,
-                  db: body.db ?? null,
-                  redis: body.redis ?? null,
-                  version: body.version ?? null,
-                }))
-                if (!response.ok || body.api !== 'ok' || body.db !== 'ok' || body.redis !== 'ok') {
-                  process.exitCode = 1
-                }
-              })
-              .catch(() => {
-                console.log(JSON.stringify({ httpStatus: null, api: 'unreachable' }))
-                process.exitCode = 1
-              })
-            NODE
-              then
-                failures=1
-              fi
-
-              echo '=== DATABASE MIGRATIONS ==='
-              migration_output="$(docker exec "$API_CONTAINER" ./node_modules/.bin/prisma migrate status 2>&1)"
-              migration_exit=$?
-              if [ "$migration_exit" -eq 0 ] && printf '%s' "$migration_output" | grep -q 'Database schema is up to date'; then
-                echo 'migration_status=up_to_date'
-              else
-                echo "migration_status=attention_required exit_code=$migration_exit"
-                failures=1
-              fi
-
-              echo '=== BACKUP CLIENTS ==='
-              pg_dump_version="$(docker exec "$API_CONTAINER" pg_dump --version 2>/dev/null)"
-              pg_dump_exit=$?
-              pg_restore_version="$(docker exec "$API_CONTAINER" pg_restore --version 2>/dev/null)"
-              pg_restore_exit=$?
-              if [ "$pg_dump_exit" -eq 0 ] && [ "$pg_restore_exit" -eq 0 ]; then
-                echo "$pg_dump_version"
-                echo "$pg_restore_version"
-                case "$pg_dump_version" in
-                  *' 16.'*) ;;
-                  *) echo 'pg_dump_major=unexpected'; failures=1 ;;
-                esac
-                case "$pg_restore_version" in
-                  *' 16.'*) ;;
-                  *) echo 'pg_restore_major=unexpected'; failures=1 ;;
-                esac
-              else
-                echo 'postgres_clients=unavailable'
-                failures=1
-              fi
-
-              echo '=== SANITIZED CONFIGURATION ==='
-              if ! docker exec -i "$API_CONTAINER" node <<'NODE'
-            function safeUrl(value) {
-              if (!value) return { configured: false, valid: false, host: null }
-              try {
-                const parsed = new URL(value)
-                return {
-                  configured: true,
-                  valid: true,
-                  protocol: parsed.protocol,
-                  host: parsed.hostname,
-                }
-              } catch {
-                return { configured: true, valid: false, host: null }
-              }
-            }
-
-            function emailDomain(value) {
-              const match = String(value || '').match(/@([^>\s]+)>?$/)
-              return match?.[1]?.toLowerCase() ?? null
-            }
-
-            const apiPublicUrl = safeUrl(process.env.API_PUBLIC_URL)
-            const explicitNotificationUrl = safeUrl(process.env.MP_NOTIFICATION_URL)
-            const effectiveNotificationHost = explicitNotificationUrl.configured
-              ? explicitNotificationUrl.host
-              : apiPublicUrl.host
-            const smtpProvider = (process.env.EMAIL_PROVIDER || '').toLowerCase()
-            const smtp = {
-              provider: smtpProvider || null,
-              hostConfigured: Boolean(process.env.SMTP_HOST),
-              portConfigured: Boolean(process.env.SMTP_PORT),
-              secure: process.env.SMTP_SECURE === 'true',
-              userConfigured: Boolean(process.env.SMTP_USER),
-              userDomain: emailDomain(process.env.SMTP_USER),
-              passwordConfigured: Boolean(process.env.SMTP_PASS),
-              fromDomain: emailDomain(process.env.EMAIL_FROM),
-            }
-            const report = {
-              apiPublicUrl,
-              explicitNotificationUrl,
-              effectiveNotificationHost,
-              accessTokenConfigured: Boolean(process.env.MP_ACCESS_TOKEN),
-              webhookSecretConfigured: Boolean(process.env.MP_WEBHOOK_SECRET),
-              smtp,
-              runDbMigrations: {
-                configured: Boolean(process.env.RUN_DB_MIGRATIONS),
-                enabled: process.env.RUN_DB_MIGRATIONS === 'true',
-              },
-            }
-            console.log(JSON.stringify(report, null, 2))
-
-            const paymentReady =
-              apiPublicUrl.valid &&
-              apiPublicUrl.protocol === 'https:' &&
-              apiPublicUrl.host === 'api.boteco12.com' &&
-              effectiveNotificationHost === 'api.boteco12.com' &&
-              report.accessTokenConfigured &&
-              report.webhookSecretConfigured
-            const emailReady =
-              smtpProvider === 'smtp' &&
-              smtp.hostConfigured &&
-              smtp.userConfigured &&
-              smtp.userDomain === 'boteco12.com' &&
-              smtp.passwordConfigured &&
-              smtp.fromDomain === 'boteco12.com'
-            const migrationsBlockedOnBoot = !report.runDbMigrations.enabled
-            if (!paymentReady || !emailReady || !migrationsBlockedOnBoot) process.exitCode = 1
-            NODE
-              then
-                failures=1
-              fi
-            fi
-
-            if [ -n "$WORKER_CONTAINER" ]; then
-              echo '=== WORKER HEALTH ==='
-              if ! docker exec -i "$WORKER_CONTAINER" node <<'NODE'
-            const port = process.env.WORKER_HEALTH_PORT || process.env.PORT || '3002'
-            fetch(`http://127.0.0.1:${port}/ready`)
-              .then(async response => {
-                const body = await response.json()
-                console.log(JSON.stringify({
-                  httpStatus: response.status,
-                  worker: body.worker ?? null,
-                  redis: body.redis ?? null,
-                  ready: body.ready ?? false,
-                  schedulesRegistered: body.schedulesRegistered ?? false,
-                  version: body.version ?? null,
-                }))
-                if (!response.ok || body.worker !== 'ok' || body.redis !== 'ok' || body.ready !== true) {
-                  process.exitCode = 1
-                }
-              })
-              .catch(() => {
-                console.log(JSON.stringify({ httpStatus: null, worker: 'unreachable' }))
-                process.exitCode = 1
-              })
-            NODE
-              then
-                failures=1
-              fi
-            fi
-
-            if [ "$failures" -ne 0 ]; then
-              echo 'preflight=attention_required'
-              exit 1
-            fi
-            echo 'preflight=ready'
+      - name: Run sanitized read-only production preflight
+        env:
+          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
+          EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
+          EASYPANEL_PROJECT: f12-prd
+          EASYPANEL_API_SERVICE: api
+          EASYPANEL_WORKER_SERVICE: worker-managed
+        run: node scripts/easypanel-production-preflight.js

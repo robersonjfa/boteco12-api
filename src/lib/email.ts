@@ -77,6 +77,8 @@ class SmtpEmailService implements EmailService {
       subject,
       html,
       text,
+      disableFileAccess: true,
+      disableUrlAccess: true,
     })
 
     logger.info(
