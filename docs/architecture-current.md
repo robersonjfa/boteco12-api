@@ -1,175 +1,79 @@
 # Arquitetura Atual
 
-## Repositórios analisados
+_Revisado em 12 de setembro de 2026._
 
-- `boteco12-api`: backend principal
-- `boteco12-frontend`: frontend web
+## Repositórios
 
-## Estado atual do backend
+- `boteco12-api`: API Node.js/Express, regras de negócio e persistência
+- `boteco12-frontend`: aplicação web React/Vite
+- `boteco12-infra`: infraestrutura e configuração de implantação
 
-Stack principal:
+## Backend
 
-- Node.js
-- Express
-- TypeScript
-- Prisma
-- PostgreSQL
-- `express-session` para autenticação baseada em cookie
+A API usa TypeScript, Express, Prisma, PostgreSQL e `express-session`. O ponto de
+entrada é `src/index.ts`; rotas, controllers, services, repositories e
+middlewares separam a camada HTTP, regras de negócio, persistência e controle de
+acesso.
 
-Ponto de entrada:
+O schema cobre usuários, rodadas, escolhas, pontuação, rankings, Mesas e
+convites, assinaturas, carteira e razão financeira, benefícios, pagamentos,
+papéis, permissões, auditoria, jobs, locks e feature flags. As migrations e seeds
+ficam versionadas em `prisma/`.
 
-- `src/index.ts`
+Principais contratos ativos:
 
-Organização observada:
+- sessão: `/api/auth/login`, `/api/auth/logout` e `/api/me`
+- rodada aberta e partidas: `/api/rounds/open` e `/api/rounds/:roundId/matches`
+- escolhas: `/api/tickets` e `/api/tickets/current`
+- rankings: `/api/rankings/*`
+- Mesas: `/api/mesas/*`
+- administração de rodadas: `/api/admin/rounds/*`
+- jobs operacionais: rotas internas autenticadas
 
-- `controllers/`: camada HTTP
-- `services/`: regra de negócio
-- `repositories/`: acesso a dados em partes específicas
-- `routes/`: composição de rotas
-- `middleware/`: autenticação, autorização e tratamento de erro
-- `prisma/`: schema, migrations e seeds
+As rotas privadas usam os middlewares de autenticação e, quando aplicável,
+autorização administrativa. A proteção também abrange o envio e a consulta de
+escolhas.
 
-## Domínio já modelado no banco
+## Frontend
 
-O banco não está em fase inicial. O schema Prisma já cobre:
+O frontend usa React 19, Vite, TypeScript, React Router 7, Tailwind CSS 4 e Axios.
+Os pontos centrais são:
 
-- usuários e perfis
-- rodadas
-- tickets/palpites
-- score por rodada e histórico
-- rankings globais, periódicos e Mesas privadas
-- convites de Mesa
-- assinatura recorrente
-- carteira e razão financeira
-- pacotes de pagamento
-- pagamentos e eventos de webhook
-- benefícios por rodada e inventário de benefícios
-- papéis, permissões e auditoria administrativa
-- jobs internos, locks e feature flags
+- `src/main.tsx`: bootstrap da aplicação
+- `src/app/router.tsx`: árvore de rotas e guards
+- `src/app/http.ts`: cliente HTTP, cookies de sessão e normalização de erros
+- `src/app/AuthProvider.tsx`: estado e operações de autenticação
+- `src/app/auth.tsx`: contrato do contexto e hook `useAuth`
 
-Artefatos encontrados:
+`AuthProvider.tsx` e `auth.tsx` são partes complementares da mesma
+implementação, não providers concorrentes. O frontend usa cookies com
+`withCredentials`, inicia a sessão por `/api/me` e encerra o estado local quando
+o interceptor recebe 401. Falhas transitórias ao atualizar o perfil não removem
+uma sessão válida.
 
-- `prisma/schema.prisma`
-- migrations versionadas em `prisma/migrations`
-- `prisma/seed.js`
-- `prisma/seed-admin-permissions.js`
+Os serviços em `src/modules/` concentram os contratos HTTP por domínio. As telas
+ativas de dashboard, ranking, escolhas e administração consomem a instância
+canônica de Axios, sem token manual nem URLs de API hardcoded.
 
-Conclusão:
+## Integração e operação
 
-- a modelagem lógica do banco já existe
-- o foco daqui para frente deve ser operação, governança, consistência de migrations e ambientes
+Os contratos ativos de autenticação, rodadas, partidas, escolhas, rankings e
+administração estão alinhados entre frontend e backend. Em particular:
 
-## Rotas e fluxos principais do backend
+- a rodada atual vem de `/api/rounds/open`
+- `/api/tickets/current` existe e carrega as escolhas da rodada aberta
+- `POST /api/tickets` é autenticado
+- `GET /api/admin/rounds` existe e abastece a tela administrativa
+- o dashboard usa exclusivamente a sessão por cookie
 
-Rotas públicas e autenticadas:
+O tratamento de erros diferencia ausência legítima de dados de indisponibilidade
+da API nos fluxos principais. A matriz detalhada e os pontos de manutenção ficam
+em `docs/integration-matrix.md`.
 
-- autenticação por sessão em `/api/auth/login` e `/api/auth/logout`
-- perfil autenticado em `/api/me`
-- tickets em `/api/tickets`
-- rankings em `/api/rankings/*`
-- rodada aberta em `/api/rounds/open`
+## Direção arquitetural
 
-Rotas administrativas:
-
-- criação, abertura, fechamento e definição de resultado de rodadas
-- monetização e assinaturas admin
-- autorização baseada em permissões
-
-Rotas internas:
-
-- jobs internos para abertura de rodada, score e fechamento de rankings
-- webhook do Mercado Pago
-
-## Estado atual do frontend
-
-Stack principal:
-
-- React 19
-- Vite
-- TypeScript
-- React Router 7
-- Tailwind CSS 4
-- Axios
-
-Pontos de entrada:
-
-- `src/main.tsx`
-- `src/app/router.tsx`
-- `src/app/http.ts`
-
-Organização observada:
-
-- `pages/`: telas
-- `modules/`: serviços e componentes por domínio
-- `components/`: elementos compartilhados
-- `shared/`: contratos e utilitários
-- `app/`: auth, roteamento e camada HTTP
-
-## Integração atual entre frontend e backend
-
-A intenção arquitetural está relativamente clara:
-
-- frontend usa `withCredentials`
-- backend usa sessão via cookie
-- bootstrap do usuário via `/api/me`
-- autenticação deveria ser resolvida no backend
-
-Esse modelo é bom para o estágio atual, mas a implementação ainda está inconsistente.
-
-## Gaps e desalinhamentos encontrados
-
-### Autenticação duplicada no frontend
-
-Existem duas implementações concorrentes:
-
-- `src/app/AuthProvider.tsx`
-- `src/app/auth.tsx`
-
-Isso gera divergência de contrato e aumenta risco de bugs de sessão.
-
-### Contratos de API não totalmente alinhados
-
-Exemplos observados:
-
-- frontend chama `/api/rounds/current`, mas o backend expõe `/api/rounds/open`
-- frontend chama `/api/rounds/history`, mas essa rota não apareceu no backend lido
-- frontend chama `/api/tickets/current`, mas essa rota não apareceu no backend lido
-- ainda há chamadas `fetch` hardcoded em algumas páginas em vez da camada HTTP central
-
-### Inconsistência de implementação no frontend
-
-Exemplos observados:
-
-- `Dashboard.tsx` usa `token` no contexto, mas o contexto atual está orientado a sessão
-- `TicketPage.tsx` chama `TicketService.createTicket`, mas o service lido expõe outro contrato
-- há partes mais modernas convivendo com código legado
-
-### Proteção de rotas incompleta ou inconsistente
-
-Exemplo observado:
-
-- `TicketController` espera `req.user`, mas a rota `POST /api/tickets` não mostrou `authMiddleware` aplicado no arquivo lido
-
-Isso indica risco funcional e de segurança.
-
-## Maturidade operacional atual
-
-Pontos positivos:
-
-- schema Prisma robusto
-- migrations já existentes
-- separação razoável por domínio no backend
-- autenticação por sessão já em andamento
-- camada admin e auditoria já pensadas
-
-Lacunas principais:
-
-- ausência de documentação estruturada
-- ausência de repositório dedicado de infraestrutura
-- contratos backend/frontend ainda não canonizados
-- falta de padrão operacional explícito para ambientes
-- segurança precisa de hardening antes de produção madura
-
-## Diagnóstico resumido
-
-O Boteco12 já tem base de produto e de domínio suficientemente rica para entrar em uma fase de consolidação. O maior risco hoje não é falta de funcionalidade, e sim inconsistência entre camadas, ausência de governança operacional e segurança ainda parcial.
+A arquitetura atual está consolidada em três repositórios, sessão por cookie,
+contratos HTTP canônicos e migrations versionadas. As prioridades contínuas são
+manter documentação e testes sincronizados com os contratos, revisar migrations
+antes de cada release e preservar observabilidade, autorização e idempotência
+nos fluxos operacionais.
