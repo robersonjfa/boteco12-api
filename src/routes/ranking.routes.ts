@@ -10,6 +10,7 @@ import { CreateBolaoInviteController } from '../controllers/bolao/create-bolao-i
 import { UseBolaoInviteController } from '../controllers/bolao/use-bolao-invite.controller';
 import { CreateBolaoController } from '../controllers/bolao/create-bolao.controller';
 import { PublishMesaController } from '../controllers/bolao/publish-mesa.controller';
+import { UpdateMesaController } from '../controllers/bolao/update-mesa.controller';
 import { ListUserBoloesController } from '../controllers/bolao/list-user-boloes.controller';
 import { ListAvailableBoloesController } from '../controllers/bolao/list-available-boloes.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
@@ -18,6 +19,7 @@ import { RankingIdParamsSchema } from '../validators/common.validator';
 import {
   CreateBolaoInviteSchema,
   CreateMesaSchema,
+  UpdateMesaSchema,
   InviteCodeParamsSchema,
   RankingParticipantParamsSchema,
   ReviewBolaoRequestSchema,
@@ -42,6 +44,7 @@ router.get('/boloes/me', authMiddleware, ListUserBoloesController.handle);
 router.get('/boloes/available', authMiddleware, ListAvailableBoloesController.handle);
 // Usuários criam PAID/FREE; a camada de domínio reserva Patrocinada ao admin.
 router.post('/mesas', authMiddleware, validateRequest(CreateMesaSchema), CreateBolaoController.handle);
+router.put('/mesas/:rankingId', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), validateRequest(UpdateMesaSchema), UpdateMesaController.handle);
 router.post('/mesas/:rankingId/publish', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), PublishMesaController.handle);
 
 

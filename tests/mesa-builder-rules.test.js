@@ -14,6 +14,9 @@ const {
 const {
   ListUserBoloesService,
 } = require('../dist/services/bolao/list-user-boloes.service')
+const {
+  UpdateMesaService,
+} = require('../dist/services/bolao/update-mesa.service')
 const { CreateMesaSchema } = require('../dist/validators/bolao.validator')
 
 test('Mesa Free exige rodadas e data limite de proteção', () => {
@@ -161,6 +164,105 @@ test('assinante cria Mesa com Tampinhas como rascunho por capacidade e rodadas',
   assert.equal(rankingData.entryEndDate, null)
   assert.equal(rankingData.endDate, null)
   assert.equal(result.status, 'DRAFT')
+})
+
+test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  const originalUserFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.ranking.findUnique = originalRankingFindUnique
+    prisma.user.findUnique = originalUserFindUnique
+    prisma.$transaction = originalTransaction
+  })
+
+  AssertActiveProUserService.execute = async userId => ({ id: userId })
+  prisma.ranking.findUnique = async () => ({
+    id: 'draft-editable',
+    type: 'BOLAO',
+    status: 'DRAFT',
+    createdByUserId: 'owner-1',
+  })
+  prisma.user.findUnique = async () => ({ id: 'owner-1', role: 'NORMAL' })
+
+  let updateData
+  let auditData
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      updateMany: async ({ data }) => {
+        updateData = data
+        return { count: 1 }
+      },
+      findUniqueOrThrow: async () => ({
+          id: 'draft-editable',
+          status: 'DRAFT',
+          currentParticipants: 0,
+          grossCollected: 0,
+          platformFee: 0,
+          settledAt: null,
+          ...updateData,
+      }),
+    },
+    auditLog: { create: async ({ data }) => { auditData = data; return data } },
+  })
+
+  const result = await UpdateMesaService.execute({
+    rankingId: 'draft-editable',
+    requestedByUserId: 'owner-1',
+    name: 'Mesa com nova recompensa',
+    description: 'Dois produtos serão entregues aos primeiros colocados.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: null,
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: 50,
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [
+      { position: 1, percentage: 70 },
+      { position: 2, percentage: 30 },
+    ],
+  })
+
+  assert.deepEqual(updateData.prizeDistribution, [
+    { position: 1, percentage: 70 },
+    { position: 2, percentage: 30 },
+  ])
+  assert.equal(updateData.description, 'Dois produtos serão entregues aos primeiros colocados.')
+  assert.equal(auditData.action, 'BOLAO_UPDATED')
+  assert.equal(result.status, 'DRAFT')
+})
+
+test('Mesa publicada não pode mais ser editada', async t => {
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  t.after(() => { prisma.ranking.findUnique = originalRankingFindUnique })
+  prisma.ranking.findUnique = async () => ({
+    id: 'active-1', type: 'BOLAO', status: 'ACTIVE', createdByUserId: 'owner-1',
+  })
+
+  await assert.rejects(UpdateMesaService.execute({
+    rankingId: 'active-1',
+    requestedByUserId: 'owner-1',
+    name: 'Mesa publicada',
+    description: 'Esta alteração não deve ser aceita pela aplicação.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    endDate: null,
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: 50,
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+  }), { code: 'mesa_update_draft_only' })
 })
 
 test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando possui tampinhas', async t => {

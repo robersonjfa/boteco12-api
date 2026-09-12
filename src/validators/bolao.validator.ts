@@ -100,6 +100,8 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
   }
 })
 
+export const UpdateMesaSchema = CreateMesaSchema
+
 /** @deprecated Use CreateMesaSchema. */
 export const CreateBolaoSchema = CreateMesaSchema
 
