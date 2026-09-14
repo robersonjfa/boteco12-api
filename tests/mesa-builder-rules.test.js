@@ -236,6 +236,10 @@ test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', 
   ])
   assert.equal(updateData.description, 'Dois produtos serão entregues aos primeiros colocados.')
   assert.equal(auditData.action, 'BOLAO_UPDATED')
+  assert.equal(
+    auditData.metadata.description,
+    'Dois produtos serão entregues aos primeiros colocados.'
+  )
   assert.equal(result.status, 'DRAFT')
 })
 

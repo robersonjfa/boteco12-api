@@ -150,6 +150,7 @@ export class UpdateMesaService {
           entityId: input.rankingId,
           metadata: {
             name,
+            description,
             category: terms.category,
             accessCost: terms.accessCost,
             sponsorPrizePool: terms.sponsorPrizePool,
