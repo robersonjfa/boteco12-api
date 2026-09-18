@@ -31,6 +31,7 @@ import adminSubscriptionsRoutes from './routes/admin-subscriptions.routes'
 import adminUsersRoutes from './routes/admin-users.routes'
 import adminLogsRoutes from './routes/admin-logs.routes'
 import adminOperationalRoutes from './routes/admin-operational.routes'
+import adminAccessRoutes from './routes/admin-access.routes'
 import teamRoutes from './routes/team.routes'
 import artRoutes from './routes/art.routes'
 import adminBolaoRoutes from './routes/admin-bolao.routes'
@@ -204,6 +205,7 @@ app.use('/api', adminRoundRoutes)
 app.use('/api', adminUsersRoutes)
 app.use('/api', adminLogsRoutes)
 app.use('/api', adminOperationalRoutes)
+app.use('/api', adminAccessRoutes)
 app.use('/', teamRoutes)
 app.use('/', artRoutes)
 app.use('/', adminBolaoRoutes)

@@ -87,10 +87,10 @@ test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
   assert.equal(result.endDate.toISOString(), '2099-09-01T02:59:59.000Z')
 })
 
-test('usuário comum não cria Mesa Patrocinada', async t => {
+test('endpoint comum não cria Mesa Patrocinada nem com User.role legado de admin', async t => {
   const originalFindUnique = prisma.user.findUnique
   t.after(() => { prisma.user.findUnique = originalFindUnique })
-  prisma.user.findUnique = async () => ({ id: 'normal-user', role: 'NORMAL' })
+  prisma.user.findUnique = async () => ({ id: 'legacy-admin', role: 'ADMIN' })
 
   await assert.rejects(CreateBolaoService.execute({
     name: 'Mesa Patrocinada Indevida',
@@ -105,7 +105,7 @@ test('usuário comum não cria Mesa Patrocinada', async t => {
     durationMode: 'ROUNDS',
     durationRounds: 5,
     prizeDistribution: [{ position: 1, percentage: 100 }],
-    createdByUserId: 'normal-user',
+    createdByUserId: 'legacy-admin',
   }), { code: 'sponsored_mesa_admin_only' })
 })
 
@@ -188,11 +188,13 @@ test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', 
   prisma.user.findUnique = async () => ({ id: 'owner-1', role: 'NORMAL' })
 
   let updateData
+  let updateWhere
   let auditData
   prisma.$transaction = async callback => callback({
     ranking: {
-      updateMany: async ({ data }) => {
+      updateMany: async ({ data, where }) => {
         updateData = data
+        updateWhere = where
         return { count: 1 }
       },
       findUniqueOrThrow: async () => ({
@@ -208,7 +210,7 @@ test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', 
     auditLog: { create: async ({ data }) => { auditData = data; return data } },
   })
 
-  const result = await UpdateMesaService.execute({
+  const updateInput = {
     rankingId: 'draft-editable',
     requestedByUserId: 'owner-1',
     name: 'Mesa com nova recompensa',
@@ -228,7 +230,8 @@ test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', 
       { position: 1, percentage: 70 },
       { position: 2, percentage: 30 },
     ],
-  })
+  }
+  const result = await UpdateMesaService.execute(updateInput)
 
   assert.deepEqual(updateData.prizeDistribution, [
     { position: 1, percentage: 70 },
@@ -241,6 +244,14 @@ test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', 
     'Dois produtos serão entregues aos primeiros colocados.'
   )
   assert.equal(result.status, 'DRAFT')
+
+  const adminResult = await UpdateMesaService.execute({
+    ...updateInput,
+    requestedByUserId: 'operator-1',
+    administrative: true,
+  })
+  assert.equal(adminResult.status, 'DRAFT')
+  assert.equal(updateWhere.createdByUserId, undefined)
 })
 
 test('Mesa publicada não pode mais ser editada', async t => {

@@ -1,7 +1,10 @@
 # Matriz de autorização — MVP V1
 
-Esta é a matriz canônica do SEC-007. As rotas usam `authorize`, que consulta
-exclusivamente `UserAdminRole`, `AdminRole` e `AdminRolePermission`.
+Esta é a matriz canônica do SEC-007. As operações administrativas usam
+`authorize`, que consulta exclusivamente `UserAdminRole`, `AdminRole` e
+`AdminRolePermission`. A rota de contexto `/api/admin/context` é a única
+exceção: ela exige qualquer vínculo em `UserAdminRole` para então informar as
+permissões efetivas que orientarão a navegação administrativa.
 `User.role = ADMIN` não concede acesso administrativo.
 
 | Operação | Permissão |

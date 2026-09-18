@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
   "routes": [
+    { "file": "src/routes/admin-access.routes.ts", "method": "get", "path": "/admin/context", "auth": "requireAdminAccess", "permission": null },
+    { "file": "src/routes/admin-access.routes.ts", "method": "get", "path": "/admin/permissions", "auth": "authMiddleware", "permission": "USER_READ" },
+    { "file": "src/routes/admin-access.routes.ts", "method": "put", "path": "/admin/permissions/roles/:roleName", "auth": "authMiddleware", "permission": "SYSTEM_FORCE" },
     { "file": "src/routes/admin-logs.routes.ts", "method": "get", "path": "/admin/logs", "auth": "authMiddleware", "permission": "AUDIT_READ" },
     { "file": "src/routes/admin-operational.routes.ts", "method": "get", "path": "/admin/operational/status", "auth": "authMiddleware", "permission": "AUDIT_READ" },
     { "file": "src/routes/admin-subscriptions.routes.ts", "method": "get", "path": "/admin/subscriptions", "auth": "authMiddleware", "permission": "FINANCE_READ" },
@@ -24,6 +27,7 @@
     { "file": "src/routes/admin-bolao.routes.ts", "method": "get", "path": "/api/admin/mesas", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
     { "file": "src/routes/admin-bolao.routes.ts", "method": "get", "path": "/api/admin/boloes", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
     { "file": "src/routes/admin-bolao.routes.ts", "method": "post", "path": "/api/admin/mesas", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
+    { "file": "src/routes/admin-bolao.routes.ts", "method": "patch", "path": "/api/admin/mesas/:rankingId", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
     { "file": "src/routes/admin-bolao.routes.ts", "method": "post", "path": "/api/admin/boloes", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
     { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users", "auth": "authMiddleware", "permission": "USER_READ" },
     { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users/:userId/history", "auth": "authMiddleware", "permission": "AUDIT_READ" },

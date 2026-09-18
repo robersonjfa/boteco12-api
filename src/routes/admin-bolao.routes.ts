@@ -4,6 +4,7 @@ import { authorize } from '../middleware/authorize.middleware'
 import { validateRequest } from '../middleware/validate-request.middleware'
 import { CreateMesaSchema } from '../validators/bolao.validator'
 import { AdminBolaoController } from '../controllers/bolao/admin-bolao.controller'
+import { RankingIdParamsSchema } from '../validators/common.validator'
 
 const router = Router()
 
@@ -40,6 +41,19 @@ router.post(
   }),
   validateRequest(CreateMesaSchema),
   AdminBolaoController.create
+)
+
+router.patch(
+  '/api/admin/mesas/:rankingId',
+  authMiddleware,
+  authorize('COMPETITION_WRITE', {
+    audit: true,
+    entity: 'BOLAO',
+    getEntityId: req => req.params.rankingId,
+  }),
+  validateRequest(RankingIdParamsSchema, 'params'),
+  validateRequest(CreateMesaSchema),
+  AdminBolaoController.update
 )
 
 router.post(

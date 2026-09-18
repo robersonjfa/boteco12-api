@@ -31,6 +31,7 @@ type UpdateMesaInput = {
   durationMode?: MesaDurationMode
   durationRounds?: number | null
   prizeDistribution: PrizeDistributionItem[]
+  administrative?: boolean
 }
 
 export class UpdateMesaService {
@@ -43,7 +44,7 @@ export class UpdateMesaService {
     if (!mesa || mesa.type !== 'BOLAO') {
       throw AppError.notFound('Mesa', 'mesa_not_found')
     }
-    if (mesa.createdByUserId !== input.requestedByUserId) {
+    if (!input.administrative && mesa.createdByUserId !== input.requestedByUserId) {
       throw AppError.forbidden('Somente o dono pode editar esta Mesa', 'mesa_update_forbidden')
     }
     if (mesa.status !== 'DRAFT') {
@@ -60,16 +61,16 @@ export class UpdateMesaService {
     })
     const user = await prisma.user.findUnique({
       where: { id: input.requestedByUserId },
-      select: { id: true, role: true },
+      select: { id: true },
     })
     if (!user) throw AppError.notFound('Usuário', 'user_not_found')
-    if (MesaCategoryRules.isSponsored(terms) && user.role !== 'ADMIN') {
+    if (MesaCategoryRules.isSponsored(terms) && !input.administrative) {
       throw AppError.forbidden(
         'Somente administradores podem configurar Mesas Patrocinadas',
         'sponsored_mesa_admin_only'
       )
     }
-    if (MesaCategoryRules.isPaid(terms)) {
+    if (MesaCategoryRules.isPaid(terms) && !input.administrative) {
       await AssertActiveProUserService.execute(input.requestedByUserId)
     }
 
@@ -111,7 +112,7 @@ export class UpdateMesaService {
           id: input.rankingId,
           type: 'BOLAO',
           status: 'DRAFT',
-          createdByUserId: input.requestedByUserId,
+          ...(input.administrative ? {} : { createdByUserId: input.requestedByUserId }),
         },
         data: {
           name,
