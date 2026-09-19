@@ -16,3 +16,5 @@ export const AdminUserRolesSchema = z.object({
   roles: z.array(z.enum(['ADMIN', 'SUPERADMIN'])).max(2),
   reason: z.string().min(3, 'motivo deve ter ao menos 3 caracteres').max(500),
 }).strict()
+
+export const AdminUserPasswordResetSchema = AdminUserReasonSchema

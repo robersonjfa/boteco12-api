@@ -76,6 +76,27 @@ export class ListAdminUsersController {
     }
   }
 
+  static async resetPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
+    try {
+      const result = await AdminUserManagementService.resetPassword(
+        {
+          adminUserId: (req as any).user.id,
+          ipAddress: req.ip,
+        },
+        req.params.userId,
+        String(req.body.reason ?? '')
+      )
+
+      return res.status(200).json(result)
+    } catch (err) {
+      return next(err)
+    }
+  }
+
   static async history(req: Request, res: Response): Promise<Response> {
     const result = await GetAdminUserHistoryService.execute(req.params.userId)
     return res.status(200).json(result)

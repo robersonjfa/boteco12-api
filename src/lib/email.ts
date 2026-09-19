@@ -223,3 +223,38 @@ export async function sendPasswordResetEmail(opts: {
 
   await emailService.send({ to, subject, html, text })
 }
+
+export async function sendTemporaryPasswordEmail(opts: {
+  to: string
+  temporaryPassword: string
+}) {
+  const { to, temporaryPassword } = opts
+  const subject = 'Boteco12 — nova senha de acesso'
+  const text = [
+    'Boteco12',
+    '',
+    'Uma nova senha foi definida para sua conta pela administração:',
+    '',
+    temporaryPassword,
+    '',
+    'Entre no Boteco12 e altere essa senha na área Segurança do seu perfil.',
+    'Todas as sessões anteriores foram encerradas.',
+    '',
+    'Se você não reconhece esta alteração, entre em contato com o suporte.',
+  ].join('\n')
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:32px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;">
+    <h1 style="margin:0 0 20px;font-size:24px;">Nova senha de acesso</h1>
+    <p>Uma nova senha foi definida para sua conta pela administração.</p>
+    <p style="margin:24px 0;padding:16px;border-radius:10px;background:#f1f5f9;font-family:monospace;font-size:18px;font-weight:700;word-break:break-all;">${temporaryPassword}</p>
+    <p>Entre no Boteco12 e altere essa senha na área <strong>Segurança</strong> do seu perfil. Todas as sessões anteriores foram encerradas.</p>
+    <p style="color:#64748b;font-size:13px;">Se você não reconhece esta alteração, entre em contato com o suporte.</p>
+  </div>
+</body>
+</html>`
+
+  await emailService.send({ to, subject, html, text })
+}

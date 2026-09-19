@@ -280,6 +280,113 @@ test('Mesa publicada não pode mais ser editada', async t => {
   }), { code: 'mesa_update_draft_only' })
 })
 
+test('admin edita Mesa ativa de qualquer dono sem zerar arrecadação', async t => {
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  const originalUserFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    prisma.ranking.findUnique = originalRankingFindUnique
+    prisma.user.findUnique = originalUserFindUnique
+    prisma.$transaction = originalTransaction
+  })
+
+  const activeMesa = {
+    id: 'active-admin-edit', type: 'BOLAO', status: 'ACTIVE',
+    createdByUserId: 'owner-1', category: 'PAID', accessCost: 10,
+    sponsorPrizePool: 0, prizeDistribution: [{ position: 1, percentage: 100 }],
+    currentParticipants: 3, grossCollected: 30, platformFee: 3,
+    prizePool: 27, rewardPool: 27, settledAt: null,
+  }
+  prisma.ranking.findUnique = async () => activeMesa
+  prisma.user.findUnique = async () => ({ id: 'admin-1' })
+
+  let updateData
+  let updateWhere
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      updateMany: async ({ data, where }) => {
+        updateData = data
+        updateWhere = where
+        return { count: 1 }
+      },
+      findUniqueOrThrow: async () => ({
+        ...activeMesa,
+        ...updateData,
+        name: updateData.name,
+        startDate: updateData.startDate,
+        entryEndDate: updateData.entryEndDate,
+        endDate: updateData.endDate,
+      }),
+    },
+    auditLog: { create: async () => ({}) },
+  })
+
+  const result = await UpdateMesaService.execute({
+    rankingId: activeMesa.id,
+    requestedByUserId: 'admin-1',
+    administrative: true,
+    name: 'Mesa ativa revisada',
+    description: 'Recompensa integral para o primeiro colocado.',
+    startDate: new Date('2026-01-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: new Date('2027-01-01T03:00:00.000Z'),
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: 50,
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'DATE',
+    durationRounds: null,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+  })
+
+  assert.equal(updateWhere.status, 'ACTIVE')
+  assert.equal(updateWhere.createdByUserId, undefined)
+  assert.equal('grossCollected' in updateData, false)
+  assert.equal('platformFee' in updateData, false)
+  assert.equal('prizePool' in updateData, false)
+  assert.equal('rewardPool' in updateData, false)
+  assert.equal(result.status, 'ACTIVE')
+})
+
+test('admin não altera termos financeiros de Mesa com participantes', async t => {
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  const originalUserFindUnique = prisma.user.findUnique
+  t.after(() => {
+    prisma.ranking.findUnique = originalRankingFindUnique
+    prisma.user.findUnique = originalUserFindUnique
+  })
+
+  prisma.ranking.findUnique = async () => ({
+    id: 'active-funded', type: 'BOLAO', status: 'ACTIVE',
+    createdByUserId: 'owner-1', category: 'PAID', accessCost: 10,
+    sponsorPrizePool: 0, prizeDistribution: [{ position: 1, percentage: 100 }],
+    currentParticipants: 2, grossCollected: 20, settledAt: null,
+  })
+  prisma.user.findUnique = async () => ({ id: 'admin-1' })
+
+  await assert.rejects(UpdateMesaService.execute({
+    rankingId: 'active-funded',
+    requestedByUserId: 'admin-1',
+    administrative: true,
+    name: 'Mesa ativa',
+    description: 'Recompensa integral para o primeiro colocado.',
+    startDate: new Date('2026-01-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: new Date('2027-01-01T03:00:00.000Z'),
+    category: 'PAID',
+    accessCost: 20,
+    sponsorPrizePool: 0,
+    maxParticipants: 50,
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'DATE',
+    durationRounds: null,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+  }), { code: 'mesa_financial_terms_locked' })
+})
+
 test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando possui tampinhas', async t => {
   const originalAssertPro = AssertActiveProUserService.execute
   const originalTransaction = prisma.$transaction

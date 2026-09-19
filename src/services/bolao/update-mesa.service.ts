@@ -38,7 +38,19 @@ export class UpdateMesaService {
   static async execute(input: UpdateMesaInput) {
     const mesa = await prisma.ranking.findUnique({
       where: { id: input.rankingId },
-      select: { id: true, type: true, status: true, createdByUserId: true },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        createdByUserId: true,
+        category: true,
+        accessCost: true,
+        sponsorPrizePool: true,
+        prizeDistribution: true,
+        currentParticipants: true,
+        grossCollected: true,
+        settledAt: true,
+      },
     })
 
     if (!mesa || mesa.type !== 'BOLAO') {
@@ -47,7 +59,7 @@ export class UpdateMesaService {
     if (!input.administrative && mesa.createdByUserId !== input.requestedByUserId) {
       throw AppError.forbidden('Somente o dono pode editar esta Mesa', 'mesa_update_forbidden')
     }
-    if (mesa.status !== 'DRAFT') {
+    if (!input.administrative && mesa.status !== 'DRAFT') {
       throw AppError.conflict('Somente Mesas em rascunho podem ser editadas', 'mesa_update_draft_only')
     }
 
@@ -86,32 +98,54 @@ export class UpdateMesaService {
       throw AppError.badRequest('A data de fim deve ser posterior às inscrições')
     }
 
-    try {
-      BolaoRegistrationWindowService.assertNotClosed({
-        startDate: input.startDate,
-        endDate: input.endDate,
-      })
-    } catch (error) {
-      throw AppError.badRequest(
-        error instanceof Error ? error.message : 'As inscrições para esta competição foram encerradas.',
-        'mesa_registration_closed'
-      )
+    if (!input.administrative || mesa.status === 'DRAFT') {
+      try {
+        BolaoRegistrationWindowService.assertNotClosed({
+          startDate: input.startDate,
+          endDate: input.endDate,
+        })
+      } catch (error) {
+        throw AppError.badRequest(
+          error instanceof Error ? error.message : 'As inscrições para esta competição foram encerradas.',
+          'mesa_registration_closed'
+        )
+      }
     }
 
     const prizeDistribution = MesaCategoryRules.isFree(terms)
       ? []
       : BolaoPrizeService.validateDistribution(input.prizeDistribution)
+    const financialTermsChanged =
+      mesa.category !== terms.category ||
+      mesa.accessCost !== terms.accessCost ||
+      mesa.sponsorPrizePool !== terms.sponsorPrizePool ||
+      JSON.stringify(mesa.prizeDistribution) !== JSON.stringify(prizeDistribution)
+    const financialTermsLocked =
+      mesa.currentParticipants > 0 || mesa.grossCollected > 0 || Boolean(mesa.settledAt)
+
+    if (
+      input.administrative &&
+      mesa.status !== 'DRAFT' &&
+      financialTermsLocked &&
+      financialTermsChanged
+    ) {
+      throw AppError.conflict(
+        'Os termos financeiros não podem ser alterados depois que a Mesa recebeu participantes ou foi liquidada.',
+        'mesa_financial_terms_locked'
+      )
+    }
     const durationDays = input.endDate
       ? Math.ceil((input.endDate.getTime() - input.startDate.getTime()) / (1000 * 60 * 60 * 24))
       : null
     const emptyPool = BolaoPrizeService.calculatePool(0)
+    const shouldRecalculateFinancials = mesa.status === 'DRAFT' || !financialTermsLocked
 
     const result = await prisma.$transaction(async tx => {
       const mutation = await tx.ranking.updateMany({
         where: {
           id: input.rankingId,
           type: 'BOLAO',
-          status: 'DRAFT',
+          status: input.administrative ? mesa.status : 'DRAFT',
           ...(input.administrative ? {} : { createdByUserId: input.requestedByUserId }),
         },
         data: {
@@ -128,9 +162,17 @@ export class UpdateMesaService {
           durationRounds: input.durationRounds ?? null,
           durationDays,
           prizeDistribution,
-          ...emptyPool,
-          prizePool: MesaCategoryRules.isSponsored(terms) ? terms.sponsorPrizePool : emptyPool.prizePool,
-          rewardPool: MesaCategoryRules.isSponsored(terms) ? terms.sponsorPrizePool : emptyPool.prizePool,
+          ...(shouldRecalculateFinancials
+            ? {
+                ...emptyPool,
+                prizePool: MesaCategoryRules.isSponsored(terms)
+                  ? terms.sponsorPrizePool
+                  : emptyPool.prizePool,
+                rewardPool: MesaCategoryRules.isSponsored(terms)
+                  ? terms.sponsorPrizePool
+                  : emptyPool.prizePool,
+              }
+            : {}),
           startDate: input.startDate,
           entryEndDate: input.entryEndDate ?? null,
           endDate: input.endDate,
@@ -138,8 +180,10 @@ export class UpdateMesaService {
       })
       if (mutation.count !== 1) {
         throw AppError.conflict(
-          'A Mesa deixou de ser um rascunho antes das alterações serem salvas',
-          'mesa_update_draft_only'
+          input.administrative
+            ? 'A Mesa mudou de status antes das alterações serem salvas'
+            : 'A Mesa deixou de ser um rascunho antes das alterações serem salvas',
+          input.administrative ? 'mesa_status_changed' : 'mesa_update_draft_only'
         )
       }
 
@@ -151,6 +195,8 @@ export class UpdateMesaService {
           entityId: input.rankingId,
           metadata: {
             name,
+            administrative: input.administrative === true,
+            previousStatus: mesa.status,
             description,
             category: terms.category,
             accessCost: terms.accessCost,

@@ -31,6 +31,7 @@
     { "file": "src/routes/admin-bolao.routes.ts", "method": "post", "path": "/api/admin/boloes", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
     { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users", "auth": "authMiddleware", "permission": "USER_READ" },
     { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users/:userId/history", "auth": "authMiddleware", "permission": "AUDIT_READ" },
+    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/password-reset", "auth": "authMiddleware", "permission": "USER_PASSWORD_RESET" },
     { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users/:userId/pii", "auth": "authMiddleware", "permission": "USER_PII_READ" },
     { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/admin-roles", "auth": "authMiddleware", "permission": "USER_WRITE" },
     { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/block", "auth": "authMiddleware", "permission": "USER_BLOCK" },

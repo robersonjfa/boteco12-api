@@ -2,6 +2,9 @@ import { PaymentProvider, SubscriptionPlan, SubscriptionStatus } from '@prisma/c
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
 import { revokeUserSessions } from '../../lib/redis-session-store'
+import crypto from 'crypto'
+import { hashPassword } from '../../security/password'
+import { sendTemporaryPasswordEmail } from '../../lib/email'
 
 type AdminContext = {
   adminUserId: string
@@ -22,6 +25,80 @@ type AdminRolesInput = {
 }
 
 export class AdminUserManagementService {
+  static async resetPassword(
+    context: AdminContext,
+    targetUserId: string,
+    reason: string
+  ) {
+    const trimmedReason = reason.trim()
+    if (trimmedReason.length < 3) {
+      throw AppError.badRequest(
+        'Informe um motivo para redefinir a senha.',
+        'reason_required'
+      )
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, email: true },
+    })
+    if (!target) throw AppError.notFound('Usuário', 'user_not_found')
+
+    // O prefixo garante a política mínima; a parte aleatória fornece 144 bits
+    // de entropia. A senha nunca é retornada ao painel nem persistida em texto.
+    const temporaryPassword = `B12a-${crypto.randomBytes(18).toString('base64url')}`
+    const passwordHash = await hashPassword(temporaryPassword)
+
+    try {
+      await prisma.$transaction(async tx => {
+        await tx.user.update({
+          where: { id: targetUserId },
+          data: {
+            password: passwordHash,
+            sessionVersion: { increment: 1 },
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+          },
+        })
+
+        await tx.passwordResetToken.updateMany({
+          where: { userId: targetUserId, usedAt: null },
+          data: { usedAt: new Date() },
+        })
+
+        await tx.adminAuditLog.create({
+          data: {
+            adminId: context.adminUserId,
+            action: 'USER_PASSWORD_RESET',
+            entity: 'USER',
+            entityId: targetUserId,
+            payload: {
+              reason: trimmedReason,
+              delivery: 'email',
+            },
+            ipAddress: context.ipAddress,
+          },
+        })
+
+        // Se o provedor rejeitar o envio, a transação é revertida e a senha
+        // atual continua válida, evitando bloquear o usuário sem comunicação.
+        await sendTemporaryPasswordEmail({
+          to: target.email,
+          temporaryPassword,
+        })
+      })
+    } catch {
+      throw new AppError(
+        'Não foi possível enviar a nova senha por email. Nenhuma alteração foi aplicada.',
+        'temporary_password_delivery_failed',
+        503
+      )
+    }
+
+    await revokeUserSessions(targetUserId)
+    return { ok: true, deliveredBy: 'email' as const }
+  }
+
   static async setAdminRoles(
     context: AdminContext,
     targetUserId: string,

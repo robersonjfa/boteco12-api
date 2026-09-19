@@ -5,20 +5,39 @@ import { ListAdminUsersController } from '../controllers/admin/list-admin-users.
 import { validateRequest } from '../middleware/validate-request.middleware'
 import {
   AdminUserReasonSchema,
+  AdminUserPasswordResetSchema,
   AdminUserRolesSchema,
   AdminUserSubscriptionSchema,
 } from '../validators/admin-user.validator'
 import { UserIdParamsSchema } from '../validators/common.validator'
 import { AdminUsersQuerySchema } from '../validators/admin-query.validator'
+import { passwordResetRateLimiter } from '../middleware/rate-limit.middleware'
 
 const router = Router()
 
 router.get(
   '/admin/users',
   authMiddleware,
-  authorize('USER_READ'),
+  authorize('USER_READ', {
+    audit: true,
+    entity: 'USER_DIRECTORY',
+  }),
   validateRequest(AdminUsersQuerySchema, 'query'),
   ListAdminUsersController.handle
+)
+
+router.post(
+  '/admin/users/:userId/password-reset',
+  authMiddleware,
+  passwordResetRateLimiter,
+  authorize('USER_PASSWORD_RESET', {
+    audit: true,
+    entity: 'USER',
+    getEntityId: req => req.params.userId,
+  }),
+  validateRequest(UserIdParamsSchema, 'params'),
+  validateRequest(AdminUserPasswordResetSchema),
+  ListAdminUsersController.resetPassword
 )
 
 router.get(

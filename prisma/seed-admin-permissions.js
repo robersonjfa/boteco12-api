@@ -73,6 +73,7 @@ async function main() {
     'USER_BLOCK',
     'USER_UNBLOCK',
     'USER_PLAN_WRITE',
+    'USER_PASSWORD_RESET',
     'AUDIT_READ',
     'JOB_EXECUTE'
   ]

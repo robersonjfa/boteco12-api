@@ -88,7 +88,7 @@ test('payload Mercado Pago mantém somente allowlist escalar', () => {
   )
 })
 
-test('listagem administrativa comum não retorna PII sem máscara', async t => {
+test('listagem administrativa auditada retorna email e CPF completos', async t => {
   const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.$transaction = originalTransaction
@@ -99,6 +99,8 @@ test('listagem administrativa comum não retorna PII sem máscara', async t => {
       id: 'user-1',
       name: 'Pessoa',
       email: 'pessoa@example.com',
+      cpf: '12345678901',
+      phone: '31999999999',
       nickname: 'pessoa',
       role: 'NORMAL',
       adminBlockedAt: null,
@@ -114,9 +116,15 @@ test('listagem administrativa comum não retorna PII sem máscara', async t => {
     }],
   ]
   const result = await ListAdminUsersService.execute({})
-  assert.equal(result.data[0].email, 'p***@example.com')
-  assert.equal('cpf' in result.data[0], false)
-  assert.equal('phone' in result.data[0], false)
+  assert.equal(result.data[0].email, 'pessoa@example.com')
+  assert.equal(result.data[0].cpf, '12345678901')
+  assert.equal(result.data[0].phone, '31999999999')
+
+  const routes = fs.readFileSync(
+    path.resolve(__dirname, '../src/routes/admin-users.routes.ts'),
+    'utf8'
+  )
+  assert.match(routes, /authorize\('USER_READ',\s*\{\s*audit: true/)
 })
 
 test('rota de PII exige permissão dedicada e auditoria', () => {
