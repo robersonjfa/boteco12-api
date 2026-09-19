@@ -3,6 +3,7 @@ import { ProfileImageSchema } from './profile-image.validator'
 import { canonicalizeEmail, normalizeDigits } from '../security/identity'
 import { NewPasswordSchema } from './password.schema'
 import { isAtLeastAge, parseDateOnly } from '../utils/age'
+import { CpfSchema } from './cpf.validator'
 
 const MIN_ADULT_AGE = 18
 
@@ -40,7 +41,7 @@ export const CreateUserSchema = z.object({
   name: z.string().trim().min(3).max(80),
   nickname: z.string().trim().min(2).max(40),
   email: z.string().trim().email().transform(canonicalizeEmail),
-  cpf: z.string().transform(normalizeDigits).pipe(z.string().length(11)),
+  cpf: CpfSchema,
   phone: z.string().transform(normalizeDigits).pipe(z.string().min(10).max(15)),
   password: NewPasswordSchema,
   birthDate: BirthDateSchema,

@@ -3,6 +3,7 @@ import { ProfileImageSchema } from './profile-image.validator'
 import { normalizeDigits } from '../security/identity'
 import { NewPasswordSchema } from './password.schema'
 import { BirthDateSchema } from './createUser.validator'
+import { CpfSchema } from './cpf.validator'
 
 export const UpdateProfileSchema = z
   .object({
@@ -12,6 +13,7 @@ export const UpdateProfileSchema = z
     bio: z.string().max(280).optional(),
     profileImage: ProfileImageSchema.nullable().optional(),
     birthDate: BirthDateSchema.optional(),
+    cpf: CpfSchema.optional(),
     addressPreference: z.enum([
       'UNSPECIFIED',
       'CUSTOMER_MASCULINE',

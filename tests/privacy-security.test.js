@@ -100,6 +100,7 @@ test('listagem administrativa auditada retorna email e CPF completos', async t =
       name: 'Pessoa',
       email: 'pessoa@example.com',
       cpf: '12345678901',
+      birthDate: new Date('1990-01-15T00:00:00Z'),
       phone: '31999999999',
       nickname: 'pessoa',
       role: 'NORMAL',
@@ -118,6 +119,7 @@ test('listagem administrativa auditada retorna email e CPF completos', async t =
   const result = await ListAdminUsersService.execute({})
   assert.equal(result.data[0].email, 'pessoa@example.com')
   assert.equal(result.data[0].cpf, '12345678901')
+  assert.equal(result.data[0].birthDate, '1990-01-15')
   assert.equal(result.data[0].phone, '31999999999')
 
   const routes = fs.readFileSync(

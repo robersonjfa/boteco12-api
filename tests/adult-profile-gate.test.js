@@ -33,7 +33,7 @@ function response() {
   }
 }
 
-test('conta legada sem data acessa o perfil, mas não outras áreas autenticadas', async t => {
+test('conta legada sem CPF e nascimento acessa o perfil, mas não outras áreas autenticadas', async t => {
   const originalFindUnique = prisma.user.findUnique
   t.after(() => {
     prisma.user.findUnique = originalFindUnique
@@ -42,6 +42,7 @@ test('conta legada sem data acessa o perfil, mas não outras áreas autenticadas
     id: 'legacy-user',
     role: 'NORMAL',
     email: 'legacy@example.com',
+    cpf: null,
     birthDate: null,
     adminBlockedAt: null,
     sessionVersion: 1,
@@ -63,7 +64,8 @@ test('conta legada sem data acessa o perfil, mas não outras áreas autenticadas
   })
   assert.equal(walletNext, false)
   assert.equal(walletRes.statusCode, 403)
-  assert.equal(walletRes.body.error, 'birth_date_required')
+  assert.equal(walletRes.body.error, 'identity_profile_required')
+  assert.deepEqual(walletRes.body.missingFields, ['cpf', 'birthDate'])
 })
 
 test('conta adulta confirmada segue para áreas autenticadas', async t => {
@@ -75,6 +77,7 @@ test('conta adulta confirmada segue para áreas autenticadas', async t => {
     id: 'adult-user',
     role: 'NORMAL',
     email: 'adult@example.com',
+    cpf: '52998224725',
     birthDate: new Date('1990-01-15T00:00:00Z'),
     adminBlockedAt: null,
     sessionVersion: 1,
@@ -89,5 +92,6 @@ test('conta adulta confirmada segue para áreas autenticadas', async t => {
   })
 
   assert.equal(nextCalled, true)
+  assert.equal(req.user.cpf, '52998224725')
   assert.equal(req.user.birthDate.toISOString().slice(0, 10), '1990-01-15')
 })

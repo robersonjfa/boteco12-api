@@ -16,14 +16,14 @@ test('cadastro persiste identidade canônica e aceita senha longa sem truncament
     name: 'Usuário Seguro',
     nickname: 'seguro',
     email: '  USER@Example.COM ',
-    cpf: '123.456.789-01',
+    cpf: '529.982.247-25',
     phone: '+55 (11) 99999-9999',
     password: `Á${'longa'.repeat(20)}1`,
     birthDate: '1990-01-15',
   })
 
   assert.equal(parsed.email, 'user@example.com')
-  assert.equal(parsed.cpf, '12345678901')
+  assert.equal(parsed.cpf, '52998224725')
   assert.equal(parsed.phone, '5511999999999')
 
   const first = `Á${'x'.repeat(80)}a1`
@@ -31,6 +31,21 @@ test('cadastro persiste identidade canônica e aceita senha longa sem truncament
   const hash = await hashPassword(first)
   assert.equal(await verifyPassword(first, hash), true)
   assert.equal(await verifyPassword(second, hash), false)
+})
+
+test('cadastro rejeita CPF com verificadores inválidos e sequência repetida', () => {
+  const base = {
+    name: 'Usuário Seguro',
+    nickname: 'seguro',
+    email: 'user@example.com',
+    phone: '5511999999999',
+    password: 'SenhaForte123',
+    birthDate: '1990-01-15',
+  }
+
+  assert.equal(CreateUserSchema.safeParse({ ...base, cpf: '12345678901' }).success, false)
+  assert.equal(CreateUserSchema.safeParse({ ...base, cpf: '11111111111' }).success, false)
+  assert.equal(CreateUserSchema.safeParse({ ...base, cpf: '5299822472' }).success, false)
 })
 
 test('schemas sensíveis rejeitam tipo incorreto, overflow, enum inválido e campo extra', () => {

@@ -11,6 +11,7 @@ export interface AuthRequest extends Request {
     id: string;
     role: UserRole;
     email?: string;
+    cpf?: string | null;
     birthDate?: Date | null;
   };
 }
@@ -37,6 +38,7 @@ export async function authMiddleware(
         id: true,
         role: true,
         email: true,
+        cpf: true,
         birthDate: true,
         adminBlockedAt: true,
         sessionVersion: true,
@@ -74,11 +76,16 @@ export async function authMiddleware(
       sessionVersion: user.sessionVersion,
     };
     const requestPath = req.originalUrl.split('?')[0]
-    const canCompleteAdultProfile = requestPath === '/api/me'
-    if (!user.birthDate && !canCompleteAdultProfile) {
+    const canCompleteIdentityProfile = requestPath === '/api/me'
+    const missingFields = [
+      ...(!user.cpf ? ['cpf'] : []),
+      ...(!user.birthDate ? ['birthDate'] : []),
+    ]
+    if (missingFields.length > 0 && !canCompleteIdentityProfile) {
       return res.status(403).json({
-        error: 'birth_date_required',
-        message: 'Informe uma data de nascimento válida no perfil para continuar.',
+        error: 'identity_profile_required',
+        message: 'Confirme CPF e data de nascimento no perfil para continuar.',
+        missingFields,
       })
     }
 
@@ -86,6 +93,7 @@ export async function authMiddleware(
       id: user.id,
       role: user.role,
       email: user.email,
+      cpf: user.cpf,
       birthDate: user.birthDate,
     }
     return next();

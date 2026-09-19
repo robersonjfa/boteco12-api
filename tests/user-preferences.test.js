@@ -43,6 +43,70 @@ test('perfil aceita data de nascimento adulta e rejeita menor de 18 anos', () =>
   )
 })
 
+test('perfil aceita CPF válido e rejeita verificadores inválidos', () => {
+  assert.equal(
+    UpdateProfileSchema.parse({ cpf: '529.982.247-25' }).cpf,
+    '52998224725'
+  )
+  assert.throws(
+    () => UpdateProfileSchema.parse({ cpf: '123.456.789-01' }),
+    /CPF inválido/
+  )
+})
+
+test('confirma CPF e nascimento legados uma única vez', async t => {
+  const originalUpdate = prisma.user.update
+  const originalUpdateMany = prisma.user.updateMany
+  const originalFindUnique = prisma.user.findUnique
+  t.after(() => {
+    prisma.user.update = originalUpdate
+    prisma.user.updateMany = originalUpdateMany
+    prisma.user.findUnique = originalFindUnique
+  })
+
+  let confirmation
+  prisma.user.findUnique = async () => ({ cpf: null, birthDate: null })
+  prisma.user.updateMany = async input => {
+    confirmation = input
+    return { count: 1 }
+  }
+  prisma.user.update = async input => ({ id: input.where.id, ...input.data })
+
+  const data = UpdateProfileSchema.parse({
+    cpf: '529.982.247-25',
+    birthDate: '1990-01-15',
+  })
+  await UpdateProfileService.execute({ userId: 'legacy-user', data })
+
+  assert.deepEqual(confirmation.where, {
+    id: 'legacy-user',
+    cpf: null,
+    birthDate: null,
+  })
+  assert.equal(confirmation.data.cpf, '52998224725')
+  assert.equal(confirmation.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
+})
+
+test('CPF confirmado não pode ser alterado pelo perfil', async t => {
+  const originalFindUnique = prisma.user.findUnique
+  t.after(() => {
+    prisma.user.findUnique = originalFindUnique
+  })
+
+  prisma.user.findUnique = async () => ({
+    cpf: '52998224725',
+    birthDate: new Date('1990-01-15T00:00:00Z'),
+  })
+
+  await assert.rejects(
+    UpdateProfileService.execute({
+      userId: 'user-authenticated',
+      data: { cpf: '16899535009' },
+    }),
+    error => error.code === 'cpf_already_confirmed' && error.statusCode === 409
+  )
+})
+
 test('salva a data de nascimento validada no perfil autenticado', async t => {
   const originalUpdate = prisma.user.update
   const originalUpdateMany = prisma.user.updateMany

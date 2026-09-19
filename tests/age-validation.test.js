@@ -8,7 +8,7 @@ const baseUser = {
   name: 'Usuário Teste',
   nickname: 'teste',
   email: 'teste@example.com',
-  cpf: '12345678901',
+  cpf: '52998224725',
   phone: '11999999999',
   password: 'Segredo12',
 }
