@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma'
+import { isAdministrativeRole } from '../../domain/admin-roles'
 
 type ListAdminUsersInput = {
   page?: number
@@ -107,7 +108,9 @@ export class ListAdminUsersService {
               ?.quantity ?? 0,
         },
         subscription: user.subscription,
-        adminRoles: user.UserAdminRole.map(item => item.role.name),
+        adminRoles: user.UserAdminRole.some(item => isAdministrativeRole(item.role.name))
+          ? ['ADMIN']
+          : [],
       })),
     }
   }

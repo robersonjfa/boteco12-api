@@ -620,7 +620,7 @@ Evidencias do MVP V1:
 - catalogo tipado em `src/domain/permissions.ts` e autorizacao oficial em `src/middleware/authorize.middleware.ts`
 - matriz rota x permissao versionada em `docs/security/authorization-matrix-v1.md`
 - bypass legado por `User.role = ADMIN` removido do fechamento/liquidacao de Mesa
-- cenarios de usuario comum, admin sem permissao, admin autorizado e `SUPERADMIN` cobertos em `tests/security-rbac.test.js`
+- cenários de usuário comum, `User.role` legado e vínculo `ADMIN` cobertos em `tests/security-rbac.test.js`
 - concessao/negacao financeira e liquidacao forcada auditadas
 
 Escopo obrigatorio do MVP V1:
@@ -628,7 +628,7 @@ Escopo obrigatorio do MVP V1:
 - manter uma unica matriz rota x permissao para todas as rotas administrativas e operacoes sensiveis de competicao, usuarios, auditoria e financas
 - usar um middleware oficial de autorizacao e remover bypass baseado somente em `User.role = ADMIN`
 - exigir permissao especifica para debito/credito, bloqueio de usuario, operacao de rodada e fechamento/liquidacao de Mesa
-- testar usuario comum, administrador sem permissao, administrador autorizado e `SUPERADMIN`
+- testar usuário comum, `User.role` sem vínculo e administrador autorizado
 - auditar sucesso e falha das operacoes financeiras e de liquidacao forcada
 
 Fica para V2:
@@ -649,7 +649,7 @@ Escopo:
 Criterios de aceite:
 
 - administrador sem permissao especifica recebe `403`
-- `SUPERADMIN` continua com bypass explicitamente testado
+- o modelo foi consolidado em um único papel `ADMIN` com capacidades completas
 - operacao financeira ou de liquidacao gera auditoria de sucesso e falha
 - matriz rota x permissao fica versionada e coberta por testes
 

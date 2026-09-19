@@ -1,5 +1,6 @@
 import { UserRepository } from "../repositories/user.repository";
 import { hasActiveProSubscription, hasAnnualProSubscription } from "../domain/subscription";
+import { isAdministrativeRole } from "../domain/admin-roles";
 
 export class UserProfileService {
   private userRepository: UserRepository;
@@ -36,7 +37,9 @@ export class UserProfileService {
       role: user.role,
       isPro: hasActiveProSubscription(user.subscription),
       isAnnualPro: hasAnnualProSubscription(user.subscription),
-      adminRoles: user.UserAdminRole?.map(item => item.role.name) ?? [],
+      adminRoles: user.UserAdminRole?.some(item => isAdministrativeRole(item.role.name))
+        ? ['ADMIN']
+        : [],
       subscription: user.subscription
         ? {
             status: user.subscription.status,

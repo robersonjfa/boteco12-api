@@ -13,7 +13,7 @@ export const AdminUserSubscriptionSchema = z.object({
 }).strict()
 
 export const AdminUserRolesSchema = z.object({
-  roles: z.array(z.enum(['ADMIN', 'SUPERADMIN'])).max(2),
+  roles: z.array(z.literal('ADMIN')).max(1),
   reason: z.string().min(3, 'motivo deve ter ao menos 3 caracteres').max(500),
 }).strict()
 

@@ -36,14 +36,14 @@ async function execute(userId) {
   return { res, nextCalled }
 }
 
-test('RBAC diferencia usuário comum, admin sem permissão, admin autorizado e SUPERADMIN', async t => {
+test('vínculo ADMIN concede todas as ações e User.role isolado não concede acesso', async t => {
   const originalFindFirst = prisma.userAdminRole.findFirst
   const originalAuditCreate = prisma.adminAuditLog.create
   const audit = []
 
   prisma.userAdminRole.findFirst = async ({ where }) => {
     const id = where.userId
-    if (id === 'authorized-admin' || id === 'superadmin') return { id: `role-${id}` }
+    if (id === 'admin' || id === 'legacy-superadmin') return { id: `role-${id}` }
     return null
   }
   prisma.adminAuditLog.create = async ({ data }) => {
@@ -56,13 +56,13 @@ test('RBAC diferencia usuário comum, admin sem permissão, admin autorizado e S
     prisma.adminAuditLog.create = originalAuditCreate
   })
 
-  for (const deniedUser of ['normal-user', 'admin-without-permission']) {
+  for (const deniedUser of ['normal-user', 'legacy-user-role-admin']) {
     const denied = await execute(deniedUser)
     assert.equal(denied.nextCalled, false)
     assert.equal(denied.res.statusCode, 403)
   }
 
-  for (const allowedUser of ['authorized-admin', 'superadmin']) {
+  for (const allowedUser of ['admin', 'legacy-superadmin']) {
     const allowed = await execute(allowedUser)
     assert.equal(allowed.nextCalled, true)
     assert.equal(allowed.res.statusCode, null)
@@ -72,9 +72,9 @@ test('RBAC diferencia usuário comum, admin sem permissão, admin autorizado e S
     audit.map(item => [item.adminId, item.action]),
     [
       ['normal-user', 'PERMISSION_DENIED'],
-      ['admin-without-permission', 'PERMISSION_DENIED'],
-      ['authorized-admin', 'PERMISSION_GRANTED'],
-      ['superadmin', 'PERMISSION_GRANTED'],
+      ['legacy-user-role-admin', 'PERMISSION_DENIED'],
+      ['admin', 'PERMISSION_GRANTED'],
+      ['legacy-superadmin', 'PERMISSION_GRANTED'],
     ]
   )
 })

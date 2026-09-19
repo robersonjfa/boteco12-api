@@ -1,10 +1,11 @@
 # Matriz de autorização — MVP V1
 
 Esta é a matriz canônica do SEC-007. As operações administrativas usam
-`authorize`, que consulta exclusivamente `UserAdminRole`, `AdminRole` e
-`AdminRolePermission`. A rota de contexto `/api/admin/context` é a única
-exceção: ela exige qualquer vínculo em `UserAdminRole` para então informar as
-permissões efetivas que orientarão a navegação administrativa.
+`authorize`, que consulta exclusivamente o vínculo em `UserAdminRole`. Existe
+um único nível administrativo, `ADMIN`, com todas as capacidades. Os códigos de
+permissão permanecem como identificadores das ações e da auditoria, não como
+castas diferentes de administrador. A rota `/api/admin/context` informa essas
+capacidades para orientar a navegação administrativa.
 `User.role = ADMIN` não concede acesso administrativo.
 
 | Operação | Permissão |
@@ -25,11 +26,10 @@ permissões efetivas que orientarão a navegação administrativa.
 | Executar job interno autorizado | `JOB_EXECUTE` |
 
 O proprietário pode fechar a própria Mesa por autorização de domínio. Um
-operador que não seja proprietário precisa de `COMPETITION_EXECUTE`. O
-`SUPERADMIN` possui bypass explícito dentro do mesmo mecanismo RBAC e as
-concessões/negações sensíveis continuam auditadas.
+operador que não seja proprietário precisa entrar pela área administrativa; as
+concessões e negações sensíveis continuam auditadas.
 
-`USER_READ` retorna somente e-mail mascarado e não expõe CPF ou telefone.
-`USER_PII_READ` não é concedida ao papel operacional `ADMIN`; a consulta
-individual é destinada ao `SUPERADMIN` ou a um papel explicitamente autorizado
-e toda tentativa é registrada na auditoria de autorização.
+`USER_READ` retorna e-mail, CPF e telefone completos somente dentro da área
+administrativa. A consulta individual por `USER_PII_READ` também permanece
+auditada. Vínculos legados chamados `SUPERADMIN` são aceitos temporariamente,
+mas normalizados como `ADMIN` e não podem ser atribuídos novamente.

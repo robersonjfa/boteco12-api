@@ -2,8 +2,6 @@
   "schemaVersion": 1,
   "routes": [
     { "file": "src/routes/admin-access.routes.ts", "method": "get", "path": "/admin/context", "auth": "requireAdminAccess", "permission": null },
-    { "file": "src/routes/admin-access.routes.ts", "method": "get", "path": "/admin/permissions", "auth": "authMiddleware", "permission": "USER_READ" },
-    { "file": "src/routes/admin-access.routes.ts", "method": "put", "path": "/admin/permissions/roles/:roleName", "auth": "authMiddleware", "permission": "SYSTEM_FORCE" },
     { "file": "src/routes/admin-logs.routes.ts", "method": "get", "path": "/admin/logs", "auth": "authMiddleware", "permission": "AUDIT_READ" },
     { "file": "src/routes/admin-operational.routes.ts", "method": "get", "path": "/admin/operational/status", "auth": "authMiddleware", "permission": "AUDIT_READ" },
     { "file": "src/routes/admin-subscriptions.routes.ts", "method": "get", "path": "/admin/subscriptions", "auth": "authMiddleware", "permission": "FINANCE_READ" },

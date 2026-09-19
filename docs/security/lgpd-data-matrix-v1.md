@@ -7,7 +7,7 @@ a finalidade operacional atual, não substituem essa validação.
 
 | Categoria | Finalidade e justificativa de uso | Armazenamento | Acesso | Retenção V1 | Responsável |
 | --- | --- | --- | --- | --- | --- |
-| Nome, apelido e e-mail | Criar conta, autenticar, comunicar e prestar o serviço; execução do contrato | `users` | Usuário; suporte via `USER_READ` com e-mail mascarado; valor completo via `USER_PII_READ` | Enquanto a conta estiver ativa; revisar na solicitação de exclusão | Produto / Operações |
+| Nome, apelido e e-mail | Criar conta, autenticar, comunicar e prestar o serviço; execução do contrato | `users` | Usuário; administração auditada via `USER_READ` e `USER_PII_READ` | Enquanto a conta estiver ativa; revisar na solicitação de exclusão | Produto / Operações |
 | CPF | Unicidade, prevenção a fraude e processos financeiros aplicáveis; execução do contrato e obrigações aplicáveis | `users` | Usuário e acesso individual auditado por `USER_PII_READ` | Enquanto necessário ao vínculo e às obrigações aplicáveis | Financeiro / Privacidade |
 | Telefone | Contato e recuperação operacional quando informado; execução do serviço | `users` | Usuário e acesso individual auditado por `USER_PII_READ` | Enquanto a conta estiver ativa ou até correção/exclusão válida | Operações |
 | Hash de senha | Autenticação; execução do serviço e segurança | `users` (bcrypt) | Aplicação; não há leitura administrativa | Até troca ou exclusão válida da conta | Engenharia |
@@ -27,7 +27,7 @@ Controles V1:
   mascaram e-mail.
 - O payload do Mercado Pago usa uma allowlist de campos escalares e a migration
   do SEC-010 reduz também os eventos já armazenados.
-- `ADMIN` não recebe `USER_PII_READ` por padrão. `SUPERADMIN` mantém o bypass
-  RBAC explícito; concessões adicionais devem ter justificativa e revisão.
+- Existe um único papel `ADMIN`, com acesso administrativo completo. Leituras
+  de diretório e PII continuam protegidas por sessão administrativa e auditoria.
 - Automação de retenção/expurgo, portal do titular, criptografia seletiva,
   relatório periódico de acessos e governança de backups pertencem à V2.

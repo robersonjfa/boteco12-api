@@ -20,7 +20,7 @@ type ManualSubscriptionInput = {
 }
 
 type AdminRolesInput = {
-  roles: Array<'ADMIN' | 'SUPERADMIN'>
+  roles: Array<'ADMIN'>
   reason: string
 }
 

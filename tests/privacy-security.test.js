@@ -127,7 +127,7 @@ test('listagem administrativa auditada retorna email e CPF completos', async t =
   assert.match(routes, /authorize\('USER_READ',\s*\{\s*audit: true/)
 })
 
-test('rota de PII exige permissão dedicada e auditoria', () => {
+test('rota individual de PII continua auditada no modelo ADMIN único', () => {
   const source = fs.readFileSync(
     path.resolve(__dirname, '../src/routes/admin-users.routes.ts'),
     'utf8'
@@ -139,8 +139,8 @@ test('rota de PII exige permissão dedicada e auditoria', () => {
     path.resolve(__dirname, '../prisma/seed-admin-permissions.js'),
     'utf8'
   )
-  const adminAllowed = seed.match(/const adminAllowed = \[([\s\S]*?)\]/)[1]
-  assert.doesNotMatch(adminAllowed, /USER_PII_READ/)
+  assert.match(seed, /roleId: adminRole\.id/)
+  assert.doesNotMatch(seed, /superAdminRole/)
 })
 
 test('histórico registra migração de minimização e serviços usam payload reduzido', () => {

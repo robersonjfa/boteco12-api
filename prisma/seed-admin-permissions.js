@@ -50,63 +50,19 @@ async function main() {
     }
   })
 
-  const superAdminRole = await prisma.adminRole.upsert({
-    where: { name: 'SUPERADMIN' },
-    update: {},
-    create: {
-      name: 'SUPERADMIN',
-      description: 'Administrador Máximo'
-    }
-  })
-
   const allPermissions = await prisma.adminPermission.findMany()
-
-  const adminAllowed = [
-    'COMPETITION_READ',
-    'COMPETITION_WRITE',
-    'COMPETITION_EXECUTE',
-    'RANKING_READ',
-    'FINANCE_READ',
-    'FINANCE_EXECUTE',
-    'USER_READ',
-    'USER_WRITE',
-    'USER_BLOCK',
-    'USER_UNBLOCK',
-    'USER_PLAN_WRITE',
-    'USER_PASSWORD_RESET',
-    'AUDIT_READ',
-    'JOB_EXECUTE'
-  ]
-
-  for (const perm of allPermissions) {
-    if (adminAllowed.includes(perm.code)) {
-      await prisma.adminRolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: adminRole.id,
-            permissionId: perm.id
-          }
-        },
-        update: {},
-        create: {
-          roleId: adminRole.id,
-          permissionId: perm.id
-        }
-      })
-    }
-  }
 
   for (const perm of allPermissions) {
     await prisma.adminRolePermission.upsert({
       where: {
         roleId_permissionId: {
-          roleId: superAdminRole.id,
+          roleId: adminRole.id,
           permissionId: perm.id
         }
       },
       update: {},
       create: {
-        roleId: superAdminRole.id,
+        roleId: adminRole.id,
         permissionId: perm.id
       }
     })
