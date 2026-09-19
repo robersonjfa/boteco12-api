@@ -24,3 +24,11 @@ export const AdminLogsQuerySchema = z.object({
   userId: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(500).optional(),
 }).strict()
+
+export const AdminMesasQuerySchema = z.object({
+  bucket: z.enum(['OPEN', 'CLOSED']).default('OPEN'),
+  category: z.enum(['PAID', 'FREE', 'SPONSORED_FREE']).optional(),
+  q: z.string().trim().max(120).optional(),
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+}).strict()
