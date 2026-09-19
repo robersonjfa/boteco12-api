@@ -19,7 +19,7 @@ const {
 } = require('../dist/services/bolao/update-mesa.service')
 const { CreateMesaSchema } = require('../dist/validators/bolao.validator')
 
-test('Mesa Free exige rodadas e data limite de proteção', () => {
+test('Mesa por lugares usa rodadas e Mesa por data usa datas explícitas', () => {
   const base = {
     name: 'Mesa Free da Freguesia',
     description: 'Mesa gratuita com prazo de proteção.',
@@ -35,17 +35,20 @@ test('Mesa Free exige rodadas e data limite de proteção', () => {
     prizeDistribution: [],
   }
 
-  assert.equal(CreateMesaSchema.safeParse(base).success, false)
+  assert.equal(CreateMesaSchema.safeParse(base).success, true)
   assert.equal(CreateMesaSchema.safeParse({
     ...base,
     endDate: '2099-09-01T02:59:59.000Z',
-  }).success, true)
+  }).success, false)
   assert.equal(CreateMesaSchema.safeParse({
     ...base,
+    registrationCloseMode: 'DATE',
+    maxParticipants: null,
+    entryEndDate: '2099-08-15T02:59:59.000Z',
     durationMode: 'DATE',
     durationRounds: null,
     endDate: '2099-09-01T02:59:59.000Z',
-  }).success, false)
+  }).success, true)
 })
 
 test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
@@ -71,7 +74,7 @@ test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
     name: 'Mesa Free da Calçada',
     description: 'Mesa aberta e gratuita para a freguesia.',
     startDate: new Date('2099-08-01T03:00:00.000Z'),
-    endDate: new Date('2099-09-01T02:59:59.000Z'),
+    endDate: null,
     category: 'FREE',
     accessCost: 0,
     sponsorPrizePool: 0,
@@ -84,7 +87,7 @@ test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
   })
 
   assert.equal(result.category, 'FREE')
-  assert.equal(result.endDate.toISOString(), '2099-09-01T02:59:59.000Z')
+  assert.equal(result.endDate, null)
 })
 
 test('endpoint comum não cria Mesa Patrocinada nem com User.role legado de admin', async t => {
@@ -163,7 +166,88 @@ test('assinante cria Mesa com Tampinhas como rascunho por capacidade e rodadas',
   assert.equal(rankingData.durationRounds, 5)
   assert.equal(rankingData.entryEndDate, null)
   assert.equal(rankingData.endDate, null)
+  assert.equal(rankingData.publishedAt, null)
   assert.equal(result.status, 'DRAFT')
+})
+
+test('criação permite publicar agora ou agendar para o início das inscrições', async t => {
+  const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
+  })
+
+  prisma.user.findUnique = async () => ({ id: 'admin-1' })
+  let rankingData
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      create: async ({ data }) => {
+        rankingData = data
+        return data
+      },
+    },
+    auditLog: { create: async () => ({}) },
+  })
+
+  const base = {
+    description: 'Recompensa integral para o primeiro colocado.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: null,
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: 2,
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    createdByUserId: 'admin-1',
+    administrative: true,
+  }
+
+  const published = await CreateBolaoService.execute({
+    ...base,
+    name: 'Mesa publicada agora',
+    publicationMode: 'NOW',
+  })
+  assert.equal(published.status, 'ACTIVE')
+  assert.ok(rankingData.publishedAt instanceof Date)
+
+  const scheduled = await CreateBolaoService.execute({
+    ...base,
+    name: 'Mesa agendada',
+    publicationMode: 'AT_START',
+  })
+  assert.equal(scheduled.status, 'DRAFT')
+  assert.equal(
+    rankingData.publishedAt.toISOString(),
+    base.startDate.toISOString()
+  )
+})
+
+test('recompensas não podem superar os lugares disponíveis', () => {
+  const result = CreateMesaSchema.safeParse({
+    name: 'Mesa pequena',
+    description: 'Premiação configurada para os participantes.',
+    startDate: '2099-08-01T03:00:00.000Z',
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    registrationCloseMode: 'CAPACITY',
+    maxParticipants: 2,
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [
+      { position: 1, percentage: 60 },
+      { position: 2, percentage: 30 },
+      { position: 3, percentage: 10 },
+    ],
+  })
+
+  assert.equal(result.success, false)
+  assert.match(JSON.stringify(result.error?.issues), /lugares disponíveis/)
 })
 
 test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', async t => {
@@ -329,15 +413,15 @@ test('admin edita Mesa ativa de qualquer dono sem zerar arrecadação', async t 
     description: 'Recompensa integral para o primeiro colocado.',
     startDate: new Date('2026-01-01T03:00:00.000Z'),
     entryEndDate: null,
-    endDate: new Date('2027-01-01T03:00:00.000Z'),
+    endDate: null,
     category: 'PAID',
     accessCost: 10,
     sponsorPrizePool: 0,
     maxParticipants: 50,
     eligibility: 'ALL',
     registrationCloseMode: 'CAPACITY',
-    durationMode: 'DATE',
-    durationRounds: null,
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
     prizeDistribution: [{ position: 1, percentage: 100 }],
   })
 
@@ -374,15 +458,15 @@ test('admin não altera termos financeiros de Mesa com participantes', async t =
     description: 'Recompensa integral para o primeiro colocado.',
     startDate: new Date('2026-01-01T03:00:00.000Z'),
     entryEndDate: null,
-    endDate: new Date('2027-01-01T03:00:00.000Z'),
+    endDate: null,
     category: 'PAID',
     accessCost: 20,
     sponsorPrizePool: 0,
     maxParticipants: 50,
     eligibility: 'ALL',
     registrationCloseMode: 'CAPACITY',
-    durationMode: 'DATE',
-    durationRounds: null,
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
     prizeDistribution: [{ position: 1, percentage: 100 }],
   }), { code: 'mesa_financial_terms_locked' })
 })

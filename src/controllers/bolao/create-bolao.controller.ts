@@ -27,6 +27,7 @@ export class CreateBolaoController {
         durationMode: req.body.durationMode,
         durationRounds: req.body.durationRounds,
         prizeDistribution: req.body.prizeDistribution,
+        publicationMode: req.body.publicationMode,
         createdByUserId: userId,
       })
 

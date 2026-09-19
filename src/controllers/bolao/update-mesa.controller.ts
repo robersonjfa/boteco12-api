@@ -26,6 +26,7 @@ export class UpdateMesaController {
         durationMode: req.body.durationMode,
         durationRounds: req.body.durationRounds,
         prizeDistribution: req.body.prizeDistribution,
+        publicationMode: req.body.publicationMode,
       })
 
       return res.status(200).json(result)

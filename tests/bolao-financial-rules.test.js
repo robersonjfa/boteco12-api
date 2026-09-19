@@ -38,9 +38,12 @@ function createInput(overrides = {}) {
     name: 'Mesa Financeira',
     description: 'Recompensa: 60/30/10 da recompensa líquida após taxa da plataforma.',
     startDate: new Date('2026-08-01T00:00:00Z'),
-    endDate: new Date('2026-08-31T23:59:59Z'),
+    endDate: null,
     entryFee: 10,
     maxParticipants: 50,
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 10,
     prizeDistribution: VALID_PRIZES,
     createdByUserId: 'creator-1',
     ...overrides,
@@ -99,6 +102,11 @@ test('Mesa exige data de fim posterior à data de início', async t => {
 
   await assert.rejects(
     CreateBolaoService.execute(createInput({
+      registrationCloseMode: 'DATE',
+      maxParticipants: null,
+      entryEndDate: new Date('2026-08-01T12:00:00Z'),
+      durationMode: 'DATE',
+      durationRounds: null,
       endDate: new Date('2026-08-01T00:00:00Z'),
     })),
     { message: 'A data de fim deve ser posterior à data de início' }
@@ -199,8 +207,6 @@ test('admin cria Mesa vazia sem debitar fichas do criador', async t => {
     maxParticipants: 80,
     entryFee: undefined,
     startDate: new Date('2099-08-01T00:00:00Z'),
-    entryEndDate: new Date('2099-08-15T00:00:00Z'),
-    endDate: new Date('2099-08-31T23:59:59Z'),
   }))
 
   assert.deepEqual(rankingData.prizeDistribution, VALID_PRIZES)
@@ -244,7 +250,6 @@ test('admin cria Mesa FREE patrocinada sem custo e com premio financiado', async
     maxParticipants: 50,
     entryEndDate: undefined,
     startDate: new Date('2099-08-01T00:00:00Z'),
-    endDate: new Date('2099-08-31T23:59:59Z'),
   }))
 
   assert.equal(rankingData.category, 'SPONSORED_FREE')

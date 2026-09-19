@@ -37,6 +37,11 @@ export function getRequiredSchedules(): RegisteredSchedule[] {
       everyMs: EVERY_MINUTE_MS,
     },
     {
+      schedulerId: SCHEDULER_IDS.PUBLISH_SCHEDULED_MESAS,
+      jobName: JOB_NAMES.PUBLISH_SCHEDULED_MESAS,
+      everyMs: EVERY_MINUTE_MS,
+    },
+    {
       schedulerId: SCHEDULER_IDS.ENSURE_MONTHLY_RANKINGS,
       jobName: JOB_NAMES.ENSURE_MONTHLY_RANKINGS,
       pattern: ENSURE_MONTHLY_CRON,

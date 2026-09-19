@@ -36,6 +36,9 @@ const {
   CloseExpiredRankingsJobService,
 } = require('../dist/services/jobs/close-expired-rankings.job.service')
 const {
+  PublishScheduledMesasJobService,
+} = require('../dist/services/jobs/publish-scheduled-mesas.job.service')
+const {
   EnsureMonthlyRankingsJobService,
 } = require('../dist/services/jobs/ensure-monthly-rankings.job.service')
 const {
@@ -66,6 +69,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
     SCHEDULER_IDS.CLOSE_SCHEDULED_ROUNDS,
     SCHEDULER_IDS.ENSURE_MONTHLY_RANKINGS,
     SCHEDULER_IDS.OPEN_SCHEDULED_ROUNDS,
+    SCHEDULER_IDS.PUBLISH_SCHEDULED_MESAS,
     SCHEDULER_IDS.RECONCILE_MONTHLY_RANKINGS,
     SCHEDULER_IDS.REVALIDATE_SUBSCRIPTIONS,
   ].sort())
@@ -73,6 +77,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   assert.ok(names.includes(JOB_NAMES.OPEN_SCHEDULED_ROUNDS))
   assert.ok(names.includes(JOB_NAMES.CLOSE_SCHEDULED_ROUNDS))
   assert.ok(names.includes(JOB_NAMES.CLOSE_EXPIRED_RANKINGS))
+  assert.ok(names.includes(JOB_NAMES.PUBLISH_SCHEDULED_MESAS))
   assert.ok(names.includes(JOB_NAMES.ENSURE_MONTHLY_RANKINGS))
   assert.ok(names.includes(JOB_NAMES.RECONCILE_MONTHLY_RANKINGS))
   assert.ok(names.includes(JOB_NAMES.REVALIDATE_SUBSCRIPTIONS))
@@ -90,7 +95,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   assert.equal(subscriptions.tz, SCHEDULE_TIMEZONE)
 
   const everyMinute = schedules.filter(item => item.everyMs === EVERY_MINUTE_MS)
-  assert.equal(everyMinute.length, 3)
+  assert.equal(everyMinute.length, 4)
 })
 
 test('timezone America/Sao_Paulo deriva periodRef correto no virada do mes', () => {
@@ -130,6 +135,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   const originalOpen = OpenScheduledRoundsJobService.execute
   const originalClose = CloseScheduledRoundsJobService.execute
   const originalExpired = CloseExpiredRankingsJobService.execute
+  const originalPublishMesas = PublishScheduledMesasJobService.execute
   const originalMonthly = EnsureMonthlyRankingsJobService.execute
   const originalSubscriptions = RevalidateSubscriptionsJobService.execute
 
@@ -137,6 +143,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
     OpenScheduledRoundsJobService.execute = originalOpen
     CloseScheduledRoundsJobService.execute = originalClose
     CloseExpiredRankingsJobService.execute = originalExpired
+    PublishScheduledMesasJobService.execute = originalPublishMesas
     EnsureMonthlyRankingsJobService.execute = originalMonthly
     RevalidateSubscriptionsJobService.execute = originalSubscriptions
   })
@@ -152,6 +159,10 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   CloseExpiredRankingsJobService.execute = async () => {
     calls.push('expired')
     return { closedRankings: 0, execution: { id: '1', status: 'SUCCESS' } }
+  }
+  PublishScheduledMesasJobService.execute = async () => {
+    calls.push('publish-mesas')
+    return { publishedMesas: 0, execution: { id: '1', status: 'SUCCESS' } }
   }
   EnsureMonthlyRankingsJobService.execute = async input => {
     calls.push(`monthly:${input?.source || 'schedule'}`)
@@ -179,6 +190,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
     'monthly:reconcile',
     'monthly:schedule',
     'open',
+    'publish-mesas',
     'subscriptions',
   ].sort())
 })
@@ -302,6 +314,37 @@ test('close expired Mesas delega service e permite repeat sem duplicar settlemen
   assert.equal(domainCalls, 2)
   assert.equal(first.closedRankings, 1)
   assert.equal(second.closedRankings, 1)
+})
+
+test('publica somente Mesas agendadas cujo início já chegou', async t => {
+  const originalJob = InternalJobRunnerService.execute
+  const originalUpdateMany = prisma.ranking.updateMany
+  t.after(() => {
+    InternalJobRunnerService.execute = originalJob
+    prisma.ranking.updateMany = originalUpdateMany
+  })
+
+  let mutation
+  prisma.ranking.updateMany = async input => {
+    mutation = input
+    return { count: 2 }
+  }
+  InternalJobRunnerService.execute = async input => ({
+    executionId: 'exec-publish-mesas',
+    status: 'SUCCESS',
+    result: await input.run(),
+  })
+
+  const now = new Date('2026-09-19T18:00:00.000Z')
+  const result = await PublishScheduledMesasJobService.execute(now)
+
+  assert.deepEqual(mutation.where, {
+    type: 'BOLAO',
+    status: 'DRAFT',
+    publishedAt: { not: null, lte: now },
+  })
+  assert.deepEqual(mutation.data, { status: 'ACTIVE' })
+  assert.equal(result.publishedMesas, 2)
 })
 
 test('recuperacao mensal usa source reconcile e chama EnsureMonthlyRankingsService', async t => {

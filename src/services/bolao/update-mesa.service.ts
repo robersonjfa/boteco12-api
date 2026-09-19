@@ -12,6 +12,7 @@ import { BolaoRegistrationWindowService } from './bolao-registration-window.serv
 import { MesaCategoryRules } from './mesa-category-rules'
 import { withMesaFinancialNames } from './mesa-financial-names'
 import { normalizeMesaPrizeRules } from './mesa-prize-rules'
+import { assertMesaScheduleRules } from './mesa-schedule-rules'
 
 type UpdateMesaInput = {
   rankingId: string
@@ -32,6 +33,7 @@ type UpdateMesaInput = {
   durationRounds?: number | null
   prizeDistribution: PrizeDistributionItem[]
   administrative?: boolean
+  publicationMode?: 'DRAFT' | 'NOW' | 'AT_START'
 }
 
 export class UpdateMesaService {
@@ -50,6 +52,7 @@ export class UpdateMesaService {
         currentParticipants: true,
         grossCollected: true,
         settledAt: true,
+        publishedAt: true,
       },
     })
 
@@ -70,6 +73,14 @@ export class UpdateMesaService {
       sponsorPrizePool: input.sponsorPrizePool,
       maxParticipants: input.maxParticipants,
       registrationCloseMode: input.registrationCloseMode,
+    })
+    assertMesaScheduleRules({
+      registrationCloseMode: input.registrationCloseMode,
+      durationMode: input.durationMode,
+      entryEndDate: input.entryEndDate,
+      endDate: input.endDate,
+      maxParticipants: terms.maxParticipants,
+      durationRounds: input.durationRounds,
     })
     const user = await prisma.user.findUnique({
       where: { id: input.requestedByUserId },
@@ -115,6 +126,37 @@ export class UpdateMesaService {
     const prizeDistribution = MesaCategoryRules.isFree(terms)
       ? []
       : BolaoPrizeService.validateDistribution(input.prizeDistribution)
+    if (
+      terms.maxParticipants != null &&
+      prizeDistribution.length > terms.maxParticipants
+    ) {
+      throw AppError.badRequest(
+        'A quantidade de posições premiadas não pode superar os lugares disponíveis',
+        'mesa_prizes_exceed_capacity'
+      )
+    }
+    if (mesa.status !== 'DRAFT' && input.publicationMode) {
+      throw AppError.conflict(
+        'A publicação só pode ser alterada enquanto a Mesa está em rascunho',
+        'mesa_publication_locked'
+      )
+    }
+    if (
+      input.publicationMode === 'AT_START' &&
+      input.startDate.getTime() <= Date.now()
+    ) {
+      throw AppError.badRequest(
+        'Para publicar na abertura, informe uma data futura para o início das inscrições',
+        'mesa_publication_date_invalid'
+      )
+    }
+    const publication = input.publicationMode === 'NOW'
+      ? { status: 'ACTIVE' as const, publishedAt: new Date() }
+      : input.publicationMode === 'AT_START'
+        ? { status: 'DRAFT' as const, publishedAt: input.startDate }
+        : input.publicationMode === 'DRAFT'
+          ? { status: 'DRAFT' as const, publishedAt: null }
+          : null
     const financialTermsChanged =
       mesa.category !== terms.category ||
       mesa.accessCost !== terms.accessCost ||
@@ -158,7 +200,7 @@ export class UpdateMesaService {
           maxParticipants: terms.maxParticipants,
           eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
           registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
-          durationMode: input.durationMode ?? MesaDurationMode.DATE,
+          durationMode: input.durationMode ?? MesaDurationMode.ROUNDS,
           durationRounds: input.durationRounds ?? null,
           durationDays,
           prizeDistribution,
@@ -176,6 +218,7 @@ export class UpdateMesaService {
           startDate: input.startDate,
           entryEndDate: input.entryEndDate ?? null,
           endDate: input.endDate,
+          ...(publication ?? {}),
         },
       })
       if (mutation.count !== 1) {
@@ -204,12 +247,13 @@ export class UpdateMesaService {
             maxParticipants: terms.maxParticipants,
             eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
             registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
-            durationMode: input.durationMode ?? MesaDurationMode.DATE,
+            durationMode: input.durationMode ?? MesaDurationMode.ROUNDS,
             durationRounds: input.durationRounds ?? null,
             prizeDistribution,
             startDate: input.startDate.toISOString(),
             entryEndDate: input.entryEndDate?.toISOString() ?? null,
             endDate: input.endDate?.toISOString() ?? null,
+            publicationMode: input.publicationMode ?? null,
           },
         },
       })

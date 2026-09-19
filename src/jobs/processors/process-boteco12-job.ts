@@ -6,6 +6,7 @@ import { CloseExpiredRankingsJobService } from '../../services/jobs/close-expire
 import { EnsureMonthlyRankingsJobService } from '../../services/jobs/ensure-monthly-rankings.job.service'
 import { RevalidateSubscriptionsJobService } from '../../services/jobs/revalidate-subscriptions.job.service'
 import { logger } from '../../lib/logger'
+import { PublishScheduledMesasJobService } from '../../services/jobs/publish-scheduled-mesas.job.service'
 
 export async function processBoteco12Job(job: Job) {
   const name = job.name as Boteco12JobName
@@ -22,6 +23,8 @@ export async function processBoteco12Job(job: Job) {
       return CloseScheduledRoundsJobService.execute()
     case JOB_NAMES.CLOSE_EXPIRED_RANKINGS:
       return CloseExpiredRankingsJobService.execute()
+    case JOB_NAMES.PUBLISH_SCHEDULED_MESAS:
+      return PublishScheduledMesasJobService.execute()
     case JOB_NAMES.ENSURE_MONTHLY_RANKINGS:
       return EnsureMonthlyRankingsJobService.execute({ source: 'schedule' })
     case JOB_NAMES.RECONCILE_MONTHLY_RANKINGS:

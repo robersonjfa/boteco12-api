@@ -16,6 +16,7 @@ import {
 } from '@prisma/client'
 import { MesaCategoryRules } from './mesa-category-rules'
 import { AssertActiveProUserService } from '../subscription/assert-active-pro-user.service'
+import { assertMesaScheduleRules } from './mesa-schedule-rules'
 
 type CreateBolaoInput = {
   name: string
@@ -36,6 +37,7 @@ type CreateBolaoInput = {
   prizeDistribution: PrizeDistributionItem[]
   createdByUserId: string
   administrative?: boolean
+  publicationMode?: 'DRAFT' | 'NOW' | 'AT_START'
 }
 
 /**
@@ -61,6 +63,14 @@ export class CreateBolaoService {
       registrationCloseMode: input.registrationCloseMode,
     })
     const accessCost = terms.accessCost
+    assertMesaScheduleRules({
+      registrationCloseMode: input.registrationCloseMode,
+      durationMode: input.durationMode,
+      entryEndDate: input.entryEndDate,
+      endDate,
+      maxParticipants: terms.maxParticipants,
+      durationRounds: input.durationRounds,
+    })
     const description = MesaCategoryRules.isFree(terms)
       ? rawDescription.trim()
       : normalizeMesaPrizeRules(rawDescription)
@@ -117,6 +127,28 @@ export class CreateBolaoService {
       ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
       : null
     const emptyPool = BolaoPrizeService.calculatePool(0)
+    const publicationMode = input.publicationMode ?? 'DRAFT'
+    if (publicationMode === 'AT_START' && startDate.getTime() <= Date.now()) {
+      throw AppError.badRequest(
+        'Para publicar na abertura, informe uma data futura para o início das inscrições',
+        'mesa_publication_date_invalid'
+      )
+    }
+    const publication = publicationMode === 'NOW'
+      ? { status: 'ACTIVE' as const, publishedAt: new Date() }
+      : publicationMode === 'AT_START'
+        ? { status: 'DRAFT' as const, publishedAt: startDate }
+        : { status: 'DRAFT' as const, publishedAt: null }
+
+    if (
+      terms.maxParticipants != null &&
+      validatedPrizeDistribution.length > terms.maxParticipants
+    ) {
+      throw AppError.badRequest(
+        'A quantidade de posições premiadas não pode superar os lugares disponíveis',
+        'mesa_prizes_exceed_capacity'
+      )
+    }
 
     const result = await prisma.$transaction(async tx => {
       const bolao = await tx.ranking.create({
@@ -125,7 +157,8 @@ export class CreateBolaoService {
           name,
           description,
           type: 'BOLAO',
-          status: 'DRAFT',
+          status: publication.status,
+          publishedAt: publication.publishedAt,
           category: terms.category,
           entryFee: accessCost,
           accessCost,
@@ -133,7 +166,7 @@ export class CreateBolaoService {
           maxParticipants: terms.maxParticipants,
           eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
           registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
-          durationMode: input.durationMode ?? MesaDurationMode.DATE,
+          durationMode: input.durationMode ?? MesaDurationMode.ROUNDS,
           durationRounds: input.durationRounds ?? null,
           currentParticipants: 0,
           durationDays,
@@ -168,7 +201,7 @@ export class CreateBolaoService {
             maxParticipants: terms.maxParticipants,
             eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
             registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
-            durationMode: input.durationMode ?? MesaDurationMode.DATE,
+            durationMode: input.durationMode ?? MesaDurationMode.ROUNDS,
             durationRounds: input.durationRounds ?? null,
             durationDays,
             startDate: startDate.toISOString(),
@@ -177,6 +210,7 @@ export class CreateBolaoService {
             prizeDistribution: validatedPrizeDistribution,
             createdByAdmin: input.administrative === true,
             autoJoinedCreator: false,
+            publicationMode,
           },
         },
       })
@@ -188,6 +222,7 @@ export class CreateBolaoService {
       id: result.id,
       name: result.name,
       status: result.status,
+      publishedAt: result.publishedAt,
       category: result.category,
       entryFee: result.entryFee,
       accessCost: result.accessCost,
