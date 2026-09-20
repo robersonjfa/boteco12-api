@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const path = require('node:path')
 const test = require('node:test')
 
 const { prisma } = require('../dist/lib/prisma')
@@ -56,4 +58,17 @@ test('rodada resolve IDs das variantes e persiste o nome com categoria', async t
 
   assert.equal(result[0].homeTeam, 'Palmeiras · Feminino')
   assert.equal(result[0].awayTeam, 'Santos · Sub-17')
+})
+
+test('migration normaliza nomes e apelidos do catálogo legado de produção', () => {
+  const sql = fs.readFileSync(path.join(
+    __dirname,
+    '../prisma/migrations/20260920030000_normalize_legacy_team_names/migration.sql'
+  ), 'utf8')
+
+  assert.match(sql, /'SE Palmeiras', 'Palmeiras'/)
+  assert.match(sql, /'CR Flamengo', 'Flamengo'/)
+  assert.match(sql, /'Botafogo-RJ', 'Botafogo'/)
+  assert.match(sql, /'Verdão'/)
+  assert.match(sql, /"searchText"/)
 })
