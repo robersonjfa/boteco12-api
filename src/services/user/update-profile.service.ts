@@ -43,6 +43,23 @@ export class UpdateProfileService {
               'cpf_already_confirmed'
             )
           }
+
+          if (!current.cpf) {
+            const cpfOwner = await tx.user.findFirst({
+              where: {
+                cpf: data.cpf,
+                NOT: { id: userId },
+              },
+              select: { id: true },
+            })
+
+            if (cpfOwner) {
+              throw AppError.conflict(
+                'Este CPF já está cadastrado em outra conta. Se o CPF é seu, procure o suporte.',
+                'cpf_already_taken'
+              )
+            }
+          }
         }
 
         if (data.birthDate !== undefined) {
@@ -106,8 +123,14 @@ export class UpdateProfileService {
         err.code === 'P2002'
       ) {
         const target = String(err.meta?.target ?? '')
-        if (target.toLowerCase().includes('cpf')) {
-          throw AppError.conflict('CPF já cadastrado', 'cpf_already_taken')
+        if (
+          data.cpf !== undefined ||
+          target.toLowerCase().includes('cpf')
+        ) {
+          throw AppError.conflict(
+            'Este CPF já está cadastrado em outra conta. Se o CPF é seu, procure o suporte.',
+            'cpf_already_taken'
+          )
         }
       }
       if (

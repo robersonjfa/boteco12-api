@@ -57,15 +57,18 @@ test('perfil aceita CPF válido e rejeita verificadores inválidos', () => {
 test('confirma CPF e nascimento legados uma única vez', async t => {
   const originalUpdate = prisma.user.update
   const originalFindUnique = prisma.user.findUnique
+  const originalFindFirst = prisma.user.findFirst
   const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.user.update = originalUpdate
     prisma.user.findUnique = originalFindUnique
+    prisma.user.findFirst = originalFindFirst
     prisma.$transaction = originalTransaction
   })
 
   let update
   prisma.user.findUnique = async () => ({ cpf: null, birthDate: null })
+  prisma.user.findFirst = async () => null
   prisma.user.update = async input => {
     update = input
     return { id: input.where.id, ...input.data }
@@ -84,6 +87,47 @@ test('confirma CPF e nascimento legados uma única vez', async t => {
   })
   assert.equal(update.data.cpf, '52998224725')
   assert.equal(update.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
+})
+
+test('informa claramente quando o CPF pertence a outra conta sem expor o titular', async t => {
+  const originalUpdate = prisma.user.update
+  const originalFindUnique = prisma.user.findUnique
+  const originalFindFirst = prisma.user.findFirst
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    prisma.user.update = originalUpdate
+    prisma.user.findUnique = originalFindUnique
+    prisma.user.findFirst = originalFindFirst
+    prisma.$transaction = originalTransaction
+  })
+
+  prisma.user.findUnique = async () => ({ cpf: null, birthDate: null })
+  prisma.user.findFirst = async input => {
+    assert.deepEqual(input, {
+      where: {
+        cpf: '52998224725',
+        NOT: { id: 'legacy-user' },
+      },
+      select: { id: true },
+    })
+    return { id: 'other-user' }
+  }
+  prisma.user.update = async () => {
+    throw new Error('update não deveria ser chamado')
+  }
+  prisma.$transaction = async callback => callback({ user: prisma.user })
+
+  await assert.rejects(
+    UpdateProfileService.execute({
+      userId: 'legacy-user',
+      data: { cpf: '52998224725' },
+    }),
+    error =>
+      error.code === 'cpf_already_taken' &&
+      error.statusCode === 409 &&
+      /CPF já está cadastrado em outra conta/.test(error.message) &&
+      !error.message.includes('other-user')
+  )
 })
 
 test('CPF confirmado não pode ser alterado pelo perfil', async t => {

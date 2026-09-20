@@ -45,10 +45,25 @@ export function errorHandler(
   // 3) Erros conhecidos do Prisma
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
+      const target = String(err.meta?.target ?? '').toLowerCase()
+
+      if (target.includes('cpf')) {
+        return res.status(409).json({
+          error: 'cpf_already_taken',
+          message: 'Este CPF já está cadastrado em outra conta. Se o CPF é seu, procure o suporte.',
+        })
+      }
+
+      if (target.includes('email')) {
+        return res.status(409).json({
+          error: 'email_already_taken',
+          message: 'Este e-mail já está cadastrado.',
+        })
+      }
+
       return res.status(409).json({
         error: 'unique_violation',
-        message: 'Já existe um registro com esse valor',
-        details: { target: err.meta?.target },
+        message: 'Não foi possível salvar porque um dado exclusivo já está em uso.',
       })
     }
     if (err.code === 'P2025') {
