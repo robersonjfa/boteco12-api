@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const crypto = require('node:crypto')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -93,27 +92,25 @@ function localMigrations() {
     .sort()
 }
 
-function migrationPayload(names) {
-  return Object.fromEntries(names.map(name => {
-    const sql = fs.readFileSync(path.join(migrationsRoot, name, 'migration.sql'))
-    return [name, sql.toString('base64')]
-  }))
-}
-
 function nodeCommand(source) {
   return `printf '%s' '${Buffer.from(source).toString('base64')}' | base64 -d | node`
 }
 
 function listMigrationsSource() {
   return `
+const fs = require('node:fs')
 const { prisma } = require('/app/dist/lib/prisma')
 ;(async () => {
   const rows = await prisma.$queryRawUnsafe(
     'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL'
   )
+  const files = fs.readdirSync('/app/prisma/migrations', { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
   await prisma.$disconnect()
   console.log('B12_LIST_BEGIN' + JSON.stringify({
     names: rows.map(row => row.migration_name),
+    files,
   }) + 'B12_LIST_END')
 })().catch(error => {
   console.log('B12_LIST_BEGIN' + JSON.stringify({ error: error?.name || 'Error' }) + 'B12_LIST_END')
@@ -122,21 +119,12 @@ const { prisma } = require('/app/dist/lib/prisma')
 `
 }
 
-function migrateSource(payload) {
+function migrateSource(names) {
   return `
-const fs = require('node:fs')
-const path = require('node:path')
 const { execFileSync } = require('node:child_process')
-const payload = ${JSON.stringify(payload)}
+const names = ${JSON.stringify(names)}
 
 ;(async () => {
-  for (const [name, sql] of Object.entries(payload)) {
-    if (!/^\\d+_[a-z0-9_]+$/.test(name)) throw new Error('Invalid migration name')
-    const directory = path.join('/app/prisma/migrations', name)
-    fs.mkdirSync(directory, { recursive: true })
-    fs.writeFileSync(path.join(directory, 'migration.sql'), Buffer.from(sql, 'base64'))
-  }
-
   execFileSync('./node_modules/.bin/prisma', ['migrate', 'deploy'], {
     cwd: '/app', env: process.env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 300_000,
   })
@@ -144,7 +132,6 @@ const payload = ${JSON.stringify(payload)}
     cwd: '/app', env: process.env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000,
   })
   const { prisma } = require('/app/dist/lib/prisma')
-  const names = Object.keys(payload)
   const rows = await prisma.$queryRawUnsafe(
     'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" WHERE migration_name = ANY($1::text[])',
     names
@@ -229,6 +216,10 @@ async function main() {
   const appliedNames = new Set(remote.names || [])
   const missing = localMigrations().filter(name => !appliedNames.has(name))
   if (missing.length === 0) throw new Error('No pending migration files were found')
+  const containerFiles = new Set(remote.files || [])
+  if (missing.some(name => !containerFiles.has(name))) {
+    throw new Error('The running API image does not contain every pending migration')
+  }
 
   const backup = await runInContainer({
     containerId: databaseContainerId,
@@ -244,7 +235,7 @@ async function main() {
 
   const migration = await runInContainer({
     containerId: apiContainerId,
-    command: nodeCommand(migrateSource(migrationPayload(missing))),
+    command: nodeCommand(migrateSource(missing)),
     token,
     startMarker: 'B12_MIGRATE_BEGIN',
     endMarker: 'B12_MIGRATE_END',
@@ -262,4 +253,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { backupCommand, localMigrations, migrationPayload }
+module.exports = { backupCommand, localMigrations }
