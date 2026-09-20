@@ -185,6 +185,41 @@ sha="$(sha256sum '${file}' | cut -d ' ' -f 1)"
 printf 'B12_BACKUP_BEGIN{"path":"${file}","sizeBytes":%s,"sha256":"%s","verified":true}B12_BACKUP_END' "$bytes" "$sha"`
 }
 
+async function stageMigrationFiles({ names, containerId, token }) {
+  for (const name of names) {
+    if (!/^\d+_[a-z0-9_]+$/.test(name)) throw new Error('Invalid migration name')
+    const contents = fs.readFileSync(path.join(migrationsRoot, name, 'migration.sql'))
+    const encoded = contents.toString('base64')
+    const expectedSha = require('node:crypto').createHash('sha256').update(contents).digest('hex')
+    const target = `/app/prisma/migrations/${name}/migration.sql`
+    const chunks = encoded.match(/.{1,1500}/g) || []
+
+    for (let index = 0; index < chunks.length; index += 1) {
+      const initialize = index === 0
+        ? `mkdir -p '/app/prisma/migrations/${name}'; : > '${target}'; `
+        : ''
+      const command = `set -eu; ${initialize}printf '%s' '${chunks[index]}' | base64 -d >> '${target}'; printf 'B12_STAGE_BEGIN{"ok":true}B12_STAGE_END'`
+      const staged = await runInContainer({
+        containerId,
+        command,
+        token,
+        startMarker: 'B12_STAGE_BEGIN',
+        endMarker: 'B12_STAGE_END',
+      })
+      if (!staged.ok) throw new Error(`Could not stage migration ${name}`)
+    }
+
+    const verified = await runInContainer({
+      containerId,
+      command: `set -eu; actual="$(sha256sum '${target}' | cut -d ' ' -f 1)"; test "$actual" = '${expectedSha}'; printf 'B12_STAGE_VERIFY_BEGIN{"verified":true}B12_STAGE_VERIFY_END'`,
+      token,
+      startMarker: 'B12_STAGE_VERIFY_BEGIN',
+      endMarker: 'B12_STAGE_VERIFY_END',
+    })
+    if (!verified.verified) throw new Error(`Could not verify migration ${name}`)
+  }
+}
+
 async function main() {
   for (const name of REQUIRED) {
     if (!process.env[name]) throw new Error(`${name} is required`)
@@ -216,10 +251,6 @@ async function main() {
   const appliedNames = new Set(remote.names || [])
   const missing = localMigrations().filter(name => !appliedNames.has(name))
   if (missing.length === 0) throw new Error('No pending migration files were found')
-  const containerFiles = new Set(remote.files || [])
-  if (missing.some(name => !containerFiles.has(name))) {
-    throw new Error('The running API image does not contain every pending migration')
-  }
 
   const backup = await runInContainer({
     containerId: databaseContainerId,
@@ -232,6 +263,10 @@ async function main() {
     throw new Error('Production backup verification failed')
   }
   console.log(JSON.stringify({ backup, pendingMigrations: missing }, null, 2))
+
+  const containerFiles = new Set(remote.files || [])
+  const migrationsToStage = missing.filter(name => !containerFiles.has(name))
+  await stageMigrationFiles({ names: migrationsToStage, containerId: apiContainerId, token })
 
   const migration = await runInContainer({
     containerId: apiContainerId,
