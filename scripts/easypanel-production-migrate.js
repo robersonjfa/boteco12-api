@@ -106,11 +106,19 @@ function nodeCommand(source) {
 
 function listMigrationsSource() {
   return `
-const fs = require('node:fs')
-const names = fs.readdirSync('/app/prisma/migrations', { withFileTypes: true })
-  .filter(entry => entry.isDirectory())
-  .map(entry => entry.name)
-console.log('B12_LIST_BEGIN' + JSON.stringify({ names }) + 'B12_LIST_END')
+const { prisma } = require('/app/dist/lib/prisma')
+;(async () => {
+  const rows = await prisma.$queryRawUnsafe(
+    'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL'
+  )
+  await prisma.$disconnect()
+  console.log('B12_LIST_BEGIN' + JSON.stringify({
+    names: rows.map(row => row.migration_name),
+  }) + 'B12_LIST_END')
+})().catch(error => {
+  console.log('B12_LIST_BEGIN' + JSON.stringify({ error: error?.name || 'Error' }) + 'B12_LIST_END')
+  process.exitCode = 1
+})
 `
 }
 
@@ -217,8 +225,9 @@ async function main() {
     startMarker: 'B12_LIST_BEGIN',
     endMarker: 'B12_LIST_END',
   })
-  const remoteNames = new Set(remote.names || [])
-  const missing = localMigrations().filter(name => !remoteNames.has(name))
+  if (remote.error) throw new Error('Could not inspect production migration history')
+  const appliedNames = new Set(remote.names || [])
+  const missing = localMigrations().filter(name => !appliedNames.has(name))
   if (missing.length === 0) throw new Error('No pending migration files were found')
 
   const backup = await runInContainer({
