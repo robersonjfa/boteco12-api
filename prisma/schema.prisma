@@ -108,6 +108,21 @@ enum TeamType {
   NATIONAL
 }
 
+enum TeamGender {
+  MEN
+  WOMEN
+  MIXED
+}
+
+enum TeamAgeCategory {
+  SENIOR
+  U23
+  U20
+  U17
+  U15
+  OTHER
+}
+
 //////////////////////////////////////////////////////
 // ENUMS — PAGAMENTO
 //////////////////////////////////////////////////////
@@ -145,7 +160,7 @@ model User {
   password String
   role     UserRole @default(NORMAL)
 
-  nickname     String? @unique
+  nickname     String?
   cpf          String? @unique
   profileImage String?
   bio          String?
@@ -218,25 +233,47 @@ model PasswordResetToken {
 //////////////////////////////////////////////////////
 
 model Team {
-  id         String   @id @default(uuid())
-  name       String
-  shortName  String?
-  country    String?
-  type       TeamType @default(CLUB)
-  logoUrl    String?
-  externalId String?  @unique
-  active     Boolean  @default(true)
+  id           String   @id @default(uuid())
+  name         String
+  officialName String?
+  shortName    String?
+  aliases      String[] @default([])
+  searchText   String   @default("")
+  country      String?
+  type         TeamType @default(CLUB)
+  logoUrl      String?
+  externalId   String?  @unique
+  active       Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  homeMatches RoundMatch[] @relation("HomeTeam")
-  awayMatches RoundMatch[] @relation("AwayTeam")
+  variants TeamVariant[]
 
   @@index([name])
+  @@index([searchText])
   @@index([country])
   @@index([type])
   @@map("teams")
+}
+
+model TeamVariant {
+  id          String          @id @default(uuid())
+  teamId      String
+  gender      TeamGender      @default(MEN)
+  ageCategory TeamAgeCategory @default(SENIOR)
+  active      Boolean         @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  homeMatches RoundMatch[] @relation("HomeTeam")
+  awayMatches RoundMatch[] @relation("AwayTeam")
+
+  @@unique([teamId, gender, ageCategory])
+  @@index([teamId, active])
+  @@map("team_variants")
 }
 
 //////////////////////////////////////////////////////
@@ -289,8 +326,8 @@ model RoundMatch {
   updatedAt DateTime @updatedAt
 
   round        Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  homeTeamData Team?  @relation("HomeTeam", fields: [homeTeamId], references: [id])
-  awayTeamData Team?  @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  homeTeamData TeamVariant? @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamData TeamVariant? @relation("AwayTeam", fields: [awayTeamId], references: [id])
 
   @@unique([roundId, position])
   @@index([roundId])

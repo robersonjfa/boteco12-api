@@ -1,6 +1,6 @@
 const { createPrismaClient } = require('../scripts/lib/prisma-client')
 
-function club(countryCode, slug, name, shortName, country, aliases = [], logoUrl) {
+function club(countryCode, slug, name, shortName, country, aliases = [], officialName, logoUrl) {
   return {
     externalId: `seed:club:${countryCode}:${slug}`,
     name,
@@ -8,11 +8,12 @@ function club(countryCode, slug, name, shortName, country, aliases = [], logoUrl
     country,
     type: 'CLUB',
     aliases,
+    officialName: officialName || null,
     logoUrl,
   }
 }
 
-function national(code, name, shortName, country, aliases = [], logoUrl) {
+function national(code, name, shortName, country, aliases = [], officialName, logoUrl) {
   return {
     externalId: `seed:national:${code}`,
     name,
@@ -20,29 +21,30 @@ function national(code, name, shortName, country, aliases = [], logoUrl) {
     country,
     type: 'NATIONAL',
     aliases,
+    officialName: officialName || null,
     logoUrl,
   }
 }
 
 const CLUBS = [
   // Campeonato Brasileiro Série A 2026 — fonte de conferência: CBF.
-  club('br', 'palmeiras', 'Palmeiras', 'PAL', 'Brasil'),
-  club('br', 'flamengo', 'Flamengo', 'FLA', 'Brasil'),
-  club('br', 'fluminense', 'Fluminense', 'FLU', 'Brasil'),
-  club('br', 'red-bull-bragantino', 'Red Bull Bragantino', 'RBB', 'Brasil', ['RB Bragantino']),
-  club('br', 'athletico-paranaense', 'Athletico Paranaense', 'CAP', 'Brasil'),
-  club('br', 'bahia', 'Bahia', 'BAH', 'Brasil'),
+  club('br', 'palmeiras', 'Palmeiras', 'PAL', 'Brasil', ['Verdão', 'Palestra'], 'Sociedade Esportiva Palmeiras'),
+  club('br', 'flamengo', 'Flamengo', 'FLA', 'Brasil', ['Mengão', 'Fla'], 'Clube de Regatas do Flamengo'),
+  club('br', 'fluminense', 'Fluminense', 'FLU', 'Brasil', ['Flu', 'Tricolor Carioca'], 'Fluminense Football Club'),
+  club('br', 'red-bull-bragantino', 'Bragantino', 'RBB', 'Brasil', ['RB Bragantino', 'Red Bull Bragantino'], 'Red Bull Bragantino'),
+  club('br', 'athletico-paranaense', 'Athletico-PR', 'CAP', 'Brasil', ['Athletico Paranaense'], 'Club Athletico Paranaense'),
+  club('br', 'bahia', 'Bahia', 'BAH', 'Brasil', ['Esquadrão de Aço'], 'Esporte Clube Bahia'),
   club('br', 'coritiba', 'Coritiba', 'CFC', 'Brasil', ['Coritiba SAF']),
-  club('br', 'sao-paulo', 'São Paulo', 'SAO', 'Brasil', ['São Paulo FC']),
-  club('br', 'botafogo', 'Botafogo', 'BOT', 'Brasil'),
-  club('br', 'vitoria', 'Vitória', 'VIT', 'Brasil'),
-  club('br', 'atletico-mineiro', 'Atlético Mineiro', 'CAM', 'Brasil'),
-  club('br', 'corinthians', 'Corinthians', 'COR', 'Brasil'),
-  club('br', 'cruzeiro', 'Cruzeiro', 'CRU', 'Brasil'),
-  club('br', 'internacional', 'Internacional', 'INT', 'Brasil'),
-  club('br', 'santos', 'Santos', 'SAN', 'Brasil', ['Santos FC']),
-  club('br', 'gremio', 'Grêmio', 'GRE', 'Brasil'),
-  club('br', 'vasco-da-gama', 'Vasco da Gama', 'VAS', 'Brasil', ['Vasco da Gama SAF']),
+  club('br', 'sao-paulo', 'São Paulo', 'SAO', 'Brasil', ['São Paulo FC', 'Tricolor Paulista'], 'São Paulo Futebol Clube'),
+  club('br', 'botafogo', 'Botafogo', 'BOT', 'Brasil', ['Fogão', 'Glorioso'], 'Botafogo de Futebol e Regatas'),
+  club('br', 'vitoria', 'Vitória', 'VIT', 'Brasil', ['Leão da Barra'], 'Esporte Clube Vitória'),
+  club('br', 'atletico-mineiro', 'Atlético-MG', 'CAM', 'Brasil', ['Atlético Mineiro', 'Galo'], 'Clube Atlético Mineiro'),
+  club('br', 'corinthians', 'Corinthians', 'COR', 'Brasil', ['Timão'], 'Sport Club Corinthians Paulista'),
+  club('br', 'cruzeiro', 'Cruzeiro', 'CRU', 'Brasil', ['Raposa'], 'Cruzeiro Esporte Clube'),
+  club('br', 'internacional', 'Internacional', 'INT', 'Brasil', ['Inter', 'Colorado'], 'Sport Club Internacional'),
+  club('br', 'santos', 'Santos', 'SAN', 'Brasil', ['Santos FC', 'Peixe'], 'Santos Futebol Clube'),
+  club('br', 'gremio', 'Grêmio', 'GRE', 'Brasil', ['Imortal'], 'Grêmio Foot-Ball Porto Alegrense'),
+  club('br', 'vasco-da-gama', 'Vasco', 'VAS', 'Brasil', ['Vasco da Gama', 'Vasco da Gama SAF'], 'Club de Regatas Vasco da Gama'),
   club('br', 'mirassol', 'Mirassol', 'MIR', 'Brasil'),
   club('br', 'remo', 'Remo', 'REM', 'Brasil'),
   club('br', 'chapecoense', 'Chapecoense', 'CHA', 'Brasil'),
@@ -50,10 +52,10 @@ const CLUBS = [
   // Outros clubes brasileiros relevantes para Série B, copas e histórico.
   club('br', 'ceara', 'Ceará', 'CEA', 'Brasil'),
   club('br', 'fortaleza', 'Fortaleza', 'FOR', 'Brasil'),
-  club('br', 'sport-recife', 'Sport Recife', 'SPT', 'Brasil', ['Sport']),
+  club('br', 'sport-recife', 'Sport', 'SPT', 'Brasil', ['Sport Recife'], 'Sport Club do Recife'),
   club('br', 'juventude', 'Juventude', 'JUV', 'Brasil'),
   club('br', 'goias', 'Goiás', 'GOI', 'Brasil'),
-  club('br', 'america-mineiro', 'América Mineiro', 'AMG', 'Brasil'),
+  club('br', 'america-mineiro', 'América-MG', 'AMG', 'Brasil', ['América Mineiro', 'Coelho'], 'América Futebol Clube'),
   club('br', 'avai', 'Avaí', 'AVA', 'Brasil'),
   club('br', 'ponte-preta', 'Ponte Preta', 'PON', 'Brasil'),
   club('br', 'guarani', 'Guarani', 'GUA', 'Brasil'),
@@ -62,7 +64,7 @@ const CLUBS = [
   club('br', 'crb', 'CRB', 'CRB', 'Brasil'),
   club('br', 'paysandu', 'Paysandu', 'PAY', 'Brasil'),
   club('br', 'cuiaba', 'Cuiabá', 'CUI', 'Brasil'),
-  club('br', 'atletico-goianiense', 'Atlético Goianiense', 'ACG', 'Brasil'),
+  club('br', 'atletico-goianiense', 'Atlético-GO', 'ACG', 'Brasil', ['Atlético Goianiense', 'Dragão'], 'Atlético Clube Goianiense'),
   club('br', 'criciuma', 'Criciúma', 'CRI', 'Brasil'),
   club('br', 'novorizontino', 'Novorizontino', 'NOV', 'Brasil'),
 
@@ -99,8 +101,8 @@ const CLUBS = [
   club('eng', 'liverpool', 'Liverpool', 'LIV', 'Inglaterra'),
   club('eng', 'manchester-city', 'Manchester City', 'MCI', 'Inglaterra'),
   club('eng', 'manchester-united', 'Manchester United', 'MUN', 'Inglaterra'),
-  club('eng', 'tottenham-hotspur', 'Tottenham Hotspur', 'TOT', 'Inglaterra', ['Tottenham']),
-  club('eng', 'newcastle-united', 'Newcastle United', 'NEW', 'Inglaterra'),
+  club('eng', 'tottenham-hotspur', 'Tottenham', 'TOT', 'Inglaterra', ['Tottenham Hotspur', 'Spurs'], 'Tottenham Hotspur Football Club'),
+  club('eng', 'newcastle-united', 'Newcastle', 'NEW', 'Inglaterra', ['Newcastle United'], 'Newcastle United Football Club'),
   club('eng', 'aston-villa', 'Aston Villa', 'AVL', 'Inglaterra'),
   club('eng', 'everton', 'Everton', 'EVE', 'Inglaterra'),
   club('eng', 'west-ham-united', 'West Ham United', 'WHU', 'Inglaterra', ['West Ham']),
@@ -129,8 +131,8 @@ const CLUBS = [
   club('it', 'bologna', 'Bologna', 'BOL', 'Itália'),
 
   // Alemanha.
-  club('de', 'bayern-munchen', 'Bayern München', 'BAY', 'Alemanha', ['Bayern de Munique']),
-  club('de', 'borussia-dortmund', 'Borussia Dortmund', 'BVB', 'Alemanha'),
+  club('de', 'bayern-munchen', 'Bayern de Munique', 'BAY', 'Alemanha', ['Bayern München', 'Bayern Munich'], 'Fußball-Club Bayern München'),
+  club('de', 'borussia-dortmund', 'Dortmund', 'BVB', 'Alemanha', ['Borussia Dortmund', 'BVB'], 'Ballspielverein Borussia 09 Dortmund'),
   club('de', 'bayer-leverkusen', 'Bayer Leverkusen', 'B04', 'Alemanha'),
   club('de', 'rb-leipzig', 'RB Leipzig', 'RBL', 'Alemanha'),
   club('de', 'eintracht-frankfurt', 'Eintracht Frankfurt', 'SGE', 'Alemanha'),
@@ -138,9 +140,9 @@ const CLUBS = [
   club('de', 'schalke-04', 'Schalke 04', 'S04', 'Alemanha'),
 
   // França.
-  club('fr', 'paris-saint-germain', 'Paris Saint-Germain', 'PSG', 'França'),
-  club('fr', 'olympique-de-marseille', 'Olympique de Marseille', 'OM', 'França', ['Marseille']),
-  club('fr', 'olympique-lyon', 'Olympique Lyon', 'OL', 'França', ['Lyon']),
+  club('fr', 'paris-saint-germain', 'PSG', 'PSG', 'França', ['Paris Saint-Germain', 'Paris Saint Germain'], 'Paris Saint-Germain Football Club'),
+  club('fr', 'olympique-de-marseille', 'Marseille', 'OM', 'França', ['Olympique de Marseille', 'Marselha'], 'Olympique de Marseille'),
+  club('fr', 'olympique-lyon', 'Lyon', 'OL', 'França', ['Olympique Lyon', 'Olympique Lyonnais'], 'Olympique Lyonnais'),
   club('fr', 'monaco', 'Monaco', 'ASM', 'França', ['AS Monaco']),
   club('fr', 'lille', 'Lille', 'LIL', 'França'),
   club('fr', 'nice', 'Nice', 'NIC', 'França'),
@@ -176,14 +178,14 @@ const NATIONALS = [
   national('ger', 'Alemanha', 'GER', 'Alemanha'),
   national('por', 'Portugal', 'POR', 'Portugal'),
   national('ita', 'Itália', 'ITA', 'Itália'),
-  national('ned', 'Países Baixos', 'NED', 'Países Baixos', ['Holanda']),
+  national('ned', 'Holanda', 'NED', 'Países Baixos', ['Países Baixos', 'Netherlands'], 'Seleção Neerlandesa de Futebol'),
   national('bel', 'Bélgica', 'BEL', 'Bélgica'),
   national('cro', 'Croácia', 'CRO', 'Croácia'),
   national('mar', 'Marrocos', 'MAR', 'Marrocos'),
   national('uru', 'Uruguai', 'URU', 'Uruguai'),
   national('col', 'Colômbia', 'COL', 'Colômbia'),
   national('mex', 'México', 'MEX', 'México'),
-  national('usa', 'Estados Unidos', 'USA', 'Estados Unidos', ['EUA']),
+  national('usa', 'EUA', 'USA', 'Estados Unidos', ['Estados Unidos', 'USA'], 'Seleção de Futebol dos Estados Unidos'),
   national('can', 'Canadá', 'CAN', 'Canadá'),
   national('crc', 'Costa Rica', 'CRC', 'Costa Rica'),
   national('sen', 'Senegal', 'SEN', 'Senegal'),
@@ -203,6 +205,26 @@ const NATIONALS = [
 ]
 
 const TEAM_CATALOG = [...CLUBS, ...NATIONALS]
+
+function normalizeSearch(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+function searchText(team) {
+  return normalizeSearch([
+    team.name,
+    team.officialName,
+    team.shortName,
+    team.country,
+    ...team.aliases,
+  ].filter(Boolean).join(' '))
+}
 
 function validateTeamCatalog(catalog = TEAM_CATALOG) {
   const errors = []
@@ -274,7 +296,10 @@ async function seedTeams(prisma) {
     const updateData = {
       externalId: team.externalId,
       name: team.name,
+      officialName: team.officialName,
       shortName: team.shortName,
+      aliases: team.aliases,
+      searchText: searchText(team),
       country: team.country,
       type: team.type,
       active: true,
@@ -283,6 +308,17 @@ async function seedTeams(prisma) {
 
     if (existing) {
       await prisma.team.update({ where: { id: existing.id }, data: updateData })
+      await prisma.teamVariant.upsert({
+        where: {
+          teamId_gender_ageCategory: {
+            teamId: existing.id,
+            gender: 'MEN',
+            ageCategory: 'SENIOR',
+          },
+        },
+        create: { teamId: existing.id, gender: 'MEN', ageCategory: 'SENIOR' },
+        update: { active: true },
+      })
       updated += 1
       continue
     }
@@ -291,6 +327,9 @@ async function seedTeams(prisma) {
       data: {
         ...updateData,
         logoUrl: team.logoUrl ?? null,
+        variants: {
+          create: { gender: 'MEN', ageCategory: 'SENIOR' },
+        },
       },
     })
     created += 1

@@ -1,0 +1,47 @@
+name: Apply production database migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit SHA containing the reviewed migrations
+        required: true
+        type: string
+      confirmation:
+        description: Type APPLY_B12_PRODUCTION_MIGRATIONS
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Backup, apply and verify production migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Checkout exact release revision
+        uses: actions/checkout@v7
+
+      - name: Validate explicit release confirmation
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$CONFIRMATION" = "APPLY_B12_PRODUCTION_MIGRATIONS"
+
+      - name: Backup, apply and verify migrations
+        env:
+          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
+          EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
+          EASYPANEL_PROJECT: f12-prd
+          EASYPANEL_API_SERVICE: api
+          EASYPANEL_DATABASE_SERVICE: postgres
+          B12_MIGRATION_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/easypanel-production-migrate.js

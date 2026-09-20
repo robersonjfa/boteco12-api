@@ -4,6 +4,7 @@ import { CreateTeamService } from '../../services/team/create-team.service'
 import { UpdateTeamService } from '../../services/team/update-team.service'
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
+import { normalizeTeamSearch } from '../../services/team/team-catalog'
 
 export class TeamController {
   static async search(req: Request, res: Response, next: NextFunction) {
@@ -18,8 +19,8 @@ export class TeamController {
 
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, shortName, country, type, logoUrl, externalId } = req.body
-      const team = await CreateTeamService.execute({ name, shortName, country, type, logoUrl, externalId })
+      const { name, officialName, shortName, aliases, country, type, logoUrl, externalId, variants } = req.body
+      const team = await CreateTeamService.execute({ name, officialName, shortName, aliases, country, type, logoUrl, externalId, variants })
       return res.status(201).json(team)
     } catch (err) {
       return next(err)
@@ -29,8 +30,8 @@ export class TeamController {
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params
-      const { name, shortName, country, type, logoUrl, active } = req.body
-      const team = await UpdateTeamService.execute({ id, name, shortName, country, type, logoUrl, active })
+      const { name, officialName, shortName, aliases, country, type, logoUrl, active, variants } = req.body
+      const team = await UpdateTeamService.execute({ id, name, officialName, shortName, aliases, country, type, logoUrl, active, variants })
       return res.json(team)
     } catch (err) {
       return next(err)
@@ -44,11 +45,7 @@ export class TeamController {
 
       const where: any = {}
       if (q) {
-        const term = String(q).trim()
-        where.OR = [
-          { name: { contains: term, mode: 'insensitive' } },
-          { shortName: { contains: term, mode: 'insensitive' } },
-        ]
+        where.searchText = { contains: normalizeTeamSearch(String(q)) }
       }
       if (type) where.type = type
       if (country) where.country = { contains: String(country), mode: 'insensitive' }
@@ -56,6 +53,9 @@ export class TeamController {
       const [teams, total] = await Promise.all([
         prisma.team.findMany({
           where,
+          include: {
+            variants: { orderBy: [{ ageCategory: 'asc' }, { gender: 'asc' }] },
+          },
           orderBy: { name: 'asc' },
           skip,
           take: limit,

@@ -50,6 +50,12 @@ CREATE TYPE "WalletTransactionType" AS ENUM ('CREDIT', 'DEBIT');
 CREATE TYPE "TeamType" AS ENUM ('CLUB', 'NATIONAL');
 
 -- CreateEnum
+CREATE TYPE "TeamGender" AS ENUM ('MEN', 'WOMEN', 'MIXED');
+
+-- CreateEnum
+CREATE TYPE "TeamAgeCategory" AS ENUM ('SENIOR', 'U23', 'U20', 'U17', 'U15', 'OTHER');
+
+-- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'REFUNDED');
 
 -- CreateEnum
@@ -105,7 +111,10 @@ CREATE TABLE "password_reset_tokens" (
 CREATE TABLE "teams" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "officialName" TEXT,
     "shortName" TEXT,
+    "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "searchText" TEXT NOT NULL DEFAULT '',
     "country" TEXT,
     "type" "TeamType" NOT NULL DEFAULT 'CLUB',
     "logoUrl" TEXT,
@@ -115,6 +124,19 @@ CREATE TABLE "teams" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "teams_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "team_variants" (
+    "id" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    "gender" "TeamGender" NOT NULL DEFAULT 'MEN',
+    "ageCategory" "TeamAgeCategory" NOT NULL DEFAULT 'SENIOR',
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "team_variants_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -525,9 +547,6 @@ CREATE TABLE "user_benefit_inventory" (
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_nickname_key" ON "users"("nickname");
-
--- CreateIndex
 CREATE UNIQUE INDEX "users_cpf_key" ON "users"("cpf");
 
 -- CreateIndex
@@ -549,10 +568,19 @@ CREATE UNIQUE INDEX "teams_externalId_key" ON "teams"("externalId");
 CREATE INDEX "teams_name_idx" ON "teams"("name");
 
 -- CreateIndex
+CREATE INDEX "teams_searchText_idx" ON "teams"("searchText");
+
+-- CreateIndex
 CREATE INDEX "teams_country_idx" ON "teams"("country");
 
 -- CreateIndex
 CREATE INDEX "teams_type_idx" ON "teams"("type");
+
+-- CreateIndex
+CREATE INDEX "team_variants_teamId_active_idx" ON "team_variants"("teamId", "active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "team_variants_teamId_gender_ageCategory_key" ON "team_variants"("teamId", "gender", "ageCategory");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "rounds_number_key" ON "rounds"("number");
@@ -750,13 +778,16 @@ CREATE UNIQUE INDEX "user_benefit_inventory_userId_type_key" ON "user_benefit_in
 ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "team_variants" ADD CONSTRAINT "team_variants_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "round_matches" ADD CONSTRAINT "round_matches_roundId_fkey" FOREIGN KEY ("roundId") REFERENCES "rounds"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "round_matches" ADD CONSTRAINT "round_matches_homeTeamId_fkey" FOREIGN KEY ("homeTeamId") REFERENCES "teams"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "round_matches" ADD CONSTRAINT "round_matches_homeTeamId_fkey" FOREIGN KEY ("homeTeamId") REFERENCES "team_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "round_matches" ADD CONSTRAINT "round_matches_awayTeamId_fkey" FOREIGN KEY ("awayTeamId") REFERENCES "teams"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "round_matches" ADD CONSTRAINT "round_matches_awayTeamId_fkey" FOREIGN KEY ("awayTeamId") REFERENCES "team_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tickets" ADD CONSTRAINT "tickets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

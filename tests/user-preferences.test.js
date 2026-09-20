@@ -56,21 +56,21 @@ test('perfil aceita CPF válido e rejeita verificadores inválidos', () => {
 
 test('confirma CPF e nascimento legados uma única vez', async t => {
   const originalUpdate = prisma.user.update
-  const originalUpdateMany = prisma.user.updateMany
   const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.user.update = originalUpdate
-    prisma.user.updateMany = originalUpdateMany
     prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
   })
 
-  let confirmation
+  let update
   prisma.user.findUnique = async () => ({ cpf: null, birthDate: null })
-  prisma.user.updateMany = async input => {
-    confirmation = input
-    return { count: 1 }
+  prisma.user.update = async input => {
+    update = input
+    return { id: input.where.id, ...input.data }
   }
-  prisma.user.update = async input => ({ id: input.where.id, ...input.data })
+  prisma.$transaction = async callback => callback({ user: prisma.user })
 
   const data = UpdateProfileSchema.parse({
     cpf: '529.982.247-25',
@@ -78,25 +78,27 @@ test('confirma CPF e nascimento legados uma única vez', async t => {
   })
   await UpdateProfileService.execute({ userId: 'legacy-user', data })
 
-  assert.deepEqual(confirmation.where, {
+  assert.deepEqual(update.where, {
     id: 'legacy-user',
-    cpf: null,
-    birthDate: null,
+    AND: [{ cpf: null }, { birthDate: null }],
   })
-  assert.equal(confirmation.data.cpf, '52998224725')
-  assert.equal(confirmation.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
+  assert.equal(update.data.cpf, '52998224725')
+  assert.equal(update.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
 })
 
 test('CPF confirmado não pode ser alterado pelo perfil', async t => {
   const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
   })
 
   prisma.user.findUnique = async () => ({
     cpf: '52998224725',
     birthDate: new Date('1990-01-15T00:00:00Z'),
   })
+  prisma.$transaction = async callback => callback({ user: prisma.user })
 
   await assert.rejects(
     UpdateProfileService.execute({
@@ -109,23 +111,21 @@ test('CPF confirmado não pode ser alterado pelo perfil', async t => {
 
 test('salva a data de nascimento validada no perfil autenticado', async t => {
   const originalUpdate = prisma.user.update
-  const originalUpdateMany = prisma.user.updateMany
   const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.user.update = originalUpdate
-    prisma.user.updateMany = originalUpdateMany
     prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
   })
 
-  let confirmation
+  let update
   prisma.user.findUnique = async () => ({ birthDate: null })
-  prisma.user.updateMany = async input => {
-    confirmation = input
-    return { count: 1 }
-  }
   prisma.user.update = async input => {
+    update = input
     return { id: input.where.id, birthDate }
   }
+  prisma.$transaction = async callback => callback({ user: prisma.user })
 
   const birthDate = UpdateProfileSchema.parse({ birthDate: '1990-01-15' }).birthDate
   await UpdateProfileService.execute({
@@ -133,17 +133,19 @@ test('salva a data de nascimento validada no perfil autenticado', async t => {
     data: { birthDate },
   })
 
-  assert.equal(confirmation.where.id, 'user-authenticated')
-  assert.equal(confirmation.where.birthDate, null)
-  assert.equal(confirmation.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
+  assert.equal(update.where.id, 'user-authenticated')
+  assert.deepEqual(update.where.AND, [{ birthDate: null }])
+  assert.equal(update.data.birthDate.toISOString().slice(0, 10), '1990-01-15')
 })
 
 test('data de nascimento confirmada não pode ser alterada pelo perfil', async t => {
   const originalFindUnique = prisma.user.findUnique
   const originalUpdate = prisma.user.update
+  const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.user.findUnique = originalFindUnique
     prisma.user.update = originalUpdate
+    prisma.$transaction = originalTransaction
   })
 
   prisma.user.findUnique = async () => ({
@@ -152,6 +154,7 @@ test('data de nascimento confirmada não pode ser alterada pelo perfil', async t
   prisma.user.update = async () => {
     throw new Error('update não deveria ser chamado')
   }
+  prisma.$transaction = async callback => callback({ user: prisma.user })
 
   await assert.rejects(
     UpdateProfileService.execute({

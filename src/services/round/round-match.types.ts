@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma'
+import { teamVariantDisplayName } from '../team/team-catalog'
 
 export type RoundMatchInput = {
   position: number
@@ -98,9 +99,14 @@ export async function resolveRoundMatchTeams(
   })
 
   const uniqueIds = [...new Set(ids)]
-  const teams = await prisma.team.findMany({
-    where: { id: { in: uniqueIds }, active: true },
-    select: { id: true, name: true },
+  const teams = await prisma.teamVariant.findMany({
+    where: { id: { in: uniqueIds }, active: true, team: { active: true } },
+    select: {
+      id: true,
+      gender: true,
+      ageCategory: true,
+      team: { select: { name: true } },
+    },
   })
   const byId = new Map(teams.map(team => [team.id, team]))
 
@@ -119,8 +125,8 @@ export async function resolveRoundMatchTeams(
       position: match.position,
       homeTeamId: home.id,
       awayTeamId: away.id,
-      homeTeam: home.name,
-      awayTeam: away.name,
+      homeTeam: teamVariantDisplayName(home.team.name, home),
+      awayTeam: teamVariantDisplayName(away.team.name, away),
       groupLabel: match.groupLabel,
       matchTime: match.matchTime,
     }

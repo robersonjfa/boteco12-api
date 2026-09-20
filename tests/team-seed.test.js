@@ -13,20 +13,20 @@ const SERIE_A_2026 = [
   'Palmeiras',
   'Flamengo',
   'Fluminense',
-  'Red Bull Bragantino',
-  'Athletico Paranaense',
+  'Bragantino',
+  'Athletico-PR',
   'Bahia',
   'Coritiba',
   'São Paulo',
   'Botafogo',
   'Vitória',
-  'Atlético Mineiro',
+  'Atlético-MG',
   'Corinthians',
   'Cruzeiro',
   'Internacional',
   'Santos',
   'Grêmio',
-  'Vasco da Gama',
+  'Vasco',
   'Mirassol',
   'Remo',
   'Chapecoense',
@@ -51,6 +51,15 @@ test('catálogo contém todos os participantes da Série A 2026', () => {
   for (const teamName of SERIE_A_2026) {
     assert.ok(brazilianClubs.has(teamName), `${teamName} não foi encontrado no catálogo`)
   }
+})
+
+test('catálogo inclui nomes oficiais e apelidos pesquisáveis dos principais clubes', () => {
+  const palmeiras = CLUBS.find(team => team.externalId === 'seed:club:br:palmeiras')
+  const botafogo = CLUBS.find(team => team.externalId === 'seed:club:br:botafogo')
+
+  assert.equal(palmeiras.officialName, 'Sociedade Esportiva Palmeiras')
+  assert.deepEqual(palmeiras.aliases, ['Verdão', 'Palestra'])
+  assert.deepEqual(botafogo.aliases, ['Fogão', 'Glorioso'])
 })
 
 test('Brasil e Espanha possuem identificadores de seleção distintos', () => {
@@ -93,6 +102,7 @@ test('seed reconcilia dados legados, preserva logo e é idempotente', async () =
     },
   ]
   let nextId = 1
+  const variants = []
   const prisma = {
     team: {
       async findUnique({ where }) {
@@ -115,11 +125,28 @@ test('seed reconcilia dados legados, preserva logo e é idempotente', async () =
       async create({ data }) {
         const record = {
           ...data,
+          variants: undefined,
           id: `created-${nextId++}`,
           createdAt: new Date(),
         }
         records.push(record)
         return record
+      },
+    },
+    teamVariant: {
+      async upsert({ where, create, update }) {
+        const key = where.teamId_gender_ageCategory
+        let variant = variants.find(item =>
+          item.teamId === key.teamId &&
+          item.gender === key.gender &&
+          item.ageCategory === key.ageCategory
+        )
+        if (variant) Object.assign(variant, update)
+        else {
+          variant = { id: `variant-${variants.length + 1}`, ...create }
+          variants.push(variant)
+        }
+        return variant
       },
     },
   }
@@ -136,7 +163,11 @@ test('seed reconcilia dados legados, preserva logo e é idempotente', async () =
 
   const usa = records.find((record) => record.externalId === 'seed:national:usa')
   assert.equal(usa.country, 'Estados Unidos')
+  assert.equal(usa.name, 'EUA')
+  assert.ok(usa.aliases.includes('Estados Unidos'))
+  assert.match(usa.searchText, /estados unidos/)
   assert.equal(usa.logoUrl, 'https://images.example.test/usa.svg')
   assert.ok(records.some((record) => record.externalId === 'seed:national:bra'))
   assert.ok(records.some((record) => record.externalId === 'seed:national:esp'))
+  assert.equal(variants.length, TEAM_CATALOG.length)
 })
