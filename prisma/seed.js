@@ -106,7 +106,8 @@ async function main() {
   const teamSummary = await seedTeams(prisma)
   console.log(
     `✅ Teams seed concluído: ${teamSummary.total} processados, ` +
-    `${teamSummary.created} criados, ${teamSummary.updated} atualizados`
+    `${teamSummary.created} criados, ${teamSummary.updated} atualizados; ` +
+    `${teamSummary.clubVariants.created} novas categorias de clubes`
   )
 }
 

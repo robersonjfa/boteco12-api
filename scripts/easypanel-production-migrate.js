@@ -288,4 +288,11 @@ if (require.main === module) {
   })
 }
 
-module.exports = { backupCommand, localMigrations }
+module.exports = {
+  backupCommand,
+  getContainerId,
+  localMigrations,
+  nodeCommand,
+  rpc,
+  runInContainer,
+}

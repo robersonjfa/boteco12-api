@@ -1,0 +1,46 @@
+name: Seed production team categories
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact deployed main commit SHA containing the reviewed seed
+        required: true
+        type: string
+      confirmation:
+        description: Type SEED_B12_TEAM_CATEGORIES
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    name: Seed and verify production team categories
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Checkout exact release revision
+        uses: actions/checkout@v7
+
+      - name: Validate explicit release confirmation
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$CONFIRMATION" = "SEED_B12_TEAM_CATEGORIES"
+
+      - name: Seed and verify team categories
+        env:
+          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
+          EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
+          EASYPANEL_PROJECT: f12-prd
+          EASYPANEL_API_SERVICE: api
+          B12_TEAM_SEED_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/easypanel-production-seed-teams.js
