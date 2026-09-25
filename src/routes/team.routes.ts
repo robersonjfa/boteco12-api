@@ -7,6 +7,7 @@ import { UuidIdParamsSchema } from '../validators/common.validator'
 import {
   AdminTeamListQuerySchema,
   CreateTeamSchema,
+  TeamSearchQuerySchema,
   UpdateTeamSchema,
 } from '../validators/team.validator'
 
@@ -14,6 +15,7 @@ const router = Router()
 
 // Public — autocomplete na criação de rodadas
 router.get('/api/teams', TeamController.search)
+router.get('/api/teams/grouped', validateRequest(TeamSearchQuerySchema, 'query'), TeamController.searchGrouped)
 
 // Admin — CRUD completo
 router.get('/api/admin/teams', authMiddleware, authorize('COMPETITION_READ'), validateRequest(AdminTeamListQuerySchema, 'query'), TeamController.list)

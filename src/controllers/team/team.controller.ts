@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { SearchTeamsService } from '../../services/team/search-teams.service'
+import { SearchTeamGroupsService } from '../../services/team/search-team-groups.service'
 import { CreateTeamService } from '../../services/team/create-team.service'
 import { UpdateTeamService } from '../../services/team/update-team.service'
 import { prisma } from '../../lib/prisma'
@@ -11,6 +12,17 @@ export class TeamController {
     try {
       const q = String(req.query.q ?? '').trim()
       const teams = await SearchTeamsService.execute(q)
+      return res.json(teams)
+    } catch (err) {
+      return next(err)
+    }
+  }
+
+  static async searchGrouped(req: Request, res: Response, next: NextFunction) {
+    try {
+      const q = String(req.query.q ?? '').trim()
+      const limit = Number(req.query.limit ?? 20)
+      const teams = await SearchTeamGroupsService.execute(q, limit)
       return res.json(teams)
     } catch (err) {
       return next(err)

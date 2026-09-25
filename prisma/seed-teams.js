@@ -206,35 +206,6 @@ const NATIONALS = [
 
 const TEAM_CATALOG = [...CLUBS, ...NATIONALS]
 
-const TEAM_GENDERS = ['MEN', 'WOMEN', 'MIXED']
-const TEAM_AGE_CATEGORIES = ['SENIOR', 'U23', 'U20', 'U17', 'U15', 'OTHER']
-
-function buildClubVariantCrossJoin(teamIds) {
-  return teamIds.flatMap(teamId =>
-    TEAM_GENDERS.flatMap(gender =>
-      TEAM_AGE_CATEGORIES.map(ageCategory => ({ teamId, gender, ageCategory }))
-    )
-  )
-}
-
-async function seedClubVariants(prisma) {
-  const clubs = await prisma.team.findMany({
-    where: { type: 'CLUB' },
-    select: { id: true },
-  })
-  const variants = buildClubVariantCrossJoin(clubs.map(club => club.id))
-  const result = variants.length > 0
-    ? await prisma.teamVariant.createMany({ data: variants, skipDuplicates: true })
-    : { count: 0 }
-
-  return {
-    clubs: clubs.length,
-    variantsPerClub: TEAM_GENDERS.length * TEAM_AGE_CATEGORIES.length,
-    expected: variants.length,
-    created: result.count,
-  }
-}
-
 function normalizeSearch(value) {
   return String(value || '')
     .normalize('NFD')
@@ -364,8 +335,7 @@ async function seedTeams(prisma) {
     created += 1
   }
 
-  const clubVariants = await seedClubVariants(prisma)
-  return { ...summary, created, updated, clubVariants }
+  return { ...summary, created, updated }
 }
 
 async function runFromCli() {
@@ -379,9 +349,7 @@ async function runFromCli() {
   try {
     const result = await seedTeams(prisma)
     console.log(
-      `Seed de times concluído: ${result.total} processados, ${result.created} criados, ${result.updated} atualizados. ` +
-      `${result.clubVariants.created} novas categorias de clubes; ` +
-      `${result.clubVariants.expected} combinações esperadas no total.`
+      `Seed de times concluído: ${result.total} processados, ${result.created} criados, ${result.updated} atualizados.`
     )
   } finally {
     await prisma.$disconnect()
@@ -400,10 +368,6 @@ module.exports = {
   CLUBS,
   NATIONALS,
   TEAM_CATALOG,
-  TEAM_GENDERS,
-  TEAM_AGE_CATEGORIES,
-  buildClubVariantCrossJoin,
-  seedClubVariants,
   seedTeams,
   validateTeamCatalog,
 }

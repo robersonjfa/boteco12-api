@@ -13,12 +13,14 @@ import { PublishMesaController } from '../controllers/bolao/publish-mesa.control
 import { UpdateMesaController } from '../controllers/bolao/update-mesa.controller';
 import { ListUserBoloesController } from '../controllers/bolao/list-user-boloes.controller';
 import { ListAvailableBoloesController } from '../controllers/bolao/list-available-boloes.controller';
+import { DiscoverMesasController } from '../controllers/bolao/discover-mesas.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validate-request.middleware';
 import { RankingIdParamsSchema } from '../validators/common.validator';
 import {
   CreateBolaoInviteSchema,
   CreateMesaSchema,
+  DiscoverMesasQuerySchema,
   UpdateMesaSchema,
   InviteCodeParamsSchema,
   RankingParticipantParamsSchema,
@@ -40,6 +42,7 @@ router.get('/rankings/weekly', WeeklyRankingController.handle);
 //
 router.get('/mesas/me', authMiddleware, ListUserBoloesController.handle);
 router.get('/mesas/available', authMiddleware, ListAvailableBoloesController.handle);
+router.get('/mesas/discover', authMiddleware, validateRequest(DiscoverMesasQuerySchema, 'query'), DiscoverMesasController.handle);
 router.get('/boloes/me', authMiddleware, ListUserBoloesController.handle);
 router.get('/boloes/available', authMiddleware, ListAvailableBoloesController.handle);
 // Usuários criam PAID/FREE; a camada de domínio reserva Patrocinada ao admin.

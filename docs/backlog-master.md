@@ -2173,3 +2173,241 @@ Notas de implementacao:
 - Evitar criar novas regras de backend se o estado de palpite/rodada ja estiver disponivel nos contratos atuais.
 - Se o frontend nao tiver informacao suficiente para saber se o usuario ja fez palpite na rodada aberta, mapear contrato necessario antes da implementacao.
 - Premios pode comecar estatico, mas deve ser estruturado para futura integracao com backend/campanhas.
+
+### 39. Redesenhar busca e selecao mobile de clubes e equipes
+
+Status: Implementado localmente em 2026-09-24; aguardando deploy e saneamento de producao
+Prioridade: Alta
+Frente: Backend / Frontend mobile-first / Dados / UX administrativa
+
+Origem:
+
+- revisao de 2026-09-24 do commit `cb8f50e4c45b2ff523061310542e3b1c972e7b5e`
+- o seed passou a criar automaticamente 18 variantes para cada clube (`3 generos x 6 faixas etarias`)
+- a lista administrativa e a pesquisa de times ficaram visualmente poluidas, especialmente em telas mobile
+
+Decisao de produto:
+
+- uma variante deve representar uma equipe que realmente existe, e nao apenas uma combinacao teoricamente possivel
+- nao criar o produto cartesiano de generos e faixas etarias para todos os clubes
+- manter `Masculino / Principal` como variante padrao quando nenhuma equipe especifica tiver sido cadastrada
+- cadastrar e ativar outras variantes somente quando forem reais e necessarias
+- preservar o ID da variante como valor usado nas partidas e rodadas
+
+Fluxo mobile proposto:
+
+1. Ao tocar em `Mandante` ou `Visitante`, abrir uma busca em tela cheia ou bottom sheet.
+2. A busca deve retornar uma linha por clube, com escudo, nome, pais e quantidade discreta de equipes disponiveis.
+3. Ao selecionar um clube com uma unica variante ativa, selecionar essa equipe imediatamente.
+4. Ao selecionar um clube com varias variantes ativas, abrir uma segunda etapa mostrando apenas as equipes reais daquele clube.
+5. Exibir cada opcao com hierarquia simples, por exemplo `Feminino - Principal` ou `Masculino - Sub-17`.
+6. Depois da selecao, manter o campo compacto, com o clube na primeira linha e a categoria na segunda.
+7. Permitir que times recentes funcionem como atalhos diretos para uma variante ja escolhida.
+8. Quando viavel, interpretar buscas como `Palmeiras feminino` para filtrar diretamente a variante correspondente.
+
+Mudancas de backend e contrato:
+
+- remover o cross join automatico de variantes do seed de clubes
+- revisar `GET /api/teams` para agrupar resultados por clube e incluir as variantes ativas dentro de cada resultado
+- aplicar o limite da pesquisa no nivel de clubes, evitando que um clube ocupe ate 18 das 20 vagas atuais
+- manter busca por nome popular, nome oficial, sigla e apelidos
+- criar saneamento protegido e auditavel para as variantes artificiais ja criadas em producao
+- o saneamento deve operar primeiro em modo de diagnostico/dry-run, identificar clubes com a matriz completa e evitar perda de referencias historicas de partidas
+
+Mudancas de frontend:
+
+- substituir o dropdown denso do autocomplete por busca mobile progressiva
+- nao repetir o mesmo clube uma vez para cada variante na primeira etapa
+- usar bottom sheet ou tela cheia no mobile, com alvos de toque de pelo menos 44 px
+- no desktop, permitir popover equivalente sem criar um comportamento funcional diferente
+- no card administrativo, substituir a lista completa de badges por um resumo como `3 equipes ativas` e uma acao `Ver equipes`
+- mostrar a lista completa somente sob demanda, em area expansivel, drawer ou bottom sheet
+
+Criterios de aceite:
+
+- a primeira etapa da pesquisa mostra no maximo uma linha por clube
+- um clube nao monopoliza o limite de resultados por possuir muitas variantes
+- clubes com somente a equipe principal continuam sendo selecionados com um unico toque
+- clubes com varias equipes apresentam uma segunda etapa clara e curta
+- somente variantes reais e ativas aparecem como opcoes para novas rodadas
+- a selecao continua salvando o `TeamVariant.id` esperado pelo backend
+- cards administrativos permanecem compactos independentemente da quantidade de variantes
+- o seed deixa de recriar a matriz de 18 combinacoes
+- existe relatorio dry-run antes de qualquer saneamento em producao
+- historico de partidas existente permanece integro
+- fluxo validado em viewport mobile pelo Playwright e revisado visualmente antes do deploy
+
+Ordem recomendada de implementacao:
+
+1. Corrigir o seed e preparar o diagnostico/saneamento dos dados.
+2. Definir e testar o contrato agrupado da pesquisa.
+3. Implementar a busca mobile e a escolha progressiva de variante.
+4. Compactar os cards e a gestao de equipes no admin.
+5. Executar o saneamento em producao somente depois do deploy e da verificacao do novo fluxo.
+
+### 40. Criar descoberta, pesquisa e filtros de Mesas para clientes
+
+Status: Implementado localmente em 2026-09-24; aguardando deploy
+Prioridade: Alta
+Frente: Produto / Backend / Frontend mobile-first / Recomendacao
+
+Origem:
+
+- decisao de produto registrada em 2026-09-24
+- clientes precisam de pesquisa, filtros e organizacao semelhantes aos recursos operacionais do admin, mas orientados a encontrar uma Mesa relevante e entrar nela rapidamente
+- Mesas com inscricoes abertas devem permanecer em destaque, especialmente quando a janela estiver proxima de fechar
+
+Objetivo:
+
+- transformar a pagina de Mesas em uma superficie de acompanhamento e descoberta
+- reduzir o tempo entre abrir a pagina, encontrar uma Mesa adequada e confirmar a entrada
+- destacar primeiro o que exige uma acao do cliente, sem esconder o catalogo completo de Mesas abertas
+
+Principio de produto:
+
+- personalizacao muda ordem, destaque e explicacao; ela nao deve esconder Mesas abertas
+- quando nao houver dados suficientes sobre o perfil ou nenhuma recomendacao compativel, mostrar todas as Mesas com inscricoes abertas
+- Mesas encerradas nao competem com oportunidades de entrada e ficam em `Historico` ou sob filtro explicito
+- elegibilidade deve ser transparente: toda Mesa exibida precisa explicar se o usuario pode entrar agora e, quando nao puder, o motivo
+
+Organizacao proposta da pagina:
+
+1. `Continue nas suas Mesas`
+- mostrar primeiro Mesas ativas em que o cliente ja participa
+- destacar posicao, pontuacao, proxima etapa e acesso rapido aos detalhes
+- nao misturar estas Mesas com oportunidades de nova inscricao
+
+2. `Abertas para voce`
+- priorizar Mesas publicadas, com inscricao aberta, vagas disponiveis e elegibilidade compativel
+- considerar plano, saldo de Tampinhas, regras de acesso e participacoes anteriores
+- mostrar uma justificativa curta de recomendacao, como `Voce pode entrar agora`, `Sem entrada` ou `Compativel com seu plano`
+
+3. `Inscricoes terminando`
+- destacar Mesas elegiveis cuja inscricao encerra em breve
+- o limite inicial sugerido e de ate 72 horas, configuravel no backend
+- urgencia deve ser real e baseada em `entryEndDate`, lotacao ou regra oficial de encerramento
+
+4. `Todas as Mesas abertas`
+- funcionar como fallback quando `Abertas para voce` estiver vazia ou tiver poucos resultados
+- permanecer acessivel mesmo quando existirem recomendacoes personalizadas
+- permitir pesquisa, filtros e ordenacao server-side
+
+5. `Proximas Mesas`
+- mostrar separadamente Mesas publicadas cuja inscricao ainda nao iniciou
+- exibir quando a inscricao abre; lembrete/notificacao pode ser uma evolucao posterior
+
+Navegacao mobile proposta:
+
+- usar segmentos ou abas compactas: `Para voce`, `Minhas` e `Todas`
+- manter pesquisa visivel no topo e abrir filtros avancados em bottom sheet
+- usar chips horizontais somente para filtros frequentes, sem tentar expor todas as opcoes na primeira tela
+- preservar estado de pesquisa, filtros e ordenacao ao abrir uma Mesa e voltar para a lista
+- mostrar contador de filtros ativos e acao clara para limpar tudo
+
+Pesquisa e filtros do MVP:
+
+- pesquisar por nome da Mesa e nome/apelido do criador
+- situacao da inscricao: `Aberta agora`, `Encerra em breve`, `Abre em breve`
+- categoria: `Com Tampinhas`, `Sem entrada`, `Patrocinada`
+- acesso: `Posso entrar`, `Compativel com meu plano`, `Com vagas`
+- faixa de custo em Tampinhas
+- quantidade de vagas ou participantes
+- ordenacao: `Recomendadas`, `Inscricao terminando`, `Mais novas`, `Menor entrada` e `Maior recompensa`
+
+Hierarquia dos cards para clientes:
+
+- nome da Mesa e criador
+- estado principal visivel: `Inscricoes abertas`, `Termina hoje`, `Abre em 2 dias`, `Lotada` ou `Participando`
+- custo de entrada e recompensa principal
+- participantes e vagas restantes, quando houver limite
+- data/hora de encerramento da inscricao em linguagem relativa e data absoluta nos detalhes
+- uma unica acao principal contextual: `Entrar agora`, `Ver Mesa`, `Continuar` ou `Ver requisitos`
+- detalhes e regras extensas ficam na pagina da Mesa, evitando cards altos no mobile
+
+Regras iniciais de relevancia:
+
+1. Separar por estado antes de pontuar: participando, pode entrar agora, abre em breve e indisponivel.
+2. Dentro de `pode entrar agora`, priorizar elegibilidade, saldo suficiente, vagas e proximidade do encerramento.
+3. Usar historico de categorias e faixas de entrada apenas como sinal secundario.
+4. Aplicar diversidade para impedir que muitas Mesas do mesmo criador dominem os primeiros resultados.
+5. Se os sinais de perfil forem insuficientes, ordenar Mesas abertas por encerramento da inscricao e recencia.
+6. Nunca recomendar como disponivel uma Mesa que o usuario nao pode acessar; nesse caso, exibir o requisito explicitamente.
+
+Dados de perfil permitidos no MVP:
+
+- plano e elegibilidade atual
+- saldo disponivel de Tampinhas
+- Mesas em que participa ou participou
+- categorias e faixas de entrada usadas anteriormente
+- nao exigir perfil comportamental complexo ou modelo de machine learning
+
+Contrato de backend a avaliar:
+
+- evoluir `GET /api/mesas/available` para aceitar `q`, filtros, ordenacao, pagina e limite
+- calcular no backend estados derivados consistentes, como:
+  - `registrationState`: `OPEN`, `CLOSING_SOON`, `UPCOMING`, `FULL`, `CLOSED`
+  - `accessState`: `CAN_JOIN`, `ALREADY_JOINED`, `OWNER`, `PLAN_REQUIRED`, `INSUFFICIENT_BALANCE`, `NOT_ELIGIBLE`
+  - `closesAt`
+  - `spotsRemaining`
+  - `recommendationReason`
+- retornar secoes ou um score estavel que permita ao frontend montar `Abertas para voce` sem duplicar regra de negocio
+- paginar no servidor e evitar carregar todas as Mesas ativas para filtrar apenas no navegador
+- considerar um endpoint de contagens por filtro para manter chips e abas coerentes
+
+Fallbacks e estados vazios:
+
+- sem recomendacoes personalizadas: mostrar todas as Mesas abertas por encerramento mais proximo
+- sem Mesas abertas: mostrar as proximas Mesas publicadas e a opcao de convite
+- sem Mesas abertas nem futuras: manter convite e mensagem curta, sem ocupar a tela com filtros vazios
+- usuario sem saldo: continuar mostrando oportunidades, mas separar as gratuitas e explicar requisitos das pagas
+- usuario sem plano compativel: destacar Mesas acessiveis e permitir visualizar as demais sem simular elegibilidade
+
+MVP recomendado:
+
+1. Separar `Minhas`, `Para voce` e `Todas`.
+2. Implementar pesquisa por Mesa/criador e filtros por inscricao, categoria e elegibilidade.
+3. Ordenar com regras deterministicas, sem machine learning.
+4. Destacar `Inscricoes terminando` quando houver opcoes elegiveis.
+5. Adicionar paginacao server-side e preservar filtros na navegacao.
+6. Medir uso antes de sofisticar a personalizacao.
+
+Antimetas do MVP:
+
+- nao criar feed infinito
+- nao esconder Mesas por um algoritmo opaco
+- nao misturar encerradas com abertas por padrao
+- nao usar urgencia artificial
+- nao criar dezenas de chips ou filtros visiveis simultaneamente no mobile
+- nao depender de machine learning para entregar valor inicial
+
+Metricas de produto:
+
+- conversao de visualizacao da lista para detalhe da Mesa
+- conversao de detalhe para entrada confirmada
+- tempo mediano para encontrar e entrar em uma Mesa
+- percentual de pesquisas sem resultado
+- uso e taxa de limpeza dos filtros
+- entrada originada de `Abertas para voce`, `Inscricoes terminando` e `Todas`
+- taxa de exibicao de Mesas inelegiveis nos primeiros resultados
+
+Criterios de aceite:
+
+- Mesas em que o cliente participa aparecem separadas das oportunidades de entrada
+- Mesas com inscricoes abertas recebem prioridade visual sobre encerradas e futuras
+- pesquisa por nome da Mesa e criador funciona no servidor
+- cliente consegue filtrar por inscricao, categoria e capacidade de entrada
+- usuario elegivel ve primeiro Mesas em que pode entrar agora
+- quando nao houver recomendacao compativel, todas as Mesas abertas continuam acessiveis
+- Mesas com inscricao proxima do fim recebem destaque verdadeiro e compreensivel
+- cada card explica custo, vagas, prazo e acao principal sem ficar excessivamente alto no mobile
+- filtros permanecem aplicados ao entrar no detalhe e voltar
+- listagem e filtros possuem paginacao e contagens coerentes
+- fluxo e estados vazios sao validados em viewport mobile pelo Playwright
+
+Questoes para refinamento antes da implementacao:
+
+- qual janela define `Inscricao terminando`: 24, 48 ou 72 horas?
+- Mesas exclusivas incompatíveis devem aparecer no fim da lista ou somente sob `Todas`?
+- `Maior recompensa` deve considerar valor absoluto ou relacao recompensa/custo?
+- devemos permitir favoritar uma Mesa ou pedir lembrete quando a inscricao ainda nao abriu?
+- participacao anterior na Mesa do mesmo criador deve aumentar relevancia?

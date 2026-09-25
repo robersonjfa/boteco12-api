@@ -149,3 +149,26 @@ export const RankingParticipantParamsSchema = z.object({
 export const InviteCodeParamsSchema = z.object({
   code: z.string().trim().min(16).max(128).regex(/^[A-Za-z0-9_-]+$/),
 }).strict()
+
+export const DiscoverMesasQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  category: z.enum(['PAID', 'FREE', 'SPONSORED_FREE']).optional(),
+  registration: z.enum(['ALL', 'OPEN', 'CLOSING_SOON', 'UPCOMING']).default('ALL'),
+  access: z.enum(['ALL', 'CAN_JOIN']).default('ALL'),
+  sort: z.enum([
+    'RECOMMENDED',
+    'CLOSING_SOON',
+    'NEWEST',
+    'LOWEST_COST',
+    'HIGHEST_REWARD',
+  ]).default('RECOMMENDED'),
+  minCost: z.coerce.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+  maxCost: z.coerce.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+}).strict().refine(value =>
+  value.minCost == null || value.maxCost == null || value.minCost <= value.maxCost,
+{
+  path: ['maxCost'],
+  message: 'o custo máximo deve ser maior ou igual ao custo mínimo',
+})

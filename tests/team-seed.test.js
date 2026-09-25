@@ -5,14 +5,9 @@ const {
   CLUBS,
   NATIONALS,
   TEAM_CATALOG,
-  TEAM_GENDERS,
-  TEAM_AGE_CATEGORIES,
-  buildClubVariantCrossJoin,
-  seedClubVariants,
   seedTeams,
   validateTeamCatalog,
 } = require('../prisma/seed-teams')
-const { teamSeedSource } = require('../scripts/easypanel-production-seed-teams')
 
 const SERIE_A_2026 = [
   'Palmeiras',
@@ -79,56 +74,6 @@ test('Brasil e Espanha possuem identificadores de seleção distintos', () => {
 test('logoUrl é opcional no catálogo', () => {
   assert.ok(TEAM_CATALOG.some((team) => team.logoUrl === undefined))
   assert.doesNotThrow(() => validateTeamCatalog())
-})
-
-test('cross join gera cada categoria uma única vez para cada clube', () => {
-  const variants = buildClubVariantCrossJoin(['palmeiras', 'santos'])
-  const expectedPerClub = TEAM_GENDERS.length * TEAM_AGE_CATEGORIES.length
-
-  assert.equal(expectedPerClub, 18)
-  assert.equal(variants.length, expectedPerClub * 2)
-  assert.equal(
-    new Set(variants.map(item => `${item.teamId}:${item.gender}:${item.ageCategory}`)).size,
-    variants.length
-  )
-  assert.ok(variants.some(item =>
-    item.teamId === 'palmeiras' && item.gender === 'WOMEN' && item.ageCategory === 'U17'
-  ))
-})
-
-test('seed de categorias inclui todos os clubes e ignora duplicidades', async () => {
-  const calls = []
-  const prisma = {
-    team: {
-      async findMany() {
-        return [{ id: 'palmeiras' }, { id: 'santos' }]
-      },
-    },
-    teamVariant: {
-      async createMany(input) {
-        calls.push(input)
-        return { count: input.data.length }
-      },
-    },
-  }
-
-  const result = await seedClubVariants(prisma)
-
-  assert.equal(result.clubs, 2)
-  assert.equal(result.variantsPerClub, 18)
-  assert.equal(result.expected, 36)
-  assert.equal(result.created, 36)
-  assert.equal(calls.length, 1)
-  assert.equal(calls[0].skipDuplicates, true)
-})
-
-test('operação de produção executa o seed e verifica as 18 categorias por clube', () => {
-  const source = teamSeedSource()
-
-  assert.match(source, /seedTeams\(prisma\)/)
-  assert.match(source, /expectedClubVariants = clubs \* 18/)
-  assert.match(source, /clubVariants === expectedClubVariants/)
-  assert.match(source, /B12_TEAM_SEED_BEGIN/)
 })
 
 test('seed reconcilia dados legados, preserva logo e é idempotente', async () => {
@@ -206,22 +151,6 @@ test('seed reconcilia dados legados, preserva logo e é idempotente', async () =
         }
         return variant
       },
-      async createMany({ data, skipDuplicates }) {
-        assert.equal(skipDuplicates, true)
-        let count = 0
-        for (const item of data) {
-          const exists = variants.some(variant =>
-            variant.teamId === item.teamId &&
-            variant.gender === item.gender &&
-            variant.ageCategory === item.ageCategory
-          )
-          if (!exists) {
-            variants.push({ id: `variant-${variants.length + 1}`, ...item, active: true })
-            count += 1
-          }
-        }
-        return { count }
-      },
     },
   }
 
@@ -243,8 +172,5 @@ test('seed reconcilia dados legados, preserva logo e é idempotente', async () =
   assert.equal(usa.logoUrl, 'https://images.example.test/usa.svg')
   assert.ok(records.some((record) => record.externalId === 'seed:national:bra'))
   assert.ok(records.some((record) => record.externalId === 'seed:national:esp'))
-  const expectedVariants = CLUBS.length * TEAM_GENDERS.length * TEAM_AGE_CATEGORIES.length + NATIONALS.length
-  assert.equal(variants.length, expectedVariants)
-  assert.equal(firstRun.clubVariants.created, CLUBS.length * 18)
-  assert.equal(secondRun.clubVariants.created, 0)
+  assert.equal(variants.length, TEAM_CATALOG.length)
 })

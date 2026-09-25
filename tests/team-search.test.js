@@ -5,6 +5,10 @@ const test = require('node:test')
 
 const { prisma } = require('../dist/lib/prisma')
 const { SearchTeamsService } = require('../dist/services/team/search-teams.service')
+const {
+  SearchTeamGroupsService,
+  parseGroupedTeamQuery,
+} = require('../dist/services/team/search-team-groups.service')
 const { resolveRoundMatchTeams } = require('../dist/services/round/round-match.types')
 
 test('busca normalizada encontra apelido sem depender de acento e prioriza nome popular', async t => {
@@ -58,6 +62,57 @@ test('rodada resolve IDs das variantes e persiste o nome com categoria', async t
 
   assert.equal(result[0].homeTeam, 'Palmeiras · Feminino')
   assert.equal(result[0].awayTeam, 'Santos · Sub-17')
+})
+
+test('busca agrupada limita por clube e mantém variantes dentro do resultado', async t => {
+  const originalFindMany = prisma.team.findMany
+  t.after(() => { prisma.team.findMany = originalFindMany })
+
+  let received
+  prisma.team.findMany = async input => {
+    received = input
+    return [
+      {
+        id: 'palmeiras', name: 'Palmeiras', officialName: 'Sociedade Esportiva Palmeiras',
+        shortName: 'PAL', aliases: ['Verdão'], country: 'Brasil', type: 'CLUB', logoUrl: null,
+        variants: [
+          { id: 'pal-main', gender: 'MEN', ageCategory: 'SENIOR' },
+          { id: 'pal-women', gender: 'WOMEN', ageCategory: 'SENIOR' },
+        ],
+      },
+    ]
+  }
+
+  const result = await SearchTeamGroupsService.execute('verdao', 20)
+
+  assert.equal(received.take, 20)
+  assert.equal(received.where.searchText.contains, 'verdao')
+  assert.equal(result.length, 1)
+  assert.equal(result[0].name, 'Palmeiras')
+  assert.deepEqual(result[0].variants.map(item => item.name), ['Palmeiras', 'Palmeiras · Feminino'])
+})
+
+test('busca agrupada entende gênero e faixa etária sem poluir a busca do clube', async t => {
+  assert.deepEqual(parseGroupedTeamQuery('Palmeiras feminino sub-17'), {
+    teamQuery: 'palmeiras',
+    variant: { gender: 'WOMEN', ageCategory: 'U17' },
+  })
+
+  const originalFindMany = prisma.team.findMany
+  t.after(() => { prisma.team.findMany = originalFindMany })
+  let received
+  prisma.team.findMany = async input => {
+    received = input
+    return []
+  }
+
+  await SearchTeamGroupsService.execute('Palmeiras feminino sub-17')
+  assert.equal(received.where.searchText.contains, 'palmeiras')
+  assert.deepEqual(received.where.variants.some, {
+    active: true,
+    gender: 'WOMEN',
+    ageCategory: 'U17',
+  })
 })
 
 test('migration normaliza nomes e apelidos do catálogo legado de produção', () => {

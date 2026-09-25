@@ -1,0 +1,57 @@
+name: Cleanup production team variants
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact deployed main commit containing the cleanup
+        required: true
+        type: string
+      mode:
+        description: DRY_RUN reports targets; APPLY deactivates and verifies them
+        required: true
+        type: choice
+        options:
+          - DRY_RUN
+          - APPLY
+      confirmation:
+        description: Type DEACTIVATE_GENERATED_TEAM_VARIANTS for APPLY
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Diagnose or deactivate generated team variants
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Checkout exact release revision
+        uses: actions/checkout@v7
+
+      - name: Validate release and apply confirmation
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          MODE: ${{ inputs.mode }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -eu
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          if [ "$MODE" = "APPLY" ]; then
+            test "$CONFIRMATION" = "DEACTIVATE_GENERATED_TEAM_VARIANTS"
+          fi
+
+      - name: Run guarded cleanup
+        env:
+          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
+          EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
+          EASYPANEL_PROJECT: f12-prd
+          EASYPANEL_API_SERVICE: api
+          B12_TEAM_VARIANT_CLEANUP_MODE: ${{ inputs.mode }}
+          B12_TEAM_VARIANT_CLEANUP_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/easypanel-production-cleanup-team-variants.js
