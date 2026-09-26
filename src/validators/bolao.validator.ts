@@ -37,6 +37,13 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
   if (input.category === 'PAID' && accessCost <= 0) {
     ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Informe o custo de acesso da Mesa' })
   }
+  if (input.category === 'PAID' && input.registrationCloseMode !== 'CAPACITY') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['registrationCloseMode'],
+      message: 'Mesa com Tampinhas encerra inscrições somente por lotação',
+    })
+  }
   if (input.category === 'FREE' && accessCost !== 0) {
     ctx.addIssue({ code: 'custom', path: ['accessCost'], message: 'Esta categoria não pode cobrar Tampinhas' })
   }

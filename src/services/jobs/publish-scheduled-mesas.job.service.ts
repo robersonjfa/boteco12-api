@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma'
 import { InternalJobRunnerService } from '../internal/internal-job-runner.service'
+import { PublishMesaService } from '../bolao/publish-mesa.service'
 
 export type PublishScheduledMesasJobResult = {
   publishedMesas: number
@@ -20,15 +21,32 @@ export class PublishScheduledMesasJobService {
       referenceId: 'publish-scheduled-mesas-sweep',
       allowRepeat: true,
       run: async () => {
-        const published = await prisma.ranking.updateMany({
+        const scheduled = await prisma.ranking.findMany({
           where: {
             type: 'BOLAO',
             status: 'DRAFT',
             publishedAt: { not: null, lte: now },
           },
-          data: { status: 'ACTIVE' },
+          select: { id: true, createdByUserId: true },
         })
-        return { publishedMesas: published.count }
+        let publishedMesas = 0
+        const failures: string[] = []
+        for (const mesa of scheduled) {
+          if (!mesa.createdByUserId) continue
+          try {
+            await PublishMesaService.execute({
+              rankingId: mesa.id,
+              requestedByUserId: mesa.createdByUserId,
+            })
+            publishedMesas += 1
+          } catch {
+            failures.push(mesa.id)
+          }
+        }
+        if (failures.length > 0) {
+          throw new Error(`Falha ao publicar ${failures.length} Mesa(s) agendada(s)`)
+        }
+        return { publishedMesas }
       },
     })
 

@@ -102,6 +102,9 @@ test('Mesa exige data de fim posterior à data de início', async t => {
 
   await assert.rejects(
     CreateBolaoService.execute(createInput({
+      category: 'FREE',
+      accessCost: 0,
+      entryFee: 0,
       registrationCloseMode: 'DATE',
       maxParticipants: null,
       entryEndDate: new Date('2026-08-01T12:00:00Z'),

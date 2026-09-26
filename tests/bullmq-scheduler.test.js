@@ -39,6 +39,9 @@ const {
   PublishScheduledMesasJobService,
 } = require('../dist/services/jobs/publish-scheduled-mesas.job.service')
 const {
+  PublishMesaService,
+} = require('../dist/services/bolao/publish-mesa.service')
+const {
   EnsureMonthlyRankingsJobService,
 } = require('../dist/services/jobs/ensure-monthly-rankings.job.service')
 const {
@@ -318,17 +321,24 @@ test('close expired Mesas delega service e permite repeat sem duplicar settlemen
 
 test('publica somente Mesas agendadas cujo início já chegou', async t => {
   const originalJob = InternalJobRunnerService.execute
-  const originalUpdateMany = prisma.ranking.updateMany
+  const originalFindMany = prisma.ranking.findMany
+  const originalPublish = PublishMesaService.execute
   t.after(() => {
     InternalJobRunnerService.execute = originalJob
-    prisma.ranking.updateMany = originalUpdateMany
+    prisma.ranking.findMany = originalFindMany
+    PublishMesaService.execute = originalPublish
   })
 
-  let mutation
-  prisma.ranking.updateMany = async input => {
-    mutation = input
-    return { count: 2 }
+  let query
+  prisma.ranking.findMany = async input => {
+    query = input
+    return [
+      { id: 'mesa-1', createdByUserId: 'owner-1' },
+      { id: 'mesa-2', createdByUserId: 'owner-2' },
+    ]
   }
+  const published = []
+  PublishMesaService.execute = async input => { published.push(input) }
   InternalJobRunnerService.execute = async input => ({
     executionId: 'exec-publish-mesas',
     status: 'SUCCESS',
@@ -338,12 +348,15 @@ test('publica somente Mesas agendadas cujo início já chegou', async t => {
   const now = new Date('2026-09-19T18:00:00.000Z')
   const result = await PublishScheduledMesasJobService.execute(now)
 
-  assert.deepEqual(mutation.where, {
+  assert.deepEqual(query.where, {
     type: 'BOLAO',
     status: 'DRAFT',
     publishedAt: { not: null, lte: now },
   })
-  assert.deepEqual(mutation.data, { status: 'ACTIVE' })
+  assert.deepEqual(published, [
+    { rankingId: 'mesa-1', requestedByUserId: 'owner-1' },
+    { rankingId: 'mesa-2', requestedByUserId: 'owner-2' },
+  ])
   assert.equal(result.publishedMesas, 2)
 })
 

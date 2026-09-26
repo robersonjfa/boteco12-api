@@ -55,6 +55,9 @@ export class MesaCategoryRules {
     }
 
     if (category === MesaCategory.PAID) {
+      if (registrationCloseMode !== MesaRegistrationCloseMode.CAPACITY) {
+        throw new Error('Mesa com Tampinhas encerra inscrições somente por lotação')
+      }
       if (!Number.isInteger(accessCost) || accessCost <= 0) {
         throw new Error('O acesso em tampinhas deve ser maior que zero')
       }

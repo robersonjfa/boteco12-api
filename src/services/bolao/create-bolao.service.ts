@@ -17,6 +17,7 @@ import {
 import { MesaCategoryRules } from './mesa-category-rules'
 import { AssertActiveProUserService } from '../subscription/assert-active-pro-user.service'
 import { assertMesaScheduleRules } from './mesa-schedule-rules'
+import { JoinBolaoService } from './join-bolao.service'
 
 type CreateBolaoInput = {
   name: string
@@ -42,7 +43,8 @@ type CreateBolaoInput = {
 
 /**
  * Cria Mesa privada sem vínculo com rodada.
- * O criador (admin) fica como dono/operador; participantes entram depois.
+ * Clientes entram automaticamente quando publicam; criação administrativa
+ * mantém o operador fora da disputa até que ele solicite participação.
  */
 export class CreateBolaoService {
   static async execute(input: CreateBolaoInput) {
@@ -214,6 +216,16 @@ export class CreateBolaoService {
           },
         },
       })
+
+      if (publication.status === 'ACTIVE' && !input.administrative) {
+        await JoinBolaoService.execute({
+          rankingId: bolao.id,
+          userId: createdByUserId,
+          creatorPublication: true,
+        }, tx)
+
+        return tx.ranking.findUniqueOrThrow({ where: { id: bolao.id } })
+      }
 
       return bolao
     })

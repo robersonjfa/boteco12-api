@@ -49,6 +49,37 @@ test('Mesa por lugares usa rodadas e Mesa por data usa datas explícitas', () =>
     durationRounds: null,
     endDate: '2099-09-01T02:59:59.000Z',
   }).success, true)
+  assert.equal(CreateMesaSchema.safeParse({
+    ...base,
+    category: 'PAID',
+    accessCost: 10,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    registrationCloseMode: 'DATE',
+    maxParticipants: null,
+    entryEndDate: '2099-08-15T02:59:59.000Z',
+    durationMode: 'DATE',
+    durationRounds: null,
+    endDate: '2099-09-01T02:59:59.000Z',
+  }).success, false)
+})
+
+test('serviço rejeita Mesa com Tampinhas configurada para encerrar por data', async () => {
+  await assert.rejects(CreateBolaoService.execute({
+    name: 'Mesa Tampinhas inválida',
+    description: 'Recompensa integral para o primeiro colocado.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: new Date('2099-08-15T02:59:59.000Z'),
+    endDate: new Date('2099-09-01T02:59:59.000Z'),
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: null,
+    registrationCloseMode: 'DATE',
+    durationMode: 'DATE',
+    durationRounds: null,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    createdByUserId: 'subscriber-1',
+  }), /encerra inscrições somente por lotação/)
 })
 
 test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
@@ -225,6 +256,64 @@ test('criação permite publicar agora ou agendar para o início das inscriçõe
     rankingData.publishedAt.toISOString(),
     base.startDate.toISOString()
   )
+})
+
+test('cliente que publica na criação entra automaticamente e paga dentro da transação', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  const originalJoin = JoinBolaoService.execute
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.user.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
+    JoinBolaoService.execute = originalJoin
+  })
+
+  AssertActiveProUserService.execute = async userId => ({ id: userId })
+  prisma.user.findUnique = async () => ({ id: 'customer-owner' })
+  let joined
+  let created
+  const transaction = {
+    ranking: {
+      create: async ({ data }) => {
+        created = data
+        return data
+      },
+      findUniqueOrThrow: async () => ({ ...created, currentParticipants: 1, grossCollected: 10 }),
+    },
+    auditLog: { create: async () => ({}) },
+  }
+  prisma.$transaction = async callback => callback(transaction)
+  JoinBolaoService.execute = async (input, tx) => {
+    joined = { input, tx }
+    return { status: 'APPROVED', rankingId: input.rankingId, participantId: 'owner-seat' }
+  }
+
+  const result = await CreateBolaoService.execute({
+    name: 'Mesa publicada pelo cliente',
+    description: 'Recompensa integral para o primeiro colocado.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: null,
+    endDate: null,
+    category: 'PAID',
+    accessCost: 10,
+    sponsorPrizePool: 0,
+    maxParticipants: 10,
+    eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY',
+    durationMode: 'ROUNDS',
+    durationRounds: 5,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    createdByUserId: 'customer-owner',
+    publicationMode: 'NOW',
+  })
+
+  assert.equal(joined.input.userId, 'customer-owner')
+  assert.equal(joined.input.creatorPublication, true)
+  assert.equal(joined.tx, transaction)
+  assert.equal(result.currentParticipants, 1)
+  assert.equal(result.grossCollected, 10)
 })
 
 test('recompensas não podem superar os lugares disponíveis', () => {
@@ -471,7 +560,7 @@ test('admin não altera termos financeiros de Mesa com participantes', async t =
   }), { code: 'mesa_financial_terms_locked' })
 })
 
-test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando possui tampinhas', async t => {
+test('criador pode entrar depois em Mesa administrativa como qualquer participante', async t => {
   const originalAssertPro = AssertActiveProUserService.execute
   const originalTransaction = prisma.$transaction
   t.after(() => {
@@ -499,7 +588,7 @@ test('freguês Na Calçada entra em Mesa aberta para toda a freguesia quando pos
         sponsorPrizePool: 0,
         maxParticipants: 20,
         currentParticipants: 1,
-        createdByUserId: 'subscriber-owner',
+        createdByUserId: 'sidewalk-user',
         startDate: new Date('2020-01-01T00:00:00.000Z'),
         entryEndDate: null,
         endDate: null,
@@ -605,27 +694,37 @@ test('Mesa com inscrições por data aceita entrada sem exigir capacidade', asyn
 test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t => {
   const { PublishMesaService } = require('../dist/services/bolao/publish-mesa.service')
   const originalAssertPro = AssertActiveProUserService.execute
-  const originalFindUnique = prisma.ranking.findUnique
-  const originalUpdate = prisma.ranking.update
+  const originalTransaction = prisma.$transaction
+  const originalJoin = JoinBolaoService.execute
   t.after(() => {
-    prisma.ranking.findUnique = originalFindUnique
-    prisma.ranking.update = originalUpdate
+    prisma.$transaction = originalTransaction
+    JoinBolaoService.execute = originalJoin
     AssertActiveProUserService.execute = originalAssertPro
   })
 
   AssertActiveProUserService.execute = async userId => ({ id: userId })
 
-  prisma.ranking.findUnique = async () => ({
-    id: 'draft-1',
-    type: 'BOLAO',
-    status: 'DRAFT',
-    createdByUserId: 'subscriber-1',
-  })
-
   let update
-  prisma.ranking.update = async input => {
-    update = input
-    return { ...input.data, id: input.where.id }
+  let joined
+  const transaction = {
+    ranking: {
+      findUnique: async () => ({
+        id: 'draft-1', type: 'BOLAO', status: 'DRAFT', category: 'PAID',
+        createdByUserId: 'subscriber-1',
+      }),
+      updateMany: async input => { update = input; return { count: 1 } },
+      findUniqueOrThrow: async () => ({ id: 'draft-1', status: 'ACTIVE' }),
+    },
+    auditLog: {
+      findFirst: async () => ({ metadata: { createdByAdmin: false } }),
+      create: async () => ({}),
+    },
+    userAdminRole: { findFirst: async () => null },
+  }
+  prisma.$transaction = async callback => callback(transaction)
+  JoinBolaoService.execute = async (input, tx) => {
+    joined = { input, tx }
+    return { status: 'APPROVED' }
   }
 
   const result = await PublishMesaService.execute({
@@ -633,38 +732,53 @@ test('somente o dono publica o rascunho e abre a Mesa para a freguesia', async t
     requestedByUserId: 'subscriber-1',
   })
 
-  assert.equal(update.where.id, 'draft-1')
+  assert.deepEqual(update.where, { id: 'draft-1', status: 'DRAFT' })
   assert.equal(update.data.status, 'ACTIVE')
   assert.ok(update.data.publishedAt instanceof Date)
+  assert.equal(joined.input.creatorPublication, true)
+  assert.equal(joined.tx, transaction)
   assert.equal(result.status, 'ACTIVE')
 })
 
-test('usuário Na Calçada publica sua Mesa Free sem assinatura PRO', async t => {
+test('admin publica Mesa com Tampinhas sem entrar nem depender de assinatura PRO', async t => {
   const { PublishMesaService } = require('../dist/services/bolao/publish-mesa.service')
   const originalAssertPro = AssertActiveProUserService.execute
-  const originalFindUnique = prisma.ranking.findUnique
-  const originalUpdate = prisma.ranking.update
+  const originalTransaction = prisma.$transaction
+  const originalJoin = JoinBolaoService.execute
   t.after(() => {
+    prisma.$transaction = originalTransaction
+    JoinBolaoService.execute = originalJoin
     AssertActiveProUserService.execute = originalAssertPro
-    prisma.ranking.findUnique = originalFindUnique
-    prisma.ranking.update = originalUpdate
   })
 
   AssertActiveProUserService.execute = async () => {
-    throw new Error('assinatura não deveria ser consultada para Mesa Free')
+    throw new Error('assinatura não deveria ser consultada para publicação administrativa')
   }
-  prisma.ranking.findUnique = async () => ({
-    id: 'free-draft', type: 'BOLAO', status: 'DRAFT', category: 'FREE',
-    createdByUserId: 'free-owner',
+  let joinCalled = false
+  JoinBolaoService.execute = async () => { joinCalled = true }
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'admin-draft', type: 'BOLAO', status: 'DRAFT', category: 'PAID',
+        createdByUserId: 'admin-owner',
+      }),
+      updateMany: async () => ({ count: 1 }),
+      findUniqueOrThrow: async () => ({ id: 'admin-draft', status: 'ACTIVE' }),
+    },
+    auditLog: {
+      findFirst: async () => ({ metadata: { createdByAdmin: true } }),
+      create: async () => ({}),
+    },
+    userAdminRole: { findFirst: async () => ({ id: 'admin-role' }) },
   })
-  prisma.ranking.update = async input => ({ ...input.data, id: input.where.id })
 
   const result = await PublishMesaService.execute({
-    rankingId: 'free-draft',
-    requestedByUserId: 'free-owner',
+    rankingId: 'admin-draft',
+    requestedByUserId: 'admin-owner',
   })
 
   assert.equal(result.status, 'ACTIVE')
+  assert.equal(joinCalled, false)
 })
 
 test('dono encontra seus rascunhos mesmo sem participar da Mesa', async t => {

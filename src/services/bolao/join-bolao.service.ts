@@ -10,6 +10,7 @@ import { MesaCategoryRules } from './mesa-category-rules';
 type JoinBolaoInput = {
   rankingId: string;
   userId: string;
+  creatorPublication?: boolean;
 };
 
 export class JoinBolaoService {
@@ -26,7 +27,7 @@ export class JoinBolaoService {
 
   private static async executeInTransaction(
     tx: Prisma.TransactionClient,
-    { rankingId, userId }: JoinBolaoInput
+    { rankingId, userId, creatorPublication = false }: JoinBolaoInput
   ) {
       const bolao = await tx.ranking.findUnique({
         where: { id: rankingId },
@@ -64,15 +65,15 @@ export class JoinBolaoService {
       const accessCost = bolao.accessCost ?? bolao.entryFee;
       const hasPaidEntry = MesaCategoryRules.hasPaidEntry(bolao);
 
-      await this.assertEligibility(bolao.eligibility, userId);
-
-      BolaoRegistrationWindowService.assertOpen(bolao);
-      if ((bolao.registrationCloseMode ?? 'CAPACITY') === 'CAPACITY') {
-        MesaCategoryRules.assertCapacity(bolao);
+      if (!creatorPublication) {
+        await this.assertEligibility(bolao.eligibility, userId);
       }
 
-      if (bolao.createdByUserId === userId) {
-        throw new Error('O criador já administra esta Mesa');
+      if (!creatorPublication) {
+        BolaoRegistrationWindowService.assertOpen(bolao);
+      }
+      if ((bolao.registrationCloseMode ?? 'CAPACITY') === 'CAPACITY') {
+        MesaCategoryRules.assertCapacity(bolao);
       }
 
       const existingParticipant = await tx.rankingParticipant.findUnique({
