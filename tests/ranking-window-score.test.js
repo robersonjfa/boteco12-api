@@ -108,6 +108,42 @@ test('Mesa calcula o acumulado pelo total atual menos o snapshot inicial', async
   assert.equal(rows[0].scoreTotalCurrent, 1)
 })
 
+test('criador que entrou antes do início usa a baseline oficial e fica zerado até a abertura', async () => {
+  const startDate = new Date('2026-10-01T03:00:00Z')
+  const participant = {
+    id: 'participant-owner', userId: 'owner-1', score: 0, scoreInitial: 10,
+    position: null, approvedAt: new Date('2026-09-20T12:00:00Z'),
+    createdAt: new Date('2026-09-20T12:00:00Z'), user: { scoreTotal: 25 },
+  }
+  const histories = [{
+    userId: 'owner-1', scoreRound: 5, scoreTotal: 20,
+    createdAt: new Date('2026-09-28T12:00:00Z'),
+    round: { closeAt: new Date('2026-09-28T12:00:00Z') },
+  }]
+  const db = {
+    rankingParticipant: { findMany: async () => [participant] },
+    userScoreHistory: { findMany: async () => histories },
+  }
+
+  const beforeStart = await RankingWindowScoreService.buildRows(
+    db,
+    { id: 'future-mesa', startDate, endDate: null },
+    new Date('2026-09-29T12:00:00Z')
+  )
+  assert.equal(beforeStart[0].scoreInitial, 20)
+  assert.equal(beforeStart[0].scoreTotalCurrent, 20)
+  assert.equal(beforeStart[0].score, 0)
+
+  participant.user.scoreTotal = 27
+  const afterStart = await RankingWindowScoreService.buildRows(
+    db,
+    { id: 'future-mesa', startDate, endDate: null },
+    new Date('2026-10-02T12:00:00Z')
+  )
+  assert.equal(afterStart[0].scoreInitial, 20)
+  assert.equal(afterStart[0].score, 7)
+})
+
 test('fechamento atrasado usa o ultimo acumulado ate o fim da competicao', async () => {
   const participant = {
     id: 'participant-1', userId: 'user-1', score: 0, scoreInitial: 10,

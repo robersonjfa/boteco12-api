@@ -124,17 +124,28 @@ export class RankingWindowScoreService {
             row.round.closeAt < ranking.startDate!
           )
         : null
+      const joinedBeforeStart = Boolean(
+        ranking.startDate &&
+        participant.approvedAt &&
+        participant.approvedAt < ranking.startDate
+      )
+      const scoreInitial = joinedBeforeStart && baselineHistory
+        ? baselineHistory.scoreTotal
+        : participant.scoreInitial
+      const rankingNotStarted = Boolean(ranking.startDate && now < ranking.startDate)
       const rankingEnded = ranking.endDate != null && now > ranking.endDate
       // Após o fim da janela, usar somente o acumulado histórico até endDate.
       // Se não há histórico algum, não houve pontuação a incorporar à Mesa:
       // o total no fechamento permanece igual ao baseline.
       const liveTotal = participant.user?.scoreTotal ?? 0
-      const scoreTotalCurrent = rankingEnded
-        ? latestHistory?.scoreTotal ?? participant.scoreInitial
+      const scoreTotalCurrent = rankingNotStarted
+        ? scoreInitial
+        : rankingEnded
+        ? latestHistory?.scoreTotal ?? scoreInitial
         : liveTotal
       const score = this.calculateScoreFromBaseline(
         scoreTotalCurrent,
-        participant.scoreInitial
+        scoreInitial
       )
       const scoreRound =
         latestHistory?.round.closeAt != null &&
@@ -152,7 +163,7 @@ export class RankingWindowScoreService {
         score,
         scoreRound,
         position: 0,
-        scoreInitial: participant.scoreInitial,
+        scoreInitial,
         scoreTotalCurrent,
         ...hits,
         userCreatedAt: participant.user.createdAt,

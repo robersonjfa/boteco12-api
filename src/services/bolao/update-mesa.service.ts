@@ -13,6 +13,7 @@ import { MesaCategoryRules } from './mesa-category-rules'
 import { withMesaFinancialNames } from './mesa-financial-names'
 import { normalizeMesaPrizeRules } from './mesa-prize-rules'
 import { assertMesaScheduleRules } from './mesa-schedule-rules'
+import { PublishMesaService } from './publish-mesa.service'
 
 type UpdateMesaInput = {
   rankingId: string
@@ -150,8 +151,9 @@ export class UpdateMesaService {
         'mesa_publication_date_invalid'
       )
     }
-    const publication = input.publicationMode === 'NOW'
-      ? { status: 'ACTIVE' as const, publishedAt: new Date() }
+    const publishNow = input.publicationMode === 'NOW'
+    const publication = publishNow
+      ? { status: 'DRAFT' as const, publishedAt: null }
       : input.publicationMode === 'AT_START'
         ? { status: 'DRAFT' as const, publishedAt: input.startDate }
         : input.publicationMode === 'DRAFT'
@@ -257,6 +259,14 @@ export class UpdateMesaService {
           },
         },
       })
+
+      if (publishNow) {
+        return PublishMesaService.execute({
+          rankingId: input.rankingId,
+          requestedByUserId: input.requestedByUserId,
+        }, tx)
+      }
+
       return tx.ranking.findUniqueOrThrow({ where: { id: input.rankingId } })
     })
 

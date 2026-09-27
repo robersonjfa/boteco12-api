@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import { AppError } from '../../errors/AppError'
 
 export class BolaoEntryPaymentService {
   static async debit(
@@ -11,7 +12,10 @@ export class BolaoEntryPaymentService {
     })
 
     if (!wallet || wallet.balance < input.amount) {
-      throw new Error('Participante não possui tampinhas suficientes para acessar esta Mesa')
+      throw AppError.badRequest(
+        'Participante não possui tampinhas suficientes para acessar esta Mesa',
+        'insufficient_balance'
+      )
     }
 
     const debit = await tx.wallet.updateMany({
@@ -19,7 +23,10 @@ export class BolaoEntryPaymentService {
       data: { balance: { decrement: input.amount } },
     })
     if (debit.count !== 1) {
-      throw new Error('Participante não possui tampinhas suficientes para acessar esta Mesa')
+      throw AppError.badRequest(
+        'Participante não possui tampinhas suficientes para acessar esta Mesa',
+        'insufficient_balance'
+      )
     }
 
     await tx.walletLedger.create({

@@ -17,7 +17,7 @@ import {
 import { MesaCategoryRules } from './mesa-category-rules'
 import { AssertActiveProUserService } from '../subscription/assert-active-pro-user.service'
 import { assertMesaScheduleRules } from './mesa-schedule-rules'
-import { JoinBolaoService } from './join-bolao.service'
+import { PublishMesaService } from './publish-mesa.service'
 
 type CreateBolaoInput = {
   name: string
@@ -136,9 +136,7 @@ export class CreateBolaoService {
         'mesa_publication_date_invalid'
       )
     }
-    const publication = publicationMode === 'NOW'
-      ? { status: 'ACTIVE' as const, publishedAt: new Date() }
-      : publicationMode === 'AT_START'
+    const publication = publicationMode === 'AT_START'
         ? { status: 'DRAFT' as const, publishedAt: startDate }
         : { status: 'DRAFT' as const, publishedAt: null }
 
@@ -217,14 +215,11 @@ export class CreateBolaoService {
         },
       })
 
-      if (publication.status === 'ACTIVE' && !input.administrative) {
-        await JoinBolaoService.execute({
+      if (publicationMode === 'NOW') {
+        return PublishMesaService.execute({
           rankingId: bolao.id,
-          userId: createdByUserId,
-          creatorPublication: true,
+          requestedByUserId: createdByUserId,
         }, tx)
-
-        return tx.ranking.findUniqueOrThrow({ where: { id: bolao.id } })
       }
 
       return bolao

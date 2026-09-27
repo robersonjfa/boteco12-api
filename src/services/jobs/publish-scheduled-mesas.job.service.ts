@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma'
 import { InternalJobRunnerService } from '../internal/internal-job-runner.service'
 import { PublishMesaService } from '../bolao/publish-mesa.service'
+import { AppError } from '../../errors/AppError'
 
 export type PublishScheduledMesasJobResult = {
   publishedMesas: number
@@ -30,7 +31,7 @@ export class PublishScheduledMesasJobService {
           select: { id: true, createdByUserId: true },
         })
         let publishedMesas = 0
-        const failures: string[] = []
+        const failures: Array<{ mesaId: string; reason: string }> = []
         for (const mesa of scheduled) {
           if (!mesa.createdByUserId) continue
           try {
@@ -39,12 +40,23 @@ export class PublishScheduledMesasJobService {
               requestedByUserId: mesa.createdByUserId,
             })
             publishedMesas += 1
-          } catch {
-            failures.push(mesa.id)
+          } catch (error) {
+            const reason = error instanceof AppError ? error.code : 'scheduled_publication_failed'
+            failures.push({ mesaId: mesa.id, reason })
+            await prisma.auditLog.create({
+              data: {
+                userId: mesa.createdByUserId,
+                action: 'BOLAO_SCHEDULED_PUBLICATION_FAILED',
+                entity: 'RANKING',
+                entityId: mesa.id,
+                metadata: { reason },
+              },
+            }).catch(() => undefined)
           }
         }
         if (failures.length > 0) {
-          throw new Error(`Falha ao publicar ${failures.length} Mesa(s) agendada(s)`)
+          const summary = failures.map(failure => `${failure.mesaId}:${failure.reason}`).join(',')
+          throw new Error(`Falha ao publicar ${failures.length} Mesa(s) agendada(s): ${summary}`)
         }
         return { publishedMesas }
       },

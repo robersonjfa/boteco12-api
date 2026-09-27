@@ -17,6 +17,9 @@ const {
 const {
   UpdateMesaService,
 } = require('../dist/services/bolao/update-mesa.service')
+const {
+  PublishMesaService,
+} = require('../dist/services/bolao/publish-mesa.service')
 const { CreateMesaSchema } = require('../dist/validators/bolao.validator')
 
 test('Mesa por lugares usa rodadas e Mesa por data usa datas explícitas', () => {
@@ -204,14 +207,16 @@ test('assinante cria Mesa com Tampinhas como rascunho por capacidade e rodadas',
 test('criação permite publicar agora ou agendar para o início das inscrições', async t => {
   const originalFindUnique = prisma.user.findUnique
   const originalTransaction = prisma.$transaction
+  const originalPublish = PublishMesaService.execute
   t.after(() => {
     prisma.user.findUnique = originalFindUnique
     prisma.$transaction = originalTransaction
+    PublishMesaService.execute = originalPublish
   })
 
   prisma.user.findUnique = async () => ({ id: 'admin-1' })
   let rankingData
-  prisma.$transaction = async callback => callback({
+  const transaction = {
     ranking: {
       create: async ({ data }) => {
         rankingData = data
@@ -219,7 +224,13 @@ test('criação permite publicar agora ou agendar para o início das inscriçõe
       },
     },
     auditLog: { create: async () => ({}) },
-  })
+  }
+  prisma.$transaction = async callback => callback(transaction)
+  let publishInput
+  PublishMesaService.execute = async (input, tx) => {
+    publishInput = { input, tx }
+    return { ...rankingData, status: 'ACTIVE', publishedAt: new Date() }
+  }
 
   const base = {
     description: 'Recompensa integral para o primeiro colocado.',
@@ -244,7 +255,11 @@ test('criação permite publicar agora ou agendar para o início das inscriçõe
     publicationMode: 'NOW',
   })
   assert.equal(published.status, 'ACTIVE')
-  assert.ok(rankingData.publishedAt instanceof Date)
+  assert.equal(rankingData.status, 'DRAFT')
+  assert.equal(rankingData.publishedAt, null)
+  assert.equal(publishInput.input.rankingId, rankingData.id)
+  assert.equal(publishInput.input.requestedByUserId, 'admin-1')
+  assert.equal(publishInput.tx, transaction)
 
   const scheduled = await CreateBolaoService.execute({
     ...base,
@@ -262,17 +277,17 @@ test('cliente que publica na criação entra automaticamente e paga dentro da tr
   const originalAssertPro = AssertActiveProUserService.execute
   const originalFindUnique = prisma.user.findUnique
   const originalTransaction = prisma.$transaction
-  const originalJoin = JoinBolaoService.execute
+  const originalPublish = PublishMesaService.execute
   t.after(() => {
     AssertActiveProUserService.execute = originalAssertPro
     prisma.user.findUnique = originalFindUnique
     prisma.$transaction = originalTransaction
-    JoinBolaoService.execute = originalJoin
+    PublishMesaService.execute = originalPublish
   })
 
   AssertActiveProUserService.execute = async userId => ({ id: userId })
   prisma.user.findUnique = async () => ({ id: 'customer-owner' })
-  let joined
+  let published
   let created
   const transaction = {
     ranking: {
@@ -285,9 +300,9 @@ test('cliente que publica na criação entra automaticamente e paga dentro da tr
     auditLog: { create: async () => ({}) },
   }
   prisma.$transaction = async callback => callback(transaction)
-  JoinBolaoService.execute = async (input, tx) => {
-    joined = { input, tx }
-    return { status: 'APPROVED', rankingId: input.rankingId, participantId: 'owner-seat' }
+  PublishMesaService.execute = async (input, tx) => {
+    published = { input, tx }
+    return { ...created, status: 'ACTIVE', currentParticipants: 1, grossCollected: 10 }
   }
 
   const result = await CreateBolaoService.execute({
@@ -309,9 +324,9 @@ test('cliente que publica na criação entra automaticamente e paga dentro da tr
     publicationMode: 'NOW',
   })
 
-  assert.equal(joined.input.userId, 'customer-owner')
-  assert.equal(joined.input.creatorPublication, true)
-  assert.equal(joined.tx, transaction)
+  assert.equal(published.input.requestedByUserId, 'customer-owner')
+  assert.equal(published.input.rankingId, created.id)
+  assert.equal(published.tx, transaction)
   assert.equal(result.currentParticipants, 1)
   assert.equal(result.grossCollected, 10)
 })
@@ -425,6 +440,72 @@ test('dono edita recompensa, quantidade de prêmios e percentuais do rascunho', 
   })
   assert.equal(adminResult.status, 'DRAFT')
   assert.equal(updateWhere.createdByUserId, undefined)
+})
+
+test('dono publica pela edição usando o fluxo transacional com autoentrada e cobrança', async t => {
+  const originalAssertPro = AssertActiveProUserService.execute
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  const originalUserFindUnique = prisma.user.findUnique
+  const originalTransaction = prisma.$transaction
+  const originalPublish = PublishMesaService.execute
+  t.after(() => {
+    AssertActiveProUserService.execute = originalAssertPro
+    prisma.ranking.findUnique = originalRankingFindUnique
+    prisma.user.findUnique = originalUserFindUnique
+    prisma.$transaction = originalTransaction
+    PublishMesaService.execute = originalPublish
+  })
+
+  AssertActiveProUserService.execute = async userId => ({ id: userId })
+  prisma.ranking.findUnique = async () => ({
+    id: 'draft-publish-edit', type: 'BOLAO', status: 'DRAFT', createdByUserId: 'owner-1',
+    category: 'PAID', accessCost: 10, sponsorPrizePool: 0,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    currentParticipants: 0, grossCollected: 0, settledAt: null,
+  })
+  prisma.user.findUnique = async () => ({ id: 'owner-1' })
+
+  let updateData
+  let publishCall
+  const transaction = {
+    ranking: {
+      updateMany: async ({ data }) => { updateData = data; return { count: 1 } },
+      findUniqueOrThrow: async () => ({
+        id: 'draft-publish-edit', status: 'ACTIVE', category: 'PAID',
+        accessCost: 10, sponsorPrizePool: 0, currentParticipants: 1,
+        grossCollected: 10, platformFee: 1, prizePool: 9, rewardPool: 9,
+        settledAt: null, startDate: new Date('2099-08-01T03:00:00.000Z'),
+        entryEndDate: null, endDate: null, prizeDistribution: [{ position: 1, percentage: 100 }],
+      }),
+    },
+    auditLog: { create: async () => ({}) },
+  }
+  prisma.$transaction = async callback => callback(transaction)
+  PublishMesaService.execute = async (input, tx) => {
+    publishCall = { input, tx }
+    return transaction.ranking.findUniqueOrThrow()
+  }
+
+  const result = await UpdateMesaService.execute({
+    rankingId: 'draft-publish-edit', requestedByUserId: 'owner-1',
+    name: 'Mesa publicada pela edição',
+    description: 'Recompensa integral para o primeiro colocado.',
+    startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: null, endDate: null, category: 'PAID', accessCost: 10,
+    sponsorPrizePool: 0, maxParticipants: 10, eligibility: 'ALL',
+    registrationCloseMode: 'CAPACITY', durationMode: 'ROUNDS', durationRounds: 5,
+    prizeDistribution: [{ position: 1, percentage: 100 }], publicationMode: 'NOW',
+  })
+
+  assert.equal(updateData.status, 'DRAFT')
+  assert.equal(updateData.publishedAt, null)
+  assert.deepEqual(publishCall.input, {
+    rankingId: 'draft-publish-edit', requestedByUserId: 'owner-1',
+  })
+  assert.equal(publishCall.tx, transaction)
+  assert.equal(result.status, 'ACTIVE')
+  assert.equal(result.currentParticipants, 1)
+  assert.equal(result.grossCollected, 10)
 })
 
 test('Mesa publicada não pode mais ser editada', async t => {

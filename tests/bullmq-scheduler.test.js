@@ -57,6 +57,7 @@ const {
   InternalJobRunnerService,
 } = require('../dist/services/internal/internal-job-runner.service')
 const { prisma } = require('../dist/lib/prisma')
+const { AppError } = require('../dist/errors/AppError')
 const { OpenRoundService } = require('../dist/services/round/open-round.service')
 const {
   CloseRoundService,
@@ -358,6 +359,55 @@ test('publica somente Mesas agendadas cujo início já chegou', async t => {
     { rankingId: 'mesa-2', requestedByUserId: 'owner-2' },
   ])
   assert.equal(result.publishedMesas, 2)
+})
+
+test('publicação agendada audita a causa segura e continua processando as demais Mesas', async t => {
+  const originalJob = InternalJobRunnerService.execute
+  const originalFindMany = prisma.ranking.findMany
+  const originalAuditCreate = prisma.auditLog.create
+  const originalPublish = PublishMesaService.execute
+  t.after(() => {
+    InternalJobRunnerService.execute = originalJob
+    prisma.ranking.findMany = originalFindMany
+    prisma.auditLog.create = originalAuditCreate
+    PublishMesaService.execute = originalPublish
+  })
+
+  prisma.ranking.findMany = async () => [
+    { id: 'mesa-sem-saldo', createdByUserId: 'owner-1' },
+    { id: 'mesa-publicada', createdByUserId: 'owner-2' },
+  ]
+  const audited = []
+  prisma.auditLog.create = async ({ data }) => { audited.push(data); return data }
+  const calls = []
+  PublishMesaService.execute = async input => {
+    calls.push(input.rankingId)
+    if (input.rankingId === 'mesa-sem-saldo') {
+      throw new AppError('mensagem interna não deve aparecer', 'insufficient_balance', 400)
+    }
+  }
+  InternalJobRunnerService.execute = async input => ({
+    executionId: 'exec-publish-failure',
+    status: 'SUCCESS',
+    result: await input.run(),
+  })
+
+  await assert.rejects(
+    PublishScheduledMesasJobService.execute(new Date('2026-09-19T18:00:00.000Z')),
+    error => {
+      assert.match(error.message, /mesa-sem-saldo:insufficient_balance/)
+      assert.doesNotMatch(error.message, /mensagem interna/)
+      return true
+    }
+  )
+  assert.deepEqual(calls, ['mesa-sem-saldo', 'mesa-publicada'])
+  assert.deepEqual(audited[0], {
+    userId: 'owner-1',
+    action: 'BOLAO_SCHEDULED_PUBLICATION_FAILED',
+    entity: 'RANKING',
+    entityId: 'mesa-sem-saldo',
+    metadata: { reason: 'insufficient_balance' },
+  })
 })
 
 test('recuperacao mensal usa source reconcile e chama EnsureMonthlyRankingsService', async t => {
