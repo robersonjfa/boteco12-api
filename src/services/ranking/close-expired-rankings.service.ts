@@ -38,6 +38,7 @@ export class CloseExpiredRankingsService {
     const closeService = new CloseRankingService();
 
     let closedCount = 0;
+    const failures: Array<{ rankingId: string; reason: string }> = [];
 
     /**
      * 2️⃣ Fechar um por um usando serviço oficial
@@ -47,15 +48,28 @@ export class CloseExpiredRankingsService {
         await closeService.execute(ranking.id);
         closedCount++;
       } catch (error) {
-        /**
-         * Não interrompe o processamento de outros rankings
-         * Pode futuramente logar via AuditLog
-         */
-        console.error(
-          `Erro ao fechar ranking ${ranking.id}:`,
-          error
-        );
+        const reason = typeof error === 'object' && error !== null &&
+          'code' in error && typeof error.code === 'string'
+          ? error.code
+          : 'ranking_close_failed';
+        failures.push({ rankingId: ranking.id, reason });
+        await prisma.auditLog.create({
+          data: {
+            action: 'RANKING_CLOSE_FAILED',
+            entity: 'RANKING',
+            entityId: ranking.id,
+            metadata: { reason },
+          },
+        }).catch(() => undefined);
       }
+    }
+
+    if (failures.length > 0) {
+      throw new Error(
+        `Falha ao encerrar ${failures.length} ranking(s): ${failures
+          .map(failure => failure.rankingId)
+          .join(',')}`
+      );
     }
 
     return { closed: closedCount };
