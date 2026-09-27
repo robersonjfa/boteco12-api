@@ -154,6 +154,17 @@ export class DiscoverMesasService {
         where: {
           type: 'BOLAO',
           status: 'ACTIVE',
+          createdByUserId: { not: input.userId },
+          participants: {
+            none: { userId: input.userId, status: 'APPROVED' },
+          },
+          registrationClosedAt: null,
+          AND: [{
+            OR: [
+              { entryEndDate: null },
+              { entryEndDate: { gt: now } },
+            ],
+          }],
           ...(input.category ? { category: input.category } : {}),
           ...(input.minCost != null || input.maxCost != null ? {
             accessCost: {
