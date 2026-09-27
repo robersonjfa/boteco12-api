@@ -223,6 +223,47 @@ test('bloqueia Mesa legada sem limite antes de reservar entrada', async t => {
   )
 })
 
+test('Mesa por data gera convite sem exigir limite de participantes', async t => {
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  const originalInviteCreate = prisma.bolaoInvite.create
+  const originalAuditCreate = prisma.auditLog.create
+  t.after(() => {
+    prisma.ranking.findUnique = originalRankingFindUnique
+    prisma.bolaoInvite.create = originalInviteCreate
+    prisma.auditLog.create = originalAuditCreate
+  })
+
+  prisma.ranking.findUnique = async () => ({
+    id: 'mesa-date',
+    type: 'BOLAO',
+    status: 'ACTIVE',
+    createdByUserId: 'owner-date',
+    startDate: new Date('2026-01-01T00:00:00Z'),
+    entryEndDate: new Date('2099-08-02T00:00:00Z'),
+    endDate: new Date('2099-08-10T00:00:00Z'),
+    currentParticipants: 3,
+    maxParticipants: null,
+    registrationCloseMode: 'DATE',
+  })
+  prisma.bolaoInvite.create = async ({ data }) => ({
+    id: 'invite-date',
+    ...data,
+    maxUses: data.maxUses ?? null,
+    expiresAt: data.expiresAt ?? null,
+    isActive: true,
+    createdAt: new Date('2026-09-26T12:00:00Z'),
+  })
+  prisma.auditLog.create = async () => ({})
+
+  const invite = await CreateBolaoInviteService.execute({
+    rankingId: 'mesa-date',
+    createdByUserId: 'owner-date',
+  })
+
+  assert.equal(invite.id, 'invite-date')
+  assert.equal(invite.isActive, true)
+})
+
 function openBolao() {
   return {
     id: 'mesa-1',

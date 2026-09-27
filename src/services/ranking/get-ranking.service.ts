@@ -23,7 +23,7 @@ export class GetRankingService {
      * Ausência de ranking NÃO é erro técnico
      * Deve retornar payload controlado
      */
-    if (!ranking) {
+    if (!ranking || (ranking.type === 'BOLAO' && ranking.status === 'DRAFT')) {
       return {
         ranking: null,
         participants: [],

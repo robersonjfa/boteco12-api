@@ -47,7 +47,9 @@ export class CloseBolaoService {
     }
 
     const closeService = new CloseRankingService();
-    await closeService.execute(rankingId, { force: true });
+    // O criador respeita o ciclo oficial da Mesa. Somente uma operação
+    // administrativa autorizada pode antecipar o encerramento.
+    await closeService.execute(rankingId, { force: canForceSettlement });
 
     if (canForceSettlement) {
       await prisma.adminAuditLog.create({

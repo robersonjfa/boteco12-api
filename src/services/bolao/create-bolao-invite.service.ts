@@ -42,6 +42,7 @@ export class CreateBolaoInviteService {
         endDate: true,
         currentParticipants: true,
         maxParticipants: true,
+        registrationCloseMode: true,
       },
     })
 
@@ -52,7 +53,9 @@ export class CreateBolaoInviteService {
     }
 
     BolaoRegistrationWindowService.assertNotClosed(ranking)
-    MesaCategoryRules.assertCapacity(ranking)
+    if ((ranking.registrationCloseMode ?? 'CAPACITY') === 'CAPACITY') {
+      MesaCategoryRules.assertCapacity(ranking)
+    }
 
     if (ranking.createdByUserId !== createdByUserId) {
       throw new Error('Apenas o dono da Mesa pode gerar convites')

@@ -5,6 +5,7 @@ import { AppError } from '../../errors/AppError'
 
 export type PublishScheduledMesasJobResult = {
   publishedMesas: number
+  failedMesas: number
   execution: {
     id: string
     status: string
@@ -31,7 +32,7 @@ export class PublishScheduledMesasJobService {
           select: { id: true, createdByUserId: true },
         })
         let publishedMesas = 0
-        const failures: Array<{ mesaId: string; reason: string }> = []
+        const failures: Array<{ mesaId: string; reason: string; scheduleCancelled: boolean }> = []
         for (const mesa of scheduled) {
           if (!mesa.createdByUserId) continue
           try {
@@ -42,28 +43,44 @@ export class PublishScheduledMesasJobService {
             publishedMesas += 1
           } catch (error) {
             const reason = error instanceof AppError ? error.code : 'scheduled_publication_failed'
-            failures.push({ mesaId: mesa.id, reason })
+            const scheduleCancelled = error instanceof AppError && [
+              'insufficient_balance',
+              'pro_subscription_required',
+            ].includes(reason)
+            failures.push({ mesaId: mesa.id, reason, scheduleCancelled })
+            if (scheduleCancelled) {
+              await prisma.ranking.updateMany({
+                where: { id: mesa.id, status: 'DRAFT', publishedAt: { not: null } },
+                data: { publishedAt: null },
+              })
+            }
             await prisma.auditLog.create({
               data: {
                 userId: mesa.createdByUserId,
                 action: 'BOLAO_SCHEDULED_PUBLICATION_FAILED',
                 entity: 'RANKING',
                 entityId: mesa.id,
-                metadata: { reason },
+                metadata: { reason, scheduleCancelled },
               },
             }).catch(() => undefined)
           }
         }
-        if (failures.length > 0) {
-          const summary = failures.map(failure => `${failure.mesaId}:${failure.reason}`).join(',')
-          throw new Error(`Falha ao publicar ${failures.length} Mesa(s) agendada(s): ${summary}`)
+        const retryableFailures = failures.filter(failure => !failure.scheduleCancelled)
+        if (retryableFailures.length > 0) {
+          const summary = retryableFailures
+            .map(failure => `${failure.mesaId}:${failure.reason}`)
+            .join(',')
+          throw new Error(
+            `Falha ao publicar ${retryableFailures.length} Mesa(s) agendada(s): ${summary}`
+          )
         }
-        return { publishedMesas }
+        return { publishedMesas, failedMesas: failures.length }
       },
     })
 
     return {
       publishedMesas: result.result?.publishedMesas ?? 0,
+      failedMesas: result.result?.failedMesas ?? 0,
       execution: {
         id: result.executionId,
         status: result.status,

@@ -359,16 +359,19 @@ test('publica somente Mesas agendadas cujo início já chegou', async t => {
     { rankingId: 'mesa-2', requestedByUserId: 'owner-2' },
   ])
   assert.equal(result.publishedMesas, 2)
+  assert.equal(result.failedMesas, 0)
 })
 
 test('publicação agendada audita a causa segura e continua processando as demais Mesas', async t => {
   const originalJob = InternalJobRunnerService.execute
   const originalFindMany = prisma.ranking.findMany
+  const originalUpdateMany = prisma.ranking.updateMany
   const originalAuditCreate = prisma.auditLog.create
   const originalPublish = PublishMesaService.execute
   t.after(() => {
     InternalJobRunnerService.execute = originalJob
     prisma.ranking.findMany = originalFindMany
+    prisma.ranking.updateMany = originalUpdateMany
     prisma.auditLog.create = originalAuditCreate
     PublishMesaService.execute = originalPublish
   })
@@ -378,6 +381,11 @@ test('publicação agendada audita a causa segura e continua processando as dema
     { id: 'mesa-publicada', createdByUserId: 'owner-2' },
   ]
   const audited = []
+  const scheduleUpdates = []
+  prisma.ranking.updateMany = async input => {
+    scheduleUpdates.push(input)
+    return { count: 1 }
+  }
   prisma.auditLog.create = async ({ data }) => { audited.push(data); return data }
   const calls = []
   PublishMesaService.execute = async input => {
@@ -392,21 +400,22 @@ test('publicação agendada audita a causa segura e continua processando as dema
     result: await input.run(),
   })
 
-  await assert.rejects(
-    PublishScheduledMesasJobService.execute(new Date('2026-09-19T18:00:00.000Z')),
-    error => {
-      assert.match(error.message, /mesa-sem-saldo:insufficient_balance/)
-      assert.doesNotMatch(error.message, /mensagem interna/)
-      return true
-    }
+  const result = await PublishScheduledMesasJobService.execute(
+    new Date('2026-09-19T18:00:00.000Z')
   )
+  assert.equal(result.publishedMesas, 1)
+  assert.equal(result.failedMesas, 1)
   assert.deepEqual(calls, ['mesa-sem-saldo', 'mesa-publicada'])
+  assert.deepEqual(scheduleUpdates, [{
+    where: { id: 'mesa-sem-saldo', status: 'DRAFT', publishedAt: { not: null } },
+    data: { publishedAt: null },
+  }])
   assert.deepEqual(audited[0], {
     userId: 'owner-1',
     action: 'BOLAO_SCHEDULED_PUBLICATION_FAILED',
     entity: 'RANKING',
     entityId: 'mesa-sem-saldo',
-    metadata: { reason: 'insufficient_balance' },
+    metadata: { reason: 'insufficient_balance', scheduleCancelled: true },
   })
 })
 

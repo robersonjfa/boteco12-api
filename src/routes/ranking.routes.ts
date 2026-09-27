@@ -54,7 +54,7 @@ router.post('/mesas/:rankingId/publish', authMiddleware, validateRequest(Ranking
 //
 // 🔹 Ranking genérico por ID (SEMPRE POR ÚLTIMO)
 //
-router.get('/rankings/:rankingId', controller.show);
+router.get('/rankings/:rankingId', validateRequest(RankingIdParamsSchema, 'params'), controller.show);
 
 //
 // 🔹 Acesso direto à Mesa
@@ -71,9 +71,9 @@ router.patch(
 //
 // 🔹 Ranking de leitura da Mesa
 //
-router.get('/rankings/:rankingId/mesa', authMiddleware, BolaoRankingController.handle);
+router.get('/rankings/:rankingId/mesa', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), BolaoRankingController.handle);
 router.post('/rankings/:rankingId/mesa/close', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), BolaoRankingController.close);
-router.get('/rankings/:rankingId/bolao', authMiddleware, BolaoRankingController.handle);
+router.get('/rankings/:rankingId/bolao', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), BolaoRankingController.handle);
 router.post('/rankings/:rankingId/bolao/close', authMiddleware, validateRequest(RankingIdParamsSchema, 'params'), BolaoRankingController.close);
 
 //

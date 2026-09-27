@@ -20,6 +20,15 @@ const {
 const {
   PublishMesaService,
 } = require('../dist/services/bolao/publish-mesa.service')
+const {
+  CloseBolaoService,
+} = require('../dist/services/bolao/close-bolao.service')
+const {
+  GetBolaoRankingService,
+} = require('../dist/services/bolao/get-bolao-ranking.service')
+const {
+  GetRankingService,
+} = require('../dist/services/ranking/get-ranking.service')
 const { CreateMesaSchema } = require('../dist/validators/bolao.validator')
 
 test('Mesa por lugares usa rodadas e Mesa por data usa datas explícitas', () => {
@@ -865,12 +874,19 @@ test('admin publica Mesa com Tampinhas sem entrar nem depender de assinatura PRO
 test('dono encontra seus rascunhos mesmo sem participar da Mesa', async t => {
   const originalParticipantFindMany = prisma.rankingParticipant.findMany
   const originalRankingFindMany = prisma.ranking.findMany
+  const originalAuditFindMany = prisma.auditLog.findMany
   t.after(() => {
     prisma.rankingParticipant.findMany = originalParticipantFindMany
     prisma.ranking.findMany = originalRankingFindMany
+    prisma.auditLog.findMany = originalAuditFindMany
   })
 
   prisma.rankingParticipant.findMany = async () => []
+  prisma.auditLog.findMany = async () => [{
+    entityId: 'draft-owned',
+    action: 'BOLAO_SCHEDULED_PUBLICATION_FAILED',
+    metadata: { reason: 'insufficient_balance', scheduleCancelled: true },
+  }]
   prisma.ranking.findMany = async () => [{
     id: 'draft-owned',
     name: 'Rascunho do Balcão',
@@ -904,4 +920,94 @@ test('dono encontra seus rascunhos mesmo sem participar da Mesa', async t => {
   assert.equal(mesas[0].id, 'draft-owned')
   assert.equal(mesas[0].isOwner, true)
   assert.equal(mesas[0].status, 'DRAFT')
+  assert.equal(mesas[0].publicationFailureReason, 'insufficient_balance')
+})
+
+test('criador não força encerramento antes do ciclo oficial da Mesa', async t => {
+  const originalFindUnique = prisma.ranking.findUnique
+  const originalTransaction = prisma.$transaction
+  t.after(() => {
+    prisma.ranking.findUnique = originalFindUnique
+    prisma.$transaction = originalTransaction
+  })
+
+  prisma.ranking.findUnique = async () => ({
+    id: 'mesa-active',
+    type: 'BOLAO',
+    status: 'ACTIVE',
+    createdByUserId: 'owner-1',
+  })
+  prisma.$transaction = async callback => callback({
+    ranking: {
+      findUnique: async () => ({
+        id: 'mesa-active',
+        type: 'BOLAO',
+        status: 'ACTIVE',
+        endDate: new Date('2099-12-31T23:59:59Z'),
+      }),
+    },
+  })
+
+  await assert.rejects(
+    CloseBolaoService.execute({
+      rankingId: 'mesa-active',
+      requestedByUserId: 'owner-1',
+    }),
+    { message: 'Ranking ainda não expirou' }
+  )
+})
+
+test('detalhes de rascunho ficam invisíveis para quem não é o dono', async t => {
+  const originalFindUnique = prisma.ranking.findUnique
+  t.after(() => { prisma.ranking.findUnique = originalFindUnique })
+
+  prisma.ranking.findUnique = async () => ({
+    id: 'private-draft',
+    type: 'BOLAO',
+    status: 'DRAFT',
+    createdByUserId: 'owner-1',
+    participants: [],
+  })
+
+  await assert.rejects(
+    GetBolaoRankingService.execute({
+      rankingId: 'private-draft',
+      viewerUserId: 'other-user',
+    }),
+    error => {
+      assert.equal(error.code, 'mesa_not_found')
+      assert.equal(error.statusCode, 404)
+      return true
+    }
+  )
+})
+
+test('endpoint genérico não expõe Mesa em rascunho nem consulta participantes', async t => {
+  const originalRankingFindUnique = prisma.ranking.findUnique
+  const originalParticipantFindMany = prisma.rankingParticipant.findMany
+  t.after(() => {
+    prisma.ranking.findUnique = originalRankingFindUnique
+    prisma.rankingParticipant.findMany = originalParticipantFindMany
+  })
+
+  prisma.ranking.findUnique = async () => ({
+    id: 'private-draft',
+    name: 'Segredo',
+    type: 'BOLAO',
+    status: 'DRAFT',
+    startDate: null,
+    endDate: null,
+    createdAt: new Date(),
+  })
+  let participantsQueried = false
+  prisma.rankingParticipant.findMany = async () => {
+    participantsQueried = true
+    return []
+  }
+
+  const result = await new GetRankingService().execute('private-draft')
+
+  assert.equal(result.ranking, null)
+  assert.deepEqual(result.participants, [])
+  assert.equal(participantsQueried, false)
 })

@@ -57,6 +57,44 @@ export class ListUserBoloesService {
       }),
     ])
 
+    const mesaIds = [
+      ...participations.map(participation => participation.ranking.id),
+      ...ownedMesas.map(mesa => mesa.id),
+    ]
+    const publicationEvents = mesaIds.length > 0
+      ? await prisma.auditLog.findMany({
+          where: {
+            userId,
+            entity: 'RANKING',
+            entityId: { in: mesaIds },
+            action: {
+              in: [
+                'BOLAO_SCHEDULED_PUBLICATION_FAILED',
+                'BOLAO_UPDATED',
+                'BOLAO_PUBLISHED',
+              ],
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { entityId: true, action: true, metadata: true },
+        })
+      : []
+    const latestPublicationEvent = new Map<string, typeof publicationEvents[number]>()
+    for (const event of publicationEvents) {
+      if (event.entityId && !latestPublicationEvent.has(event.entityId)) {
+        latestPublicationEvent.set(event.entityId, event)
+      }
+    }
+    const failureReason = (rankingId: string, status: string) => {
+      if (status !== 'DRAFT') return null
+      const event = latestPublicationEvent.get(rankingId)
+      if (event?.action !== 'BOLAO_SCHEDULED_PUBLICATION_FAILED') return null
+      const metadata = event.metadata
+      return metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+        ? String((metadata as { reason?: unknown }).reason ?? 'scheduled_publication_failed')
+        : 'scheduled_publication_failed'
+    }
+
     const participating = participations.map(p => withMesaFinancialNames({
       id: p.ranking.id,
       name: p.ranking.name,
@@ -86,6 +124,7 @@ export class ListUserBoloesService {
       isOwner: p.ranking.createdByUserId === userId,
       myPosition: p.position,
       myScore: p.score,
+      publicationFailureReason: failureReason(p.ranking.id, p.ranking.status),
     }))
 
     const participatingIds = new Set(participating.map(item => item.id))
@@ -120,6 +159,7 @@ export class ListUserBoloesService {
         isOwner: true,
         myPosition: null,
         myScore: 0,
+        publicationFailureReason: failureReason(mesa.id, mesa.status),
       }))
 
     return [...owned, ...participating]

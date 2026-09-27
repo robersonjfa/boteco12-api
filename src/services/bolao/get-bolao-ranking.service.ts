@@ -1,6 +1,8 @@
 import { prisma } from '../../lib/prisma';
 import { withMesaFinancialNames } from './mesa-financial-names';
 import { RankingWindowScoreService } from '../ranking/ranking-window-score.service';
+import { AppError } from '../../errors/AppError';
+import { mesaRegistrationState } from './discover-mesas.service';
 
 type ExecuteInput = {
   rankingId: string;
@@ -47,6 +49,9 @@ export class GetBolaoRankingService {
 
     const ownerId = bolao.createdByUserId;
     const isOwner = ownerId === viewerUserId;
+    if (bolao.status === 'DRAFT' && !isOwner) {
+      throw AppError.notFound('Mesa', 'mesa_not_found');
+    }
     const viewerParticipant = viewerUserId
       ? bolao.participants.find(p => p.userId === viewerUserId)
       : undefined;
@@ -108,6 +113,12 @@ export class GetBolaoRankingService {
             };
           });
 
+    const registration = bolao.status === 'CLOSED'
+      ? { state: 'CLOSED' as const, spotsRemaining: bolao.maxParticipants == null
+          ? null
+          : Math.max(bolao.maxParticipants - bolao.currentParticipants, 0) }
+      : mesaRegistrationState(bolao, new Date());
+
     return {
       ranking: withMesaFinancialNames({
         id: bolao.id,
@@ -139,6 +150,8 @@ export class GetBolaoRankingService {
         joined: viewerParticipant?.status === 'APPROVED',
         participantId: viewerParticipant?.id ?? null,
         participantStatus: viewerParticipant?.status ?? null,
+        registrationState: registration.state,
+        spotsRemaining: registration.spotsRemaining,
         ownerName: displayName(bolao.createdBy),
       }),
       total: entries.length,

@@ -26,7 +26,7 @@ type DiscoverMesasInput = {
   now?: Date
 }
 
-type RegistrationState = 'OPEN' | 'CLOSING_SOON' | 'UPCOMING' | 'FULL' | 'CLOSED'
+export type RegistrationState = 'OPEN' | 'CLOSING_SOON' | 'UPCOMING' | 'FULL' | 'CLOSED'
 type AccessState =
   | 'CAN_JOIN'
   | 'ALREADY_JOINED'
@@ -38,7 +38,7 @@ type AccessState =
 
 const CLOSING_SOON_MS = 72 * 60 * 60 * 1000
 
-function registrationState(mesa: {
+export function mesaRegistrationState(mesa: {
   startDate: Date | null
   entryEndDate: Date | null
   registrationClosedAt: Date | null
@@ -190,7 +190,7 @@ export class DiscoverMesasService {
     const isPro = hasActiveProSubscriptionAt(user?.subscription, now)
     const balance = user?.wallet?.balance ?? 0
     let rows = mesas.map(mesa => {
-      const registration = registrationState(mesa, now)
+      const registration = mesaRegistrationState(mesa, now)
       const joined = mesa.participants.length > 0
       const isOwner = mesa.createdByUserId === input.userId
       const access = accessState({
