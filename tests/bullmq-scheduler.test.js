@@ -62,6 +62,9 @@ const { OpenRoundService } = require('../dist/services/round/open-round.service'
 const {
   CloseRoundService,
 } = require('../dist/services/round/close-round.service')
+const {
+  CloseRankingService,
+} = require('../dist/services/ranking/close-ranking.service')
 
 test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   const schedules = getRequiredSchedules()
@@ -318,6 +321,49 @@ test('close expired Mesas delega service e permite repeat sem duplicar settlemen
   assert.equal(domainCalls, 2)
   assert.equal(first.closedRankings, 1)
   assert.equal(second.closedRankings, 1)
+})
+
+test('close expired audita falhas individuais e reprova o job depois de tentar todas as Mesas', async t => {
+  const originalFindMany = prisma.ranking.findMany
+  const originalRoundFindMany = prisma.round.findMany
+  const originalAuditCreate = prisma.auditLog.create
+  const originalClose = CloseRankingService.prototype.execute
+  t.after(() => {
+    prisma.ranking.findMany = originalFindMany
+    prisma.round.findMany = originalRoundFindMany
+    prisma.auditLog.create = originalAuditCreate
+    CloseRankingService.prototype.execute = originalClose
+  })
+
+  prisma.round.findMany = async () => []
+  prisma.ranking.findMany = async input => {
+    if (input.where?.durationMode === 'ROUNDS') return []
+    return [{ id: 'mesa-falhou' }, { id: 'mesa-fechou' }]
+  }
+
+  const attempted = []
+  CloseRankingService.prototype.execute = async rankingId => {
+    attempted.push(rankingId)
+    if (rankingId === 'mesa-falhou') throw new Error('falha interna sensível')
+  }
+
+  const audits = []
+  prisma.auditLog.create = async input => {
+    audits.push(input.data)
+    return { id: `audit-${audits.length}` }
+  }
+
+  await assert.rejects(
+    () => new CloseExpiredRankingsService().execute(),
+    /Falha ao encerrar 1 ranking\(s\): mesa-falhou/
+  )
+  assert.deepEqual(attempted, ['mesa-falhou', 'mesa-fechou'])
+  assert.deepEqual(audits, [{
+    action: 'RANKING_CLOSE_FAILED',
+    entity: 'RANKING',
+    entityId: 'mesa-falhou',
+    metadata: { reason: 'ranking_close_failed' },
+  }])
 })
 
 test('publica somente Mesas agendadas cujo início já chegou', async t => {
