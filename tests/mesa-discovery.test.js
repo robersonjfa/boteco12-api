@@ -76,6 +76,17 @@ test('filtra no servidor por pesquisa, categoria e capacidade de entrada', async
   })
   assert.equal(receivedWhere.category, 'FREE')
   assert.ok(receivedWhere.OR.some(item => item.createdBy))
+  assert.deepEqual(receivedWhere.createdByUserId, { not: 'user-1' })
+  assert.deepEqual(receivedWhere.participants, {
+    none: { userId: 'user-1', status: 'APPROVED' },
+  })
+  assert.equal(receivedWhere.registrationClosedAt, null)
+  assert.deepEqual(receivedWhere.AND, [{
+    OR: [
+      { entryEndDate: null },
+      { entryEndDate: { gt: NOW } },
+    ],
+  }])
   assert.equal(result.mesas.length, 1)
   assert.equal(result.mesas[0].accessState, 'CAN_JOIN')
 })
