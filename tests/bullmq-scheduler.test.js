@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const test = require('node:test')
+const packageJson = require('../package.json')
 
 const {
   JOB_NAMES,
@@ -103,6 +104,13 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
 
   const everyMinute = schedules.filter(item => item.everyMs === EVERY_MINUTE_MS)
   assert.equal(everyMinute.length, 4)
+})
+
+test('gate do worker inclui a recuperação manual das Mesas agendadas', () => {
+  assert.match(
+    packageJson.scripts['test:worker'],
+    /publish-scheduled-mesas-recovery\.test\.js/
+  )
 })
 
 test('timezone America/Sao_Paulo deriva periodRef correto no virada do mes', () => {
