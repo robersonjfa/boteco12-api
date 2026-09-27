@@ -7,6 +7,7 @@ import { OpenRoundJobController } from '../../controllers/internal/open-round.jo
 import { RecomputeScoredRoundsController } from '../../controllers/internal/recompute-scored-rounds.controller';
 import { ScheduledRoundsJobController } from '../../controllers/internal/scheduled-rounds.job.controller';
 import { EnsureMonthlyRankingsJobController } from '../../controllers/internal/ensure-monthly-rankings.job.controller';
+import { PublishScheduledMesasController } from '../../controllers/internal/publish-scheduled-mesas.controller';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ const openRoundJobController = new OpenRoundJobController();
 const recomputeScoredRoundsController = new RecomputeScoredRoundsController();
 const scheduledRoundsJobController = new ScheduledRoundsJobController();
 const ensureMonthlyRankingsJobController = new EnsureMonthlyRankingsJobController();
+const publishScheduledMesasController = new PublishScheduledMesasController();
 
 /**
  * Apuração de rodada
@@ -37,6 +39,17 @@ router.post(
   internalJobRateLimiter,
   internalJobAuth,
   (req, res) => closeExpiredRankingsController.execute(req, res)
+);
+
+/**
+ * Publicação de Mesas agendadas (recuperação manual)
+ * POST /internal/jobs/publish-scheduled-mesas
+ */
+router.post(
+  '/publish-scheduled-mesas',
+  internalJobRateLimiter,
+  internalJobAuth,
+  (req, res) => publishScheduledMesasController.execute(req, res)
 );
 
 /**

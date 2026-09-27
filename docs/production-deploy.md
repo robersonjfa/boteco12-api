@@ -408,6 +408,7 @@ Validacao manual dos jobs (recovery):
 /opt/boteco12-infra/scripts/run-internal-job.sh /internal/open-scheduled-rounds
 /opt/boteco12-infra/scripts/run-internal-job.sh /internal/close-scheduled-rounds
 /opt/boteco12-infra/scripts/run-internal-job.sh /internal/close-expired-rankings
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/publish-scheduled-mesas
 /opt/boteco12-infra/scripts/run-internal-job.sh /internal/ensure-monthly-rankings
 ```
 
