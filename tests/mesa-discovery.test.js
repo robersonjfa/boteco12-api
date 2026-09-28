@@ -64,29 +64,34 @@ test('filtra no servidor por pesquisa, categoria e capacidade de entrada', async
     prisma.user.findUnique = originals.user
     prisma.ranking.findMany = originals.mesas
   })
-  let receivedWhere
+  let receivedQuery
   prisma.user.findUnique = async () => ({ subscription: null, wallet: { balance: 0 } })
   prisma.ranking.findMany = async input => {
-    receivedWhere = input.where
+    receivedQuery = input
     return [mesa({ category: 'FREE', accessCost: 0, entryFee: 0, eligibility: 'ALL' })]
   }
 
   const result = await DiscoverMesasService.execute({
     userId: 'user-1', query: 'chefao', category: 'FREE', access: 'CAN_JOIN', now: NOW,
   })
-  assert.equal(receivedWhere.category, 'FREE')
-  assert.ok(receivedWhere.OR.some(item => item.createdBy))
-  assert.deepEqual(receivedWhere.createdByUserId, { not: 'user-1' })
-  assert.deepEqual(receivedWhere.participants, {
+  assert.equal(receivedQuery.where.category, 'FREE')
+  assert.ok(receivedQuery.where.OR.some(item => item.createdBy))
+  assert.deepEqual(receivedQuery.where.createdByUserId, { not: 'user-1' })
+  assert.deepEqual(receivedQuery.where.participants, {
     none: { userId: 'user-1', status: 'APPROVED' },
   })
-  assert.equal(receivedWhere.registrationClosedAt, null)
-  assert.deepEqual(receivedWhere.AND, [{
+  assert.equal(receivedQuery.where.registrationClosedAt, null)
+  assert.deepEqual(receivedQuery.where.AND, [{
     OR: [
       { entryEndDate: null },
       { entryEndDate: { gt: NOW } },
     ],
   }])
+  assert.equal(receivedQuery.take, 241)
+  assert.deepEqual(receivedQuery.orderBy, [
+    { entryEndDate: { sort: 'asc', nulls: 'last' } },
+    { createdAt: 'desc' },
+  ])
   assert.equal(result.mesas.length, 1)
   assert.equal(result.mesas[0].accessState, 'CAN_JOIN')
 })

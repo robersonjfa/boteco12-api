@@ -62,6 +62,15 @@ function readRoutes(file) {
   return routes
 }
 
+function routeFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const absolutePath = path.join(directory, entry.name)
+    if (entry.isDirectory()) return routeFiles(absolutePath)
+    if (!entry.isFile() || !entry.name.endsWith('.routes.ts')) return []
+    return [path.relative(root, absolutePath)]
+  })
+}
+
 test('matriz canônica protege todas as rotas administrativas e internas', () => {
   assert.equal(policy.schemaVersion, 1)
   const expected = new Map()
@@ -71,14 +80,15 @@ test('matriz canônica protege todas as rotas administrativas e internas', () =>
     expected.set(key, route)
   }
 
-  const files = [...new Set(policy.routes.map(route => route.file))]
+  const files = routeFiles(path.join(root, 'src/routes'))
   const discovered = files
     .flatMap(readRoutes)
     .filter(
       route =>
         route.path.startsWith('/admin') ||
         route.path.includes('/admin/') ||
-        route.file === 'src/routes/internal.routes.ts'
+        route.file === 'src/routes/internal.routes.ts' ||
+        route.file.startsWith('src/routes/internal/')
     )
 
   assert.equal(discovered.length, policy.routes.length)

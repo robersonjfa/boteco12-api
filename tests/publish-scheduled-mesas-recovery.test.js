@@ -50,6 +50,10 @@ test('rota interna e runbook documentam a recuperação da publicação agendada
     path.join(root, 'src/routes/internal/jobs.routes.ts'),
     'utf8'
   )
+  const internalIndex = fs.readFileSync(
+    path.join(root, 'src/routes/internal/index.ts'),
+    'utf8'
+  )
   const runbook = fs.readFileSync(
     path.join(root, 'docs/production-deploy.md'),
     'utf8'
@@ -57,5 +61,7 @@ test('rota interna e runbook documentam a recuperação da publicação agendada
 
   assert.match(routes, /'\/publish-scheduled-mesas'/)
   assert.match(routes, /internalJobRateLimiter[\s\S]*internalJobAuth/)
-  assert.match(runbook, /\/internal\/publish-scheduled-mesas/)
+  assert.match(internalIndex, /router\.use\('\/jobs', jobsRoutes\)/)
+  assert.doesNotMatch(internalIndex, /router\.use\(jobsRoutes\)/)
+  assert.match(runbook, /\/internal\/jobs\/publish-scheduled-mesas/)
 })
