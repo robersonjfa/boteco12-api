@@ -17,7 +17,7 @@
     "test:payments": "npm run build && node --test tests/mercado-pago-*.test.js tests/operational-alerts.test.js tests/subscription-access.test.js tests/subscription-package-validity.test.js",
     "test:operations:e2e": "npm run build && node --test tests/operational-alerts.e2e.test.js",
     "test:benefits": "npm run build && node --test tests/benefit-consumption.test.js tests/regrant-open-round-benefits.test.js",
-    "test:worker": "npm run build && node --test tests/bullmq-*.test.js",
+    "test:worker": "npm run build && node --test tests/bullmq-*.test.js tests/publish-scheduled-mesas-recovery.test.js",
     "test:teams": "npm run build && node --test tests/team-seed.test.js tests/team-route-permissions.test.js tests/team-search.test.js tests/team-variant-cleanup.test.js",
     "test:preferences": "npm run build && node --test tests/user-preferences.test.js",
     "test:security": "npm run build && node --test tests/admin-access.test.js tests/admin-user-password-reset.test.js tests/csrf-protection.test.js tests/session-security.test.js tests/wallet-atomicity.test.js tests/security-rbac.test.js tests/security-identity-validation.test.js tests/privacy-security.test.js tests/security-route-policy.test.js tests/security-platform-controls.test.js tests/migration-baseline-v2.test.js tests/container-hardening.test.js tests/email-security.test.js tests/logger-secret-redaction.test.js tests/password-policy.test.js tests/simulation-safety.test.js tests/simulation-data-cleanup.test.js tests/production-preflight.test.js",
