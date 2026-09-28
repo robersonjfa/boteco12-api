@@ -37,7 +37,18 @@ type AccessState =
   | 'NOT_OPEN'
 
 const CLOSING_SOON_MS = 72 * 60 * 60 * 1000
-const DISCOVERY_CANDIDATE_LIMIT = 240
+
+type MesaDiscoveryIndexRow = {
+  id: string | null
+  registrationState: RegistrationState | null
+  accessState: AccessState | null
+  spotsRemaining: number | null
+  ordinal: number | null
+  total: number
+  canJoin: number
+  closingSoon: number
+  upcoming: number
+}
 
 export function mesaRegistrationState(mesa: {
   startDate: Date | null
@@ -133,6 +144,171 @@ const mesaSelect = {
   createdBy: { select: { name: true, nickname: true } },
 } satisfies Prisma.RankingSelect
 
+function discoveryOrder(sort: MesaDiscoverySort) {
+  if (sort === 'NEWEST') {
+    return Prisma.sql`"createdAt" DESC, id ASC`
+  }
+  if (sort === 'LOWEST_COST') {
+    return Prisma.sql`access_cost ASC, state_rank ASC, "createdAt" DESC, id ASC`
+  }
+  if (sort === 'HIGHEST_REWARD') {
+    return Prisma.sql`reward_pool DESC, state_rank ASC, "createdAt" DESC, id ASC`
+  }
+  if (sort === 'CLOSING_SOON') {
+    return Prisma.sql`state_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
+  }
+  return Prisma.sql`state_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
+}
+
+function buildDiscoveryIndexQuery(input: {
+  userId: string
+  query?: string
+  category?: MesaCategory
+  registration: MesaRegistrationFilter
+  access: MesaAccessFilter
+  sort: MesaDiscoverySort
+  minCost?: number
+  maxCost?: number
+  now: Date
+  isPro: boolean
+  balance: number
+  offset: number
+  limit: number
+}) {
+  const closingSoonAt = new Date(input.now.getTime() + CLOSING_SOON_MS)
+  const baseFilters: Prisma.Sql[] = [
+    Prisma.sql`r."type"::text = 'BOLAO'`,
+    Prisma.sql`r."status"::text = 'ACTIVE'`,
+    Prisma.sql`r."createdByUserId" IS DISTINCT FROM ${input.userId}`,
+    Prisma.sql`NOT EXISTS (
+      SELECT 1
+      FROM "ranking_participants" participant
+      WHERE participant."rankingId" = r.id
+        AND participant."userId" = ${input.userId}
+        AND participant."status"::text = 'APPROVED'
+    )`,
+    Prisma.sql`r."registrationClosedAt" IS NULL`,
+    Prisma.sql`(r."entryEndDate" IS NULL OR r."entryEndDate" > ${input.now})`,
+    Prisma.sql`(r."maxParticipants" IS NULL OR r."currentParticipants" < r."maxParticipants")`,
+  ]
+
+  if (input.category) {
+    baseFilters.push(Prisma.sql`r."category"::text = ${input.category}`)
+  }
+  if (input.minCost != null) {
+    baseFilters.push(Prisma.sql`r."accessCost" >= ${input.minCost}`)
+  }
+  if (input.maxCost != null) {
+    baseFilters.push(Prisma.sql`r."accessCost" <= ${input.maxCost}`)
+  }
+  if (input.query) {
+    baseFilters.push(Prisma.sql`(
+      r."name" ILIKE '%' || ${input.query} || '%'
+      OR EXISTS (
+        SELECT 1
+        FROM "users" owner
+        WHERE owner.id = r."createdByUserId"
+          AND (
+            owner."name" ILIKE '%' || ${input.query} || '%'
+            OR owner."nickname" ILIKE '%' || ${input.query} || '%'
+          )
+      )
+    )`)
+  }
+
+  const registrationFilter = input.registration === 'ALL'
+    ? Prisma.sql`TRUE`
+    : input.registration === 'OPEN'
+      ? Prisma.sql`registration_state IN ('OPEN', 'CLOSING_SOON')`
+      : Prisma.sql`registration_state = ${input.registration}`
+  const accessFilter = input.access === 'CAN_JOIN'
+    ? Prisma.sql`access_state = 'CAN_JOIN'`
+    : Prisma.sql`TRUE`
+  const upperOrdinal = input.offset + input.limit
+
+  return Prisma.sql`
+    WITH base AS (
+      SELECT
+        r.id,
+        r."startDate",
+        r."entryEndDate",
+        r."createdAt",
+        r."category"::text AS category,
+        r."eligibility"::text AS eligibility,
+        COALESCE(r."accessCost", r."entryFee") AS access_cost,
+        COALESCE(r."rewardPool", r."prizePool") AS reward_pool,
+        CASE
+          WHEN r."maxParticipants" IS NULL THEN NULL
+          ELSE GREATEST(r."maxParticipants" - r."currentParticipants", 0)
+        END::int AS spots_remaining
+      FROM "rankings" r
+      WHERE ${Prisma.join(baseFilters, ' AND ')}
+    ), registration AS (
+      SELECT
+        base.*,
+        CASE
+          WHEN "startDate" IS NOT NULL AND "startDate" > ${input.now} THEN 'UPCOMING'
+          WHEN ("entryEndDate" IS NOT NULL AND "entryEndDate" <= ${closingSoonAt})
+            OR (spots_remaining IS NOT NULL AND spots_remaining <= 2) THEN 'CLOSING_SOON'
+          ELSE 'OPEN'
+        END AS registration_state
+      FROM base
+    ), classified AS (
+      SELECT
+        registration.*,
+        CASE
+          WHEN eligibility = 'SUBSCRIBERS_ONLY' AND NOT ${input.isPro} THEN 'PLAN_REQUIRED'
+          WHEN eligibility = 'FREE_ONLY' AND ${input.isPro} THEN 'SIDEWALK_REQUIRED'
+          WHEN registration_state NOT IN ('OPEN', 'CLOSING_SOON') THEN 'NOT_OPEN'
+          WHEN category = 'PAID' AND ${input.balance} < access_cost THEN 'INSUFFICIENT_BALANCE'
+          ELSE 'CAN_JOIN'
+        END AS access_state
+      FROM registration
+    ), scored AS (
+      SELECT
+        classified.*,
+        CASE
+          WHEN access_state = 'CAN_JOIN' AND registration_state = 'CLOSING_SOON' THEN 0
+          WHEN access_state = 'CAN_JOIN' THEN 1
+          WHEN registration_state <> 'UPCOMING' THEN 2
+          ELSE 3
+        END AS state_rank
+      FROM classified
+    ), filtered AS (
+      SELECT *
+      FROM scored
+      WHERE ${registrationFilter} AND ${accessFilter}
+    ), ordered AS (
+      SELECT
+        filtered.*,
+        (ROW_NUMBER() OVER (ORDER BY ${discoveryOrder(input.sort)}))::int AS ordinal
+      FROM filtered
+    ), stats AS (
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE access_state = 'CAN_JOIN')::int AS can_join,
+        COUNT(*) FILTER (WHERE registration_state = 'CLOSING_SOON')::int AS closing_soon,
+        COUNT(*) FILTER (WHERE registration_state = 'UPCOMING')::int AS upcoming
+      FROM filtered
+    )
+    SELECT
+      page.id,
+      page.registration_state AS "registrationState",
+      page.access_state AS "accessState",
+      page.spots_remaining AS "spotsRemaining",
+      page.ordinal,
+      stats.total,
+      stats.can_join AS "canJoin",
+      stats.closing_soon AS "closingSoon",
+      stats.upcoming
+    FROM stats
+    LEFT JOIN ordered page
+      ON page.ordinal > ${input.offset}
+      AND page.ordinal <= ${upperOrdinal}
+    ORDER BY page.ordinal NULLS LAST
+  `
+}
+
 export class DiscoverMesasService {
   static async execute(input: DiscoverMesasInput) {
     const now = input.now ?? new Date()
@@ -141,161 +317,93 @@ export class DiscoverMesasService {
     const sort = input.sort ?? 'RECOMMENDED'
     const query = input.query?.trim()
 
-    const [user, queriedMesas] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: input.userId },
-        select: {
-          subscription: {
-            select: { status: true, plan: true, startAt: true, endAt: true },
-          },
-          wallet: { select: { balance: true } },
+    const user = await prisma.user.findUnique({
+      where: { id: input.userId },
+      select: {
+        subscription: {
+          select: { status: true, plan: true, startAt: true, endAt: true },
         },
-      }),
-      prisma.ranking.findMany({
-        where: {
-          type: 'BOLAO',
-          status: 'ACTIVE',
-          createdByUserId: { not: input.userId },
-          participants: {
-            none: { userId: input.userId, status: 'APPROVED' },
-          },
-          registrationClosedAt: null,
-          AND: [{
-            OR: [
-              { entryEndDate: null },
-              { entryEndDate: { gt: now } },
-            ],
-          }],
-          ...(input.category ? { category: input.category } : {}),
-          ...(input.minCost != null || input.maxCost != null ? {
-            accessCost: {
-              ...(input.minCost != null ? { gte: input.minCost } : {}),
-              ...(input.maxCost != null ? { lte: input.maxCost } : {}),
-            },
-          } : {}),
-          ...(query ? {
-            OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              {
-                createdBy: {
-                  is: {
-                    OR: [
-                      { name: { contains: query, mode: 'insensitive' } },
-                      { nickname: { contains: query, mode: 'insensitive' } },
-                    ],
-                  },
-                },
-              },
-            ],
-          } : {}),
-        },
-        select: {
-          ...mesaSelect,
-          participants: {
-            where: { userId: input.userId, status: 'APPROVED' },
-            select: { id: true, status: true },
-          },
-        },
-        orderBy: [
-          { entryEndDate: { sort: 'asc', nulls: 'last' } },
-          { createdAt: 'desc' },
-        ],
-        take: DISCOVERY_CANDIDATE_LIMIT + 1,
-      }),
-    ])
+        wallet: { select: { balance: true } },
+      },
+    })
 
     const isPro = hasActiveProSubscriptionAt(user?.subscription, now)
     const balance = user?.wallet?.balance ?? 0
-    const truncated = queriedMesas.length > DISCOVERY_CANDIDATE_LIMIT
-    const mesas = queriedMesas.slice(0, DISCOVERY_CANDIDATE_LIMIT)
-    let rows = mesas.map(mesa => {
-      const registration = mesaRegistrationState(mesa, now)
-      const joined = mesa.participants.length > 0
-      const isOwner = mesa.createdByUserId === input.userId
-      const access = accessState({
-        isOwner,
-        joined,
-        eligibility: mesa.eligibility,
+    const offset = (page - 1) * limit
+    const indexedRows = await prisma.$queryRaw<MesaDiscoveryIndexRow[]>(
+      buildDiscoveryIndexQuery({
+        userId: input.userId,
+        query,
+        category: input.category,
+        registration: input.registration ?? 'ALL',
+        access: input.access ?? 'ALL',
+        sort,
+        minCost: input.minCost,
+        maxCost: input.maxCost,
+        now,
         isPro,
-        registrationState: registration.state,
-        category: mesa.category,
-        accessCost: mesa.accessCost ?? mesa.entryFee,
         balance,
+        offset,
+        limit,
       })
+    )
+    const summary = indexedRows[0] ?? {
+      total: 0,
+      canJoin: 0,
+      closingSoon: 0,
+      upcoming: 0,
+    }
+    const pageIndex = indexedRows.filter((row): row is MesaDiscoveryIndexRow & {
+      id: string
+      registrationState: RegistrationState
+      accessState: AccessState
+      ordinal: number
+    } => Boolean(row.id && row.registrationState && row.accessState && row.ordinal != null))
+    const ids = pageIndex.map(row => row.id)
+    const mesas = ids.length === 0
+      ? []
+      : await prisma.ranking.findMany({
+        where: { id: { in: ids } },
+        select: mesaSelect,
+      })
+    const mesasById = new Map(mesas.map(mesa => [mesa.id, mesa]))
+    const rows = pageIndex.flatMap(indexed => {
+      const mesa = mesasById.get(indexed.id)
+      if (!mesa) return []
       const financial = withMesaFinancialNames(mesa)
-      return {
+      return [{
         ...financial,
         participants: mesa.currentParticipants,
         ownerName: mesa.createdBy?.nickname?.trim() || mesa.createdBy?.name?.trim() || 'Boteco12',
-        isOwner,
-        joined,
-        participantId: mesa.participants[0]?.id ?? null,
-        participantStatus: mesa.participants[0]?.status ?? null,
-        registrationState: registration.state,
-        accessState: access,
+        isOwner: false,
+        joined: false,
+        participantId: null,
+        participantStatus: null,
+        registrationState: indexed.registrationState,
+        accessState: indexed.accessState,
         closesAt: mesa.entryEndDate,
-        spotsRemaining: registration.spotsRemaining,
+        spotsRemaining: indexed.spotsRemaining,
         recommendationReason: recommendationReason({
-          accessState: access,
-          registrationState: registration.state,
+          accessState: indexed.accessState,
+          registrationState: indexed.registrationState,
           category: mesa.category,
         }),
-      }
+      }]
     })
-
-    const registrationFilter = input.registration ?? 'ALL'
-    if (registrationFilter === 'OPEN') {
-      rows = rows.filter(item => ['OPEN', 'CLOSING_SOON'].includes(item.registrationState))
-    } else if (registrationFilter !== 'ALL') {
-      rows = rows.filter(item => item.registrationState === registrationFilter)
-    }
-    if ((input.access ?? 'ALL') === 'CAN_JOIN') {
-      rows = rows.filter(item => item.accessState === 'CAN_JOIN')
-    }
-
-    rows = rows.filter(item =>
-      !item.isOwner && !item.joined && !['FULL', 'CLOSED'].includes(item.registrationState)
-    )
-
-    const stateRank = (item: typeof rows[number]) => {
-      if (item.accessState === 'CAN_JOIN' && item.registrationState === 'CLOSING_SOON') return 0
-      if (item.accessState === 'CAN_JOIN') return 1
-      if (item.registrationState !== 'UPCOMING') return 2
-      return 3
-    }
-    rows.sort((a, b) => {
-      if (sort === 'NEWEST') return b.createdAt.getTime() - a.createdAt.getTime()
-      if (sort === 'LOWEST_COST') return a.accessCost - b.accessCost || stateRank(a) - stateRank(b)
-      if (sort === 'HIGHEST_REWARD') return b.rewardPool - a.rewardPool || stateRank(a) - stateRank(b)
-      if (sort === 'CLOSING_SOON') {
-        return stateRank(a) - stateRank(b) ||
-          (a.closesAt?.getTime() ?? Number.MAX_SAFE_INTEGER) -
-          (b.closesAt?.getTime() ?? Number.MAX_SAFE_INTEGER)
-      }
-      return stateRank(a) - stateRank(b) ||
-        (a.closesAt?.getTime() ?? Number.MAX_SAFE_INTEGER) -
-        (b.closesAt?.getTime() ?? Number.MAX_SAFE_INTEGER) ||
-        b.createdAt.getTime() - a.createdAt.getTime()
-    })
-
-    const counts = rows.reduce((result, item) => {
-      if (item.accessState === 'CAN_JOIN') result.canJoin += 1
-      if (item.registrationState === 'CLOSING_SOON') result.closingSoon += 1
-      if (item.registrationState === 'UPCOMING') result.upcoming += 1
-      return result
-    }, { canJoin: 0, closingSoon: 0, upcoming: 0 })
-    const total = rows.length
-    const paged = rows.slice((page - 1) * limit, page * limit)
 
     return {
-      mesas: paged,
+      mesas: rows,
       meta: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        counts,
-        truncated,
+        total: summary.total,
+        totalPages: Math.ceil(summary.total / limit),
+        counts: {
+          canJoin: summary.canJoin,
+          closingSoon: summary.closingSoon,
+          upcoming: summary.upcoming,
+        },
+        truncated: false,
       },
       viewer: { isPro, balance },
     }

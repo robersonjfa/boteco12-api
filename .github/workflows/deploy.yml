@@ -27,6 +27,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -49,6 +64,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm run ci:check
+
+      - name: Run Mesa discovery PostgreSQL integration
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm run test:mesa-discovery:postgres
 
       - name: Publish security gate report
         if: always()
