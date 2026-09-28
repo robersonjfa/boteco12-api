@@ -631,6 +631,9 @@ CREATE UNIQUE INDEX "rankings_name_key" ON "rankings"("name");
 CREATE INDEX "rankings_periodRef_idx" ON "rankings"("periodRef");
 
 -- CreateIndex
+CREATE INDEX "rankings_type_status_registrationClosedAt_entryEndDate_crea_idx" ON "rankings"("type", "status", "registrationClosedAt", "entryEndDate", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "rankings_type_periodRef_key" ON "rankings"("type", "periodRef");
 
 -- CreateIndex

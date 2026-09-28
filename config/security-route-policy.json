@@ -40,6 +40,21 @@
     { "file": "src/routes/team.routes.ts", "method": "post", "path": "/api/admin/teams", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
     { "file": "src/routes/team.routes.ts", "method": "put", "path": "/api/admin/teams/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
     { "file": "src/routes/team.routes.ts", "method": "delete", "path": "/api/admin/teams/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
+    { "file": "src/routes/art.routes.ts", "method": "get", "path": "/api/admin/arts", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
+    { "file": "src/routes/art.routes.ts", "method": "post", "path": "/api/admin/arts", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
+    { "file": "src/routes/art.routes.ts", "method": "put", "path": "/api/admin/arts/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
+    { "file": "src/routes/art.routes.ts", "method": "delete", "path": "/api/admin/arts/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
+    { "file": "src/routes/internal/alerts-jobs.routes.ts", "method": "post", "path": "/jobs/alerts/run", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/score-round", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/close-expired-rankings", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/publish-scheduled-mesas", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/open-round", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/open-scheduled-rounds", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/close-scheduled-rounds", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/recompute-scored-rounds", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/ensure-monthly-rankings", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/subscription-jobs.routes.ts", "method": "post", "path": "/jobs/subscriptions/revalidate", "auth": "internalJobAuth", "permission": null },
+    { "file": "src/routes/internal/webhooks.routes.ts", "method": "post", "path": "/webhooks/mercado-pago", "auth": "verifyMercadoPagoSignature", "permission": null },
     { "file": "src/routes/internal.routes.ts", "method": "post", "path": "/jobs/generate-ranking-snapshot", "auth": "internalJobAuth", "permission": "JOB_EXECUTE" }
   ]
 }

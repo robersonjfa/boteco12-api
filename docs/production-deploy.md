@@ -405,11 +405,11 @@ recuperacao: /opt/boteco12-infra/scripts/run-internal-job.sh
 Validacao manual dos jobs (recovery):
 
 ```bash
-/opt/boteco12-infra/scripts/run-internal-job.sh /internal/open-scheduled-rounds
-/opt/boteco12-infra/scripts/run-internal-job.sh /internal/close-scheduled-rounds
-/opt/boteco12-infra/scripts/run-internal-job.sh /internal/close-expired-rankings
-/opt/boteco12-infra/scripts/run-internal-job.sh /internal/publish-scheduled-mesas
-/opt/boteco12-infra/scripts/run-internal-job.sh /internal/ensure-monthly-rankings
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/jobs/open-scheduled-rounds
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/jobs/close-scheduled-rounds
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/jobs/close-expired-rankings
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/jobs/publish-scheduled-mesas
+/opt/boteco12-infra/scripts/run-internal-job.sh /internal/jobs/ensure-monthly-rankings
 ```
 
 ### 8. Migrations Prisma

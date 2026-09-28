@@ -440,6 +440,7 @@ model Ranking {
   @@map("rankings")
   @@unique([type, periodRef])
   @@index([periodRef])
+  @@index([type, status, registrationClosedAt, entryEndDate, createdAt])
 }
 
 //////////////////////////////////////////////////////

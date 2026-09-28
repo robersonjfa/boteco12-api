@@ -95,3 +95,30 @@ test('filtra no servidor por pesquisa, categoria e capacidade de entrada', async
   assert.equal(result.mesas.length, 1)
   assert.equal(result.mesas[0].accessState, 'CAN_JOIN')
 })
+
+test('limita a janela de candidatos e sinaliza resultado truncado', async t => {
+  const originals = { user: prisma.user.findUnique, mesas: prisma.ranking.findMany }
+  t.after(() => {
+    prisma.user.findUnique = originals.user
+    prisma.ranking.findMany = originals.mesas
+  })
+  prisma.user.findUnique = async () => ({ subscription: null, wallet: { balance: 0 } })
+  prisma.ranking.findMany = async () => Array.from({ length: 241 }, (_, index) => mesa({
+    id: `mesa-${index}`,
+    name: `Mesa ${index}`,
+    category: 'FREE',
+    accessCost: 0,
+    entryFee: 0,
+    eligibility: 'ALL',
+    currentParticipants: 1,
+  }))
+
+  const result = await DiscoverMesasService.execute({
+    userId: 'user-1', page: 20, limit: 12, now: NOW,
+  })
+
+  assert.equal(result.meta.total, 240)
+  assert.equal(result.meta.totalPages, 20)
+  assert.equal(result.meta.truncated, true)
+  assert.equal(result.mesas.length, 12)
+})

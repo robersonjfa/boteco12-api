@@ -37,6 +37,7 @@ type AccessState =
   | 'NOT_OPEN'
 
 const CLOSING_SOON_MS = 72 * 60 * 60 * 1000
+const DISCOVERY_CANDIDATE_LIMIT = 240
 
 export function mesaRegistrationState(mesa: {
   startDate: Date | null
@@ -140,7 +141,7 @@ export class DiscoverMesasService {
     const sort = input.sort ?? 'RECOMMENDED'
     const query = input.query?.trim()
 
-    const [user, mesas] = await Promise.all([
+    const [user, queriedMesas] = await Promise.all([
       prisma.user.findUnique({
         where: { id: input.userId },
         select: {
@@ -195,11 +196,18 @@ export class DiscoverMesasService {
             select: { id: true, status: true },
           },
         },
+        orderBy: [
+          { entryEndDate: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
+        take: DISCOVERY_CANDIDATE_LIMIT + 1,
       }),
     ])
 
     const isPro = hasActiveProSubscriptionAt(user?.subscription, now)
     const balance = user?.wallet?.balance ?? 0
+    const truncated = queriedMesas.length > DISCOVERY_CANDIDATE_LIMIT
+    const mesas = queriedMesas.slice(0, DISCOVERY_CANDIDATE_LIMIT)
     let rows = mesas.map(mesa => {
       const registration = mesaRegistrationState(mesa, now)
       const joined = mesa.participants.length > 0
@@ -287,6 +295,7 @@ export class DiscoverMesasService {
         total,
         totalPages: Math.ceil(total / limit),
         counts,
+        truncated,
       },
       viewer: { isPro, balance },
     }
