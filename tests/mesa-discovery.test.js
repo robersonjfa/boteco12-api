@@ -34,15 +34,29 @@ test('consulta de descoberta valida filtros e paginação', () => {
 })
 
 test('prioriza Mesa elegível terminando e explica bloqueios sem ocultar abertas', async t => {
-  const originals = { user: prisma.user.findUnique, mesas: prisma.ranking.findMany }
+  const originals = {
+    user: prisma.user.findUnique,
+    queryRaw: prisma.$queryRaw,
+    mesas: prisma.ranking.findMany,
+  }
   t.after(() => {
     prisma.user.findUnique = originals.user
+    prisma.$queryRaw = originals.queryRaw
     prisma.ranking.findMany = originals.mesas
   })
   prisma.user.findUnique = async () => ({
     subscription: { status: 'ACTIVE', plan: 'MONTHLY', startAt: new Date('2026-01-01'), endAt: null },
     wallet: { balance: 20 },
   })
+  let rawQueryCalled = false
+  prisma.$queryRaw = async () => {
+    rawQueryCalled = true
+    return [
+      { id: 'mesa-1', registrationState: 'CLOSING_SOON', accessState: 'CAN_JOIN', spotsRemaining: 2, ordinal: 1, total: 3, canJoin: 1, closingSoon: 2, upcoming: 1 },
+      { id: 'mesa-cara', registrationState: 'CLOSING_SOON', accessState: 'INSUFFICIENT_BALANCE', spotsRemaining: 9, ordinal: 2, total: 3, canJoin: 1, closingSoon: 2, upcoming: 1 },
+      { id: 'mesa-futura', registrationState: 'UPCOMING', accessState: 'NOT_OPEN', spotsRemaining: 9, ordinal: 3, total: 3, canJoin: 1, closingSoon: 2, upcoming: 1 },
+    ]
+  }
   prisma.ranking.findMany = async () => [
     mesa(),
     mesa({ id: 'mesa-cara', name: 'Mesa cara', accessCost: 100, entryFee: 100, currentParticipants: 1 }),
@@ -50,6 +64,7 @@ test('prioriza Mesa elegível terminando e explica bloqueios sem ocultar abertas
   ]
 
   const result = await DiscoverMesasService.execute({ userId: 'user-1', now: NOW })
+  assert.equal(rawQueryCalled, true)
   assert.deepEqual(result.mesas.map(item => item.id), ['mesa-1', 'mesa-cara', 'mesa-futura'])
   assert.equal(result.mesas[0].registrationState, 'CLOSING_SOON')
   assert.equal(result.mesas[0].accessState, 'CAN_JOIN')
@@ -59,66 +74,73 @@ test('prioriza Mesa elegível terminando e explica bloqueios sem ocultar abertas
 })
 
 test('filtra no servidor por pesquisa, categoria e capacidade de entrada', async t => {
-  const originals = { user: prisma.user.findUnique, mesas: prisma.ranking.findMany }
+  const originals = {
+    user: prisma.user.findUnique,
+    queryRaw: prisma.$queryRaw,
+    mesas: prisma.ranking.findMany,
+  }
   t.after(() => {
     prisma.user.findUnique = originals.user
+    prisma.$queryRaw = originals.queryRaw
     prisma.ranking.findMany = originals.mesas
   })
-  let receivedQuery
+  let receivedRawQuery
   prisma.user.findUnique = async () => ({ subscription: null, wallet: { balance: 0 } })
-  prisma.ranking.findMany = async input => {
-    receivedQuery = input
-    return [mesa({ category: 'FREE', accessCost: 0, entryFee: 0, eligibility: 'ALL' })]
+  prisma.$queryRaw = async query => {
+    receivedRawQuery = query
+    return [{
+      id: 'mesa-1', registrationState: 'CLOSING_SOON', accessState: 'CAN_JOIN',
+      spotsRemaining: 2, ordinal: 1, total: 1, canJoin: 1, closingSoon: 1, upcoming: 0,
+    }]
   }
+  prisma.ranking.findMany = async () => [
+    mesa({ category: 'FREE', accessCost: 0, entryFee: 0, eligibility: 'ALL' }),
+  ]
 
   const result = await DiscoverMesasService.execute({
-    userId: 'user-1', query: 'chefao', category: 'FREE', access: 'CAN_JOIN', now: NOW,
+    userId: 'user-1', query: 'chefao', category: 'FREE', access: 'CAN_JOIN',
+    sort: 'HIGHEST_REWARD', page: 3, limit: 12, now: NOW,
   })
-  assert.equal(receivedQuery.where.category, 'FREE')
-  assert.ok(receivedQuery.where.OR.some(item => item.createdBy))
-  assert.deepEqual(receivedQuery.where.createdByUserId, { not: 'user-1' })
-  assert.deepEqual(receivedQuery.where.participants, {
-    none: { userId: 'user-1', status: 'APPROVED' },
-  })
-  assert.equal(receivedQuery.where.registrationClosedAt, null)
-  assert.deepEqual(receivedQuery.where.AND, [{
-    OR: [
-      { entryEndDate: null },
-      { entryEndDate: { gt: NOW } },
-    ],
-  }])
-  assert.equal(receivedQuery.take, 241)
-  assert.deepEqual(receivedQuery.orderBy, [
-    { entryEndDate: { sort: 'asc', nulls: 'last' } },
-    { createdAt: 'desc' },
-  ])
+  assert.ok(receivedRawQuery)
+  assert.match(receivedRawQuery.sql, /ROW_NUMBER\(\) OVER/)
+  assert.match(receivedRawQuery.sql, /COUNT\(\*\)/)
+  assert.match(receivedRawQuery.sql, /rewardPool/)
+  assert.ok(receivedRawQuery.values.includes('chefao'))
+  assert.ok(receivedRawQuery.values.includes('FREE'))
+  assert.ok(receivedRawQuery.values.includes(24))
+  assert.ok(receivedRawQuery.values.includes(36))
   assert.equal(result.mesas.length, 1)
   assert.equal(result.mesas[0].accessState, 'CAN_JOIN')
 })
 
-test('limita a janela de candidatos e sinaliza resultado truncado', async t => {
-  const originals = { user: prisma.user.findUnique, mesas: prisma.ranking.findMany }
+test('pagina todo o conjunto elegível sem truncar depois de 240 Mesas', async t => {
+  const originals = {
+    user: prisma.user.findUnique,
+    queryRaw: prisma.$queryRaw,
+    mesas: prisma.ranking.findMany,
+  }
   t.after(() => {
     prisma.user.findUnique = originals.user
+    prisma.$queryRaw = originals.queryRaw
     prisma.ranking.findMany = originals.mesas
   })
   prisma.user.findUnique = async () => ({ subscription: null, wallet: { balance: 0 } })
-  prisma.ranking.findMany = async () => Array.from({ length: 241 }, (_, index) => mesa({
-    id: `mesa-${index}`,
-    name: `Mesa ${index}`,
-    category: 'FREE',
-    accessCost: 0,
-    entryFee: 0,
-    eligibility: 'ALL',
-    currentParticipants: 1,
-  }))
+  prisma.$queryRaw = async () => [{
+    id: 'mesa-300', registrationState: 'OPEN', accessState: 'CAN_JOIN',
+    spotsRemaining: 8, ordinal: 301, total: 1000, canJoin: 700, closingSoon: 40, upcoming: 100,
+  }]
+  prisma.ranking.findMany = async () => [mesa({
+    id: 'mesa-300', name: 'Mesa além da janela antiga', category: 'FREE',
+    accessCost: 0, entryFee: 0, eligibility: 'ALL', currentParticipants: 2,
+  })]
 
   const result = await DiscoverMesasService.execute({
-    userId: 'user-1', page: 20, limit: 12, now: NOW,
+    userId: 'user-1', page: 26, limit: 12, now: NOW,
   })
 
-  assert.equal(result.meta.total, 240)
-  assert.equal(result.meta.totalPages, 20)
-  assert.equal(result.meta.truncated, true)
-  assert.equal(result.mesas.length, 12)
+  assert.equal(result.meta.total, 1000)
+  assert.equal(result.meta.totalPages, 84)
+  assert.equal(result.meta.truncated, false)
+  assert.deepEqual(result.meta.counts, { canJoin: 700, closingSoon: 40, upcoming: 100 })
+  assert.deepEqual(result.mesas.map(item => item.id), ['mesa-300'])
 })
