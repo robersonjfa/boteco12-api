@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Validate P0 controls and clean up
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         env:
           P0_QA_RUN_ID: ${{ github.run_id }}
         with:

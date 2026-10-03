@@ -104,12 +104,26 @@ test('workflow publica relatório e bloqueia deploy antes dos gates', () => {
   )
   assert.match(workflow, /pull_request:\s*\n\s*branches: \[main\]/)
   assert.match(workflow, /run: npm run ci:check/)
-  assert.match(workflow, /uses: actions\/upload-artifact@v7/)
+  assert.match(
+    workflow,
+    /uses: actions\/upload-artifact@[a-f0-9]{40} # v7/
+  )
   assert.match(workflow, /path: \.artifacts\/security-gates\.json/)
   assert.match(workflow, /services:[\s\S]+postgres:[\s\S]+image: postgres:16-alpine/)
   assert.match(workflow, /run: npm run test:mesa-discovery:postgres/)
   assert.match(workflow, /docker-build:[\s\S]+needs: ci/)
   assert.match(workflow, /deploy:[\s\S]+needs: \[ci, docker-build\]/)
+})
+
+test('workflows fixam actions externas por SHA imutável', () => {
+  const workflowsDir = path.resolve(__dirname, '../.github/workflows')
+  for (const filename of fs.readdirSync(workflowsDir)) {
+    if (!filename.endsWith('.yml')) continue
+    const workflow = fs.readFileSync(path.join(workflowsDir, filename), 'utf8')
+    for (const match of workflow.matchAll(/uses:\s+[^@\s]+@([^\s#]+)/g)) {
+      assert.match(match[1], /^[a-f0-9]{40}$/, `${filename}: ${match[0]}`)
+    }
+  }
 })
 
 test('gate de migrations usa baseline controlada, não modo relatório', () => {
