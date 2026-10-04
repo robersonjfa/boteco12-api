@@ -1,9 +1,9 @@
-FROM postgres:16-alpine AS postgres-client
+FROM postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea AS postgres-client
 
 ############################
 # STAGE 1 — BUILD
 ############################
-FROM node:22-alpine AS build
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN npm prune --omit=dev && npm cache clean --force
 ############################
 # STAGE 2 — RUNTIME
 ############################
-FROM node:22-alpine AS runtime
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runtime
 
 ENV NODE_ENV=production
 WORKDIR /app

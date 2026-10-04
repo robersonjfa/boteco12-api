@@ -18,7 +18,7 @@ docker run --rm --entrypoint sh "$IMAGE" -c '
   test ! -e /usr/local/bin/npx
   # Prisma 7 loads prisma.config.ts through its own TypeScript dependency.
   test -d node_modules/typescript
-  test ! -d node_modules/ts-node-dev
+  test ! -d node_modules/tsx
   test ! -d node_modules/pino-pretty
   pg_dump --version | grep -q " 16\."
   pg_restore --version | grep -q " 16\."

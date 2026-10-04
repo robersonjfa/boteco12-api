@@ -2,7 +2,7 @@
 
 Baseline operacional do SEC-012:
 
-- build e runtime usam `node:22-alpine`, uma linha LTS suportada;
+- build e runtime usam `node:22-alpine` fixado por digest SHA-256, uma linha LTS suportada;
 - a imagem é multi-stage e executa API ou worker como usuário `node`, nunca root;
 - `npm prune --omit=dev` remove TypeScript, ts-node, tipos e ferramentas de
   desenvolvimento;

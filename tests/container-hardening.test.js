@@ -8,9 +8,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8')
 
 test('imagem usa Node LTS, multi-stage e usuário não-root', () => {
   const dockerfile = read('Dockerfile')
-  assert.match(dockerfile, /FROM node:22-alpine AS build/)
-  assert.match(dockerfile, /FROM node:22-alpine AS runtime/)
-  assert.match(dockerfile, /FROM postgres:16-alpine AS postgres-client/)
+  assert.match(dockerfile, /FROM node:22-alpine@sha256:[a-f0-9]{64} AS build/)
+  assert.match(dockerfile, /FROM node:22-alpine@sha256:[a-f0-9]{64} AS runtime/)
+  assert.match(dockerfile, /FROM postgres:16-alpine@sha256:[a-f0-9]{64} AS postgres-client/)
   assert.match(dockerfile, /postgresql-client/)
   assert.match(dockerfile, /COPY --from=postgres-client \/usr\/local\/bin\/pg_dump/)
   assert.match(dockerfile, /COPY --from=postgres-client \/usr\/local\/bin\/pg_restore/)
@@ -26,7 +26,7 @@ test('Prisma CLI é operacional e dependências diretas de build continuam dev-o
   const pkg = require('../package.json')
   assert.ok(pkg.dependencies.prisma)
   assert.equal(pkg.devDependencies.prisma, undefined)
-  for (const dependency of ['typescript', 'ts-node-dev', 'pino-pretty']) {
+  for (const dependency of ['typescript', 'tsx', 'pino-pretty']) {
     assert.ok(pkg.devDependencies[dependency])
     assert.equal(pkg.dependencies[dependency], undefined)
   }
@@ -37,7 +37,7 @@ test('CI verifica conteúdo, escaneia a imagem e exige healthcheck da release', 
   const workflow = read('.github/workflows/deploy.yml')
   assert.match(workflow, /NODE_VERSION: '22'/)
   assert.match(workflow, /verify-container-hardening\.sh/)
-  assert.match(workflow, /aquasec\/trivy:0\.65\.0 image/)
+  assert.match(workflow, /aquasec\/trivy:0\.65\.0@sha256:[a-f0-9]{64} image/)
   assert.match(workflow, /--exit-code 1/)
   assert.match(workflow, /--ignore-unfixed=false/)
   assert.match(workflow, /--pkg-types os,library/)
@@ -64,7 +64,7 @@ test('verificação da imagem cobre API, worker, Prisma e dependências de runti
   assert.match(verifier, /usr\/local\/bin\/npm/)
   assert.match(verifier, /usr\/local\/bin\/npx/)
   assert.match(verifier, /node_modules\/typescript/)
-  assert.match(verifier, /node_modules\/ts-node-dev/)
+  assert.match(verifier, /node_modules\/tsx/)
   assert.match(verifier, /node_modules\/pino-pretty/)
   assert.match(verifier, /pg_dump --version/)
   assert.match(verifier, /pg_restore --version/)

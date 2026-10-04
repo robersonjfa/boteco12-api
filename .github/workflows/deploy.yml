@@ -29,7 +29,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
         env:
           POSTGRES_DB: ci
           POSTGRES_USER: ci
@@ -70,6 +70,28 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm run test:mesa-discovery:postgres
 
+      - name: Prove backup restore in a disposable database
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          RESTORE_DATABASE_URL: postgresql://ci:ci@localhost:5432/boteco12_restore_ci
+          PGPASSWORD: ci
+        run: |
+          set -euo pipefail
+          backup_dir="${RUNNER_TEMP}/boteco12-backup"
+          BACKUP_DIR="$backup_dir" npm run db:backup -- --label ci-restore
+          backup_file="$(find "$backup_dir" -name '*.dump' -type f -print -quit)"
+          manifest_file="${backup_file%.dump}.manifest.json"
+          npm run db:backup:verify -- --file "$backup_file" --manifest "$manifest_file"
+          psql -h localhost -U ci -d ci -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE boteco12_restore_ci'
+          npm run db:restore -- \
+            --file "$backup_file" \
+            --target-url "$RESTORE_DATABASE_URL" \
+            --yes-i-know-this-drops-data
+          restored_tables="$(psql "$RESTORE_DATABASE_URL" -Atc \
+            "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'")"
+          test "$restored_tables" -gt 0
+
       - name: Publish security gate report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -100,7 +122,7 @@ jobs:
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${HOME}/.cache/trivy:/root/.cache/" \
-            aquasec/trivy:0.65.0 image \
+            aquasec/trivy:0.65.0@sha256:a22415a38938a56c379387a8163fcb0ce38b10ace73e593475d3658d578b2436 image \
             --exit-code 1 \
             --ignore-unfixed=false \
             --pkg-types os,library \

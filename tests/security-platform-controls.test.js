@@ -109,7 +109,10 @@ test('workflow publica relatório e bloqueia deploy antes dos gates', () => {
     /uses: actions\/upload-artifact@[a-f0-9]{40} # v7/
   )
   assert.match(workflow, /path: \.artifacts\/security-gates\.json/)
-  assert.match(workflow, /services:[\s\S]+postgres:[\s\S]+image: postgres:16-alpine/)
+  assert.match(
+    workflow,
+    /services:[\s\S]+postgres:[\s\S]+image: postgres:16-alpine@sha256:[a-f0-9]{64}/
+  )
   assert.match(workflow, /run: npm run test:mesa-discovery:postgres/)
   assert.match(workflow, /docker-build:[\s\S]+needs: ci/)
   assert.match(workflow, /deploy:[\s\S]+needs: \[ci, docker-build\]/)
