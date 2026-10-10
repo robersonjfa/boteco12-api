@@ -72,6 +72,7 @@
     "mysql2": "3.24.3",
     "path-to-regexp": "0.1.13",
     "picomatch": "2.3.2",
+    "proxy-addr": "2.0.8",
     "qs": "6.16.0"
   },
   "dependencies": {
