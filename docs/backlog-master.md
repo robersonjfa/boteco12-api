@@ -6,7 +6,7 @@ Data de consolidacao:
 
 Ultima atualizacao:
 
-- 2026-07-28
+- 2026-10-08
 
 Objetivo:
 
@@ -27,7 +27,7 @@ Documentos de origem:
 
 ## Fechamento das regras oficiais — fase sem premiação patrocinada
 
-Status da fase em 2026-07-15:
+Status da fase atualizado em 2026-10-08:
 
 - [x] Palpite exige exatamente 12 jogos e aceita somente `1`, `X` ou `2`
 - [x] Pontuação simples `+1/0`, Dupla `+2/-2`, Super Dupla `+4/-4` e jogo cancelado com zero
@@ -42,13 +42,13 @@ Status da fase em 2026-07-15:
 - [x] Coorte mensal fecha junto com a primeira rodada válida do mês
 - [x] Fechamento atrasado usa o último acumulado histórico até o fim da competição
 - [x] Pontuação negativa é preservada
-- [x] Mesa exige regras/observações, entrada positiva e distribuição de 100% (criação via admin)
-
-- [x] Mesa válida nasce `ACTIVE`; `DRAFT` permanece apenas como compatibilidade de fechamento legado
-- [x] Entrada do criador e dos participantes é imediata, atômica e condicionada ao saldo de fichas
-- [x] Mesa aceita inscrições somente antes do término das entradas (`entryEndDate`)
-- [x] Criação de Mesa desacoplada de rodada; exclusiva do admin
-- [x] Usuário PRO (e fluxo de convite) entra na Mesa; não cria Mesa nesta fase
+- [x] Mesa com recompensa exige regras/observações e distribuição válida de 100%
+- [x] Mesa nasce como `DRAFT` e pode ser publicada agora ou agendada para a abertura
+- [x] Cliente criador entra automaticamente ao publicar; a entrada e o débito de Tampinhas são atômicos
+- [x] Admin criador não entra automaticamente e pode participar depois nas mesmas condições dos demais clientes
+- [x] Mesa com Tampinhas fecha inscrições ao atingir a capacidade máxima e termina após a quantidade configurada de rodadas
+- [x] Mesa com Tampinhas não exige nem exibe data final de inscrições
+- [x] Criação de Mesa é desacoplada de rodada; clientes podem criar Mesas conforme elegibilidade e Mesa Patrocinada permanece exclusiva do admin
 
 ### Premiação adiada — fora da fase atual
 - [x] Caixa, taxa, prêmio líquido e pagamentos aos vencedores são auditáveis
@@ -1061,7 +1061,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-11`
+- `Concluido e implantado`
 
 Tarefas:
 
@@ -1552,7 +1552,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-11`
+- `Concluido e implantado`
 
 Tarefas:
 
@@ -1602,7 +1602,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-12`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1633,7 +1633,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-12`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1666,7 +1666,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-12`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1695,7 +1695,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-12`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1724,7 +1724,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-12`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1761,7 +1761,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-13`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1789,28 +1789,31 @@ Tipo:
 
 Status sugerido:
 
-- `Parcialmente implementado; criar Mesa saiu do jogador em 2026-07-28`
+- `Concluido, implantado e coberto por regressao mobile`
 
 Objetivo:
 
-- simplificar entrada e acompanhamento de Mesas; criação fica no admin nesta fase
+- simplificar descoberta, entrada e acompanhamento de Mesas para clientes
 
 Tarefas:
 
-- organizar lista de Mesas com estado, participantes, custo e periodo
+- organizar lista de Mesas com estado, participantes, custo e ciclo por rodadas
 - destacar convite/link/codigo quando aplicavel
-- no detalhe da Mesa, separar `Ranking`, `Participantes`, `Regras` e `Historico`
+- manter o detalhe compacto, com `Placar` e `Regras`
 
-Nota 2026-07-28:
+Nota de conclusao 2026-10-08:
 
 - Mesa não depende mais de rodada vinculada para criação/inscrição
-- somente admin cria Mesas (`Admin → Mesas`); jogador PRO apenas entra
-- backlog futuro: regras diferenciadas para usuário PRO criar Mesas (fora do escopo atual)
+- cliente cria Mesa pelo fluxo proprio e entra automaticamente quando a publica
+- admin cria Mesa pelo fluxo administrativo, não entra automaticamente e pode participar depois como qualquer cliente
+- descoberta separa Mesas do cliente das oportunidades abertas e mantém encerradas fora da visão principal
+- pesquisa, filtros, ordenação, paginação e estados de elegibilidade são calculados no servidor
 
 Critérios de aceite:
 
 - usuario entende como entrar em uma Mesa (convite/lista)
-- criacao fica restrita ao admin nesta fase
+- cliente elegivel consegue criar, publicar e entrar automaticamente na propria Mesa
+- admin não é inscrito automaticamente na Mesa que cria
 - detalhe da Mesa nao concentra informacao demais em uma unica dobra
 
 ### 33b. Reativar criacao de Mesa para usuario PRO com regras proprias
@@ -1821,22 +1824,22 @@ Tipo:
 
 Status sugerido:
 
-- `Backlog — nao iniciar agora`
+- `Concluido e implantado`
 
 Objetivo:
 
-- no futuro, permitir que usuario PRO crie Mesas com regras diferentes das do admin
-  (limites, taxas, elegibilidade, janelas etc. a definir)
+- permitir que cliente elegivel crie Mesas pelas regras oficiais, preservando o fluxo administrativo separado
 
 Tarefas:
 
-- definir regras de negocio PRO vs admin para criacao
-- reabrir endpoint/UI de criacao para PRO com validacoes especificas
-- alinhar copy de assinatura/upsell quando a feature voltar
+- aplicar elegibilidade de assinatura na criação de Mesa com Tampinhas
+- manter Mesa Patrocinada exclusiva do admin
+- publicar Mesa do cliente com entrada automática e débito atômico quando houver custo
+- publicar Mesa administrativa sem inscrever nem debitar o operador
 
 Critérios de aceite:
 
-- PRO cria Mesa apenas sob as regras novas documentadas
+- cliente cria Mesa apenas sob as regras oficiais documentadas
 - admin continua podendo criar Mesas operacionais
 - regressao de entrada/convite/ranking coberta por testes
 
@@ -1848,7 +1851,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-13`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1876,7 +1879,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-14`
+- `Concluido e incorporado ao fluxo de QA`
 
 Objetivo:
 
@@ -1906,7 +1909,7 @@ Tipo:
 
 Status sugerido:
 
-- `Implementado localmente em 2026-06-14`
+- `Concluido e implantado`
 
 Objetivo:
 
@@ -1935,30 +1938,24 @@ Tipo:
 
 Status sugerido:
 
-- `Backlog detalhado em 2026-06-25`
+- `Concluido na forma das regras oficiais vigentes e implantado`
 
 Objetivo:
 
-- transformar Mesas em disputas com criação PRO, entrada imediata mediante pagamento em fichas, período definido e ranking calculado somente sobre a pontuação feita durante a janela em que cada participante esteve na Mesa.
+- manter entrada imediata e atômica, ranking auditável e ciclo de vida definido pela categoria da Mesa.
 
-Regras de produto:
+Nota de conclusao 2026-10-08:
 
-- somente usuario PRO pode criar Mesa
-- usuario normal nao pode criar Mesa
-- criador PRO define o minimo de fichas exigido para participacao
-- qualquer usuário autenticado pode entrar em Mesa aberta se possuir as fichas exigidas
-- Mesas tem periodo de inicio e fim
-- cards de Mesas abertas devem mostrar claramente:
-  - nome da Mesa
-  - criador
-  - minimo de fichas
-  - quantidade de participantes/limite, se houver
-  - periodo de inicio e fim
-  - status de entrada do usuario: pode entrar, participando, encerrada ou saldo insuficiente
-- entrada em Mesa é automática quando o participante possui as fichas exigidas, sem aprovação do criador
-- o débito, o snapshot inicial e a inclusão no ranking acontecem na mesma transação
+- Mesa com Tampinhas exige capacidade máxima, fecha inscrições por lotação e termina depois da quantidade configurada de rodadas
+- Mesa com Tampinhas não usa data final de inscrições nem data final da Mesa
+- Mesa Free exige quantidade de rodadas e data limite; termina no primeiro limite atingido
+- Mesa Patrocinada é criada somente pelo admin e pode encerrar por rodadas ou por data
+- cliente criador entra automaticamente quando publica; admin criador permanece fora até solicitar participação
+- débito, inclusão do participante, atualização financeira e snapshot de entrada ocorrem atomicamente
+- ranking da Mesa preserva a janela oficial e não altera o ranking global acumulado
+- decisões completas por categoria permanecem em `docs/mesa-official-rules-v2-decisions.md`
 
-Regras de ranking historico:
+Controles de ranking entregues:
 
 - o ranking global/acumulado do usuario continua historico e cumulativo enquanto ele estiver no sistema
 - o ranking da Mesa nao substitui nem reseta o ranking global
@@ -1969,102 +1966,35 @@ Regras de ranking historico:
 - guardar log/snapshot para auditoria da Mesa, nao depender apenas de recalculo ad hoc em tela
 - se o usuario entrar depois do inicio da Mesa, a pontuacao inicial dele deve ser a pontuacao global no momento da entrada, nao a pontuacao do inicio da Mesa
 - se a Mesa fechar em uma data futura, a pontuacao final precisa refletir o ranking global consolidado ate o fechamento, respeitando a mesma fonte de verdade do ranking global
-- se houver reprocessamento de rodada/ranking que altere pontuacao historica dentro do periodo da Mesa, definir politica antes de implementar:
-  - opcao preferida: recalcular snapshots derivados com job auditavel e registrar evento de reprocessamento
-  - opcao conservadora: manter snapshots fechados imutaveis depois do fechamento e registrar ajuste manual se necessario
+- Mesa finalizada preserva o resultado liquidado; qualquer correção posterior exige fluxo auditável
 
-Modelo de dados a avaliar:
+Perguntas historicas encerradas pela implementacao:
 
-- `Table`/`Mesa`
-  - `id`
-  - `creatorId`
-  - `name`
-  - `description`
-  - `minChips`
-  - `startAt`
-  - `endAt`
-  - `status`: `OPEN`, `IN_PROGRESS`, `FINISHED`, `CANCELLED`
-- `TableParticipant`
-  - `id`
-  - `tableId`
-  - `userId`
-  - `joinedAt`
-  - `entryGlobalScore`
-  - `finalGlobalScore`
-  - `tableScore`
-  - `closedAt`
-  - `status`: `ACTIVE`, `FINISHED`, `REMOVED`
-- `TableScoreAuditLog`
-  - `id`
-  - `tableId`
-  - `userId`
-  - `action`: `JOIN_CONFIRMED`, `SCORE_SNAPSHOT_ENTRY`, `SCORE_SNAPSHOT_FINAL`, `TABLE_CLOSED`, `SCORE_REPROCESSED`
-  - `metadata`
-  - `createdAt`
-
-Backend - tarefas:
-
-- validar elegibilidade PRO para criar Mesa
-- validar saldo e debitar as fichas atomicamente ao entrar
-- bloquear entrada duplicada para mesma Mesa
-- criar participante aprovado e gravar snapshot de pontuacao global na mesma transacao
-- criar fluxo de fechamento de Mesa que:
-  - localiza participantes aprovados
-  - captura pontuacao global final de cada um
-  - calcula `tableScore`
-  - persiste snapshots e logs
-  - muda status da Mesa para `FINISHED`
-- definir se fechamento e manual pelo criador/admin, automatico por `endAt`, ou ambos
-- expor endpoints para:
-  - listar Mesas abertas
-  - criar Mesa
-  - entrar imediatamente mediante pagamento em fichas
-  - ver detalhe/ranking da Mesa
-  - fechar Mesa
-
-Frontend - tarefas:
-
-- card de Mesa aberta deve mostrar periodo de inicio/fim
-- qualquer usuario autenticado ve o botao `Entrar agora` quando a janela estiver aberta
-- usuario com entrada confirmada ve estado `Participando`
-- detalhe da Mesa deve separar:
-  - resumo/regras
-  - participantes
-  - ranking da Mesa
-  - historico/auditoria basica
-
-Perguntas antes de implementar:
-
-- fichas de entrada são debitadas imediatamente ao entrar
-- usuario criador entra automaticamente como participante da Mesa?
-- Mesa pode ter limite maximo de participantes?
-- Mesa pode comecar antes de `startAt` se o criador quiser?
-- fechamento deve ser automatico por `endAt`, manual, ou ambos?
-- o ranking da Mesa considera todas as pontuacoes do usuario no periodo ou apenas rodadas fechadas/apuradas dentro do periodo?
-- em reprocessamento de ranking global, Mesas finalizadas devem recalcular ou manter snapshots imutaveis?
+- Tampinhas são debitadas imediatamente e atomicamente na entrada
+- cliente criador entra automaticamente ao publicar; admin criador não entra automaticamente
+- Mesa com Tampinhas exige limite máximo e fecha inscrições ao atingir a capacidade
+- início e publicação obedecem ao modo configurado; não há início manual antecipado pelo criador
+- encerramento segue a categoria e a quantidade de rodadas ou data limite aplicável
+- ranking considera as rodadas oficiais da janela da Mesa e mantém trilha auditável
+- Mesa finalizada preserva o resultado liquidado; correções exigem fluxo auditável
 
 Criterios de aceite:
 
 - usuario normal consegue entrar em Mesa aberta quando possui as fichas exigidas
-- usuario PRO consegue criar Mesa com minimo de fichas e periodo
+- cliente elegivel consegue criar e publicar Mesa pelas regras da categoria
 - qualquer usuario autenticado com saldo suficiente entra sem aprovação do criador
 - participante tem snapshot de pontuacao global gravado no momento da entrada
 - ao fechar Mesa, cada participante tem snapshot final e `tableScore` persistidos
 - ranking da Mesa ordena por pontuacao feita dentro da Mesa, nao por pontuacao global total
 - ranking global continua acumulado e historico, sem reset por Mesa
-- cards de Mesas abertas exibem inicio e fim do periodo
+- cards exibem ciclo, custo, capacidade e elegibilidade sem inventar datas não aplicáveis
 - logs/auditoria permitem explicar de onde veio a pontuacao inicial e final de cada participante
 
 ## Ordem recomendada agora
 
-1. consolidar Mesas com entrada imediata por fichas e ranking por periodo
-2. reorganizar `Admin > Rodadas` por tarefa, sem mudar regras
-3. reorganizar `Admin > Usuarios` com detalhe progressivo, mantendo a grade operacional
-4. revisar Dashboard do jogador como tela de decisao rapida
-5. polir fluxo de palpites e historico sem alterar motor de pontuacao
-6. revisar Bar/Balcao, Mesas e Perfil com foco mobile-first
-7. validar pagamento real de assinatura em producao e webhook de confirmacao
-8. manter rotina de observabilidade, backup e deploy como base operacional
+1. configurar `OPERATIONS_ALERT_WEBHOOK_URL` na API e no worker e repetir a auditoria operacional
+2. validar pagamento real de assinatura em producao e o webhook de confirmacao
+3. manter CI, smoke autenticado, observabilidade, backup e deploy como base operacional
 
 ## Observacao final
 
@@ -2077,9 +2007,16 @@ Os documentos abaixo continuam valiosos, mas agora devem ser lidos como analise 
 A fonte oficial de prioridades passa a ser este arquivo.
 ### 38. Redesenhar navegacao mobile-first, dashboard de entrada e vitrine de premios
 
-Status: Backlog
+Status: Concluido, implantado e validado em viewport mobile
 Prioridade: Alta
 Frente: Frontend mobile-first / conversao / usabilidade
+
+Nota de conclusao 2026-10-08:
+
+- navegacao principal mobile consolidada em `Inicio`, `Bar`, `Mesas`, `Ranking` e `Recompensas`
+- rota autenticada de Recompensas implantada com conteúdo publicado pelo admin e estado vazio
+- dashboard usa card compacto, plano e saldo discreto e CTA contextual para fazer ou acompanhar escolhas
+- fluxo possui regressao Playwright em viewport mobile
 
 Objetivo:
 Simplificar o acesso mobile dos usuarios e deixar mais visiveis as areas que vendem a proposta do Boteco12: Bar, Mesas, Ranking e Premios. A tela inicial deve ser mais leve, direta e orientada para a proxima acao do usuario.
@@ -2168,17 +2105,23 @@ Criterios de aceite:
 - Build frontend passa sem erros.
 - Validacao visual mobile feita antes de deploy.
 
-Notas de implementacao:
-- Priorizar alteracoes no frontend.
-- Evitar criar novas regras de backend se o estado de palpite/rodada ja estiver disponivel nos contratos atuais.
-- Se o frontend nao tiver informacao suficiente para saber se o usuario ja fez palpite na rodada aberta, mapear contrato necessario antes da implementacao.
-- Premios pode comecar estatico, mas deve ser estruturado para futura integracao com backend/campanhas.
+Notas da implementacao entregue:
+- alteracoes ficaram concentradas no frontend e reutilizaram os contratos existentes de rodada, escolha e saldo
+- Recompensas foi integrada às artes publicadas pelo admin e possui estado vazio quando não há conteúdo
+- nenhuma regra nova de pontuação ou rodada foi criada para sustentar a interface
 
 ### 39. Redesenhar busca e selecao mobile de clubes e equipes
 
-Status: Implementado localmente em 2026-09-24; aguardando deploy e saneamento de producao
+Status: Concluido, implantado e saneado em producao
 Prioridade: Alta
 Frente: Backend / Frontend mobile-first / Dados / UX administrativa
+
+Nota de conclusao 2026-10-08:
+
+- contrato agrupado por clube, busca progressiva mobile e cards administrativos compactos foram implantados
+- dry-run de producao identificou 2.057 variantes artificiais ativas
+- saneamento protegido desativou as 2.057 variantes e a verificacao posterior encontrou zero restante
+- evidencias: runs `36081940070` (dry-run) e `36082014577` (aplicacao e verificacao)
 
 Origem:
 
@@ -2237,7 +2180,7 @@ Criterios de aceite:
 - historico de partidas existente permanece integro
 - fluxo validado em viewport mobile pelo Playwright e revisado visualmente antes do deploy
 
-Ordem recomendada de implementacao:
+Ordem executada na entrega:
 
 1. Corrigir o seed e preparar o diagnostico/saneamento dos dados.
 2. Definir e testar o contrato agrupado da pesquisa.
@@ -2247,9 +2190,17 @@ Ordem recomendada de implementacao:
 
 ### 40. Criar descoberta, pesquisa e filtros de Mesas para clientes
 
-Status: Implementado localmente em 2026-09-24; aguardando deploy
+Status: Concluido, implantado e validado em producao
 Prioridade: Alta
 Frente: Produto / Backend / Frontend mobile-first / Recomendacao
+
+Nota de conclusao 2026-10-08:
+
+- descoberta separa `Para voce`, `Minhas` e `Todas`, priorizando Mesas abertas e elegiveis
+- pesquisa, filtros, ordenacao, contagens e paginacao são processados no servidor
+- filtros são preservados ao abrir uma Mesa e voltar para a listagem
+- encerradas ficam ocultas por padrão e oportunidades abertas permanecem acessíveis como fallback
+- regressao cobre descoberta e navegação em viewport mobile; paginação completa no banco possui gate dedicado
 
 Origem:
 
@@ -2362,7 +2313,7 @@ Fallbacks e estados vazios:
 - usuario sem saldo: continuar mostrando oportunidades, mas separar as gratuitas e explicar requisitos das pagas
 - usuario sem plano compativel: destacar Mesas acessiveis e permitir visualizar as demais sem simular elegibilidade
 
-MVP recomendado:
+MVP entregue:
 
 1. Separar `Minhas`, `Para voce` e `Todas`.
 2. Implementar pesquisa por Mesa/criador e filtros por inscricao, categoria e elegibilidade.
@@ -2404,7 +2355,7 @@ Criterios de aceite:
 - listagem e filtros possuem paginacao e contagens coerentes
 - fluxo e estados vazios sao validados em viewport mobile pelo Playwright
 
-Questoes para refinamento antes da implementacao:
+Evolucoes futuras ainda sujeitas a decisao de produto:
 
 - qual janela define `Inscricao terminando`: 24, 48 ou 72 horas?
 - Mesas exclusivas incompatíveis devem aparecer no fim da lista ou somente sob `Todas`?
