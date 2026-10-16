@@ -18,6 +18,7 @@ export class GetBolaoRankingService {
     const bolao = await prisma.ranking.findUnique({
       where: { id: rankingId },
       include: {
+        referenceRound: { select: { number: true } },
         createdBy: {
           select: {
             id: true,
@@ -69,6 +70,7 @@ export class GetBolaoRankingService {
           name: displayName(p.user),
           participantStatus: p.status,
           approvedAt: p.approvedAt,
+          scoreInitialCapturedAt: p.scoreInitialCapturedAt,
         },
       ])
     );
@@ -84,6 +86,7 @@ export class GetBolaoRankingService {
             isMe: participant.userId === viewerUserId,
             score: participant.score,
             scoreInitial: participant.scoreInitial,
+            scoreInitialCapturedAt: participant.scoreInitialCapturedAt,
             scoreTotal: participant.score,
             scoreRound: 0,
             position: participant.position ?? 0,
@@ -95,6 +98,10 @@ export class GetBolaoRankingService {
               id: bolao.id,
               startDate: bolao.startDate,
               endDate: bolao.endDate,
+              referenceRoundId: bolao.referenceRoundId,
+              referenceRound: bolao.referenceRound,
+              initializationStatus: bolao.initializationStatus,
+              scoreInitialCapturedAt: bolao.scoreInitialCapturedAt,
             })
           ).map(row => {
             const info = userInfoById.get(row.userId);
@@ -105,6 +112,7 @@ export class GetBolaoRankingService {
               isMe: row.userId === viewerUserId,
               score: row.score,
               scoreInitial: row.scoreInitial,
+              scoreInitialCapturedAt: info?.scoreInitialCapturedAt ?? null,
               scoreTotal: row.score,
               scoreRound: row.scoreRound,
               position: row.position,
@@ -133,6 +141,9 @@ export class GetBolaoRankingService {
         durationMode: bolao.durationMode,
         durationRounds: bolao.durationRounds,
         registrationClosedAt: bolao.registrationClosedAt,
+        referenceRoundId: bolao.referenceRoundId,
+        initializationStatus: bolao.initializationStatus,
+        scoreInitialCapturedAt: bolao.scoreInitialCapturedAt,
         publishedAt: bolao.publishedAt,
         sponsorPrizePool: bolao.sponsorPrizePool,
         prizeDistribution: bolao.prizeDistribution,

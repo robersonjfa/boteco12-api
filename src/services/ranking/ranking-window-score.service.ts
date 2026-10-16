@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { MesaInitializationStatus, Prisma } from '@prisma/client'
 import { RankingTiebreakService } from './ranking-tiebreak.service'
 
 type RankingScoreClient = Pick<
@@ -10,6 +10,10 @@ type RankingWindow = {
   id: string
   startDate: Date | null
   endDate: Date | null
+  referenceRoundId?: string | null
+  referenceRound?: { number: number } | null
+  initializationStatus?: MesaInitializationStatus | null
+  scoreInitialCapturedAt?: Date | null
 }
 
 export type RankingWindowRow = {
@@ -65,6 +69,7 @@ export class RankingWindowScoreService {
         userId: true,
         score: true,
         scoreInitial: true,
+        scoreInitialCapturedAt: true,
         position: true,
         approvedAt: true,
         createdAt: true,
@@ -84,6 +89,20 @@ export class RankingWindowScoreService {
       return []
     }
 
+    const referenceLifecycle = Boolean(ranking.referenceRoundId || ranking.initializationStatus)
+    if (referenceLifecycle && (
+      ranking.initializationStatus !== 'READY' || !ranking.scoreInitialCapturedAt ||
+      !ranking.referenceRound || participants.some(p => !p.scoreInitialCapturedAt)
+    )) {
+      // Não ordenar nem expor pontuação parcial antes da barreira global.
+      return participants.map(p => ({
+        participantId: p.id, userId: p.userId, score: 0, scoreRound: 0, position: 0,
+        scoreInitial: p.scoreInitial, scoreTotalCurrent: p.scoreInitial,
+        superDoubleHits: 0, doubleHits: 0, userCreatedAt: p.user.createdAt,
+        previousScore: p.score, previousPosition: p.position,
+      }))
+    }
+
     const participantIds = participants.map(participant => participant.userId)
     const endDate = ranking.endDate ?? new Date()
 
@@ -91,6 +110,7 @@ export class RankingWindowScoreService {
       where: {
         userId: { in: participantIds },
         round: {
+          ...(referenceLifecycle ? { status: 'SCORED' as const } : {}),
           closeAt: {
             lte: endDate,
           },
@@ -104,10 +124,10 @@ export class RankingWindowScoreService {
         totalSuperDoubles: true,
         createdAt: true,
         round: {
-          select: { closeAt: true },
+          select: { closeAt: true, number: true },
         },
       },
-      orderBy: [
+      orderBy: referenceLifecycle ? [{ round: { number: 'desc' } }] : [
         { round: { closeAt: 'desc' } },
         { createdAt: 'desc' },
       ],
@@ -115,9 +135,13 @@ export class RankingWindowScoreService {
 
     const rows = participants.map(participant => {
       const latestHistory = historyRows.find(row =>
-        row.userId === participant.userId
+        row.userId === participant.userId &&
+        (!referenceLifecycle || row.round.number > ranking.referenceRound!.number)
       )
-      const baselineHistory = ranking.startDate
+      const baselineHistory = referenceLifecycle
+        ? historyRows.find(row => row.userId === participant.userId &&
+            row.round.number <= ranking.referenceRound!.number)
+        : ranking.startDate
         ? historyRows.find(row =>
             row.userId === participant.userId &&
             row.round.closeAt != null &&
@@ -129,7 +153,7 @@ export class RankingWindowScoreService {
         participant.approvedAt &&
         participant.approvedAt < ranking.startDate
       )
-      const scoreInitial = joinedBeforeStart && baselineHistory
+      const scoreInitial = !referenceLifecycle && joinedBeforeStart && baselineHistory
         ? baselineHistory.scoreTotal
         : participant.scoreInitial
       const rankingNotStarted = Boolean(ranking.startDate && now < ranking.startDate)
@@ -138,7 +162,9 @@ export class RankingWindowScoreService {
       // Se não há histórico algum, não houve pontuação a incorporar à Mesa:
       // o total no fechamento permanece igual ao baseline.
       const liveTotal = participant.user?.scoreTotal ?? 0
-      const scoreTotalCurrent = rankingNotStarted
+      const scoreTotalCurrent = referenceLifecycle
+        ? latestHistory?.scoreTotal ?? scoreInitial
+        : rankingNotStarted
         ? scoreInitial
         : rankingEnded
         ? latestHistory?.scoreTotal ?? scoreInitial
@@ -153,7 +179,7 @@ export class RankingWindowScoreService {
           ? latestHistory.scoreRound
           : 0
       const hits = RankingTiebreakService.calculateWindowHits(
-        latestHistory,
+        referenceLifecycle ? latestHistory ?? baselineHistory : latestHistory,
         baselineHistory
       )
 

@@ -1,10 +1,12 @@
 import { prisma } from '../../lib/prisma'
 import { RankingWindowScoreService } from './ranking-window-score.service'
 import { RANKING_TIEBREAK_RULE_VERSION } from './ranking-tiebreak.service'
+import { MesaInitialScoreService } from '../bolao/mesa-initial-score.service'
 
 export class RecalculateRankingService {
 
   static async execute(): Promise<void> {
+    await MesaInitialScoreService.capturePending()
     const rankings = await prisma.ranking.findMany({
       where: {
         OR: [
@@ -16,6 +18,10 @@ export class RecalculateRankingService {
         id: true,
         startDate: true,
         endDate: true,
+        referenceRoundId: true,
+        referenceRound: { select: { number: true } },
+        initializationStatus: true,
+        scoreInitialCapturedAt: true,
       },
     })
 

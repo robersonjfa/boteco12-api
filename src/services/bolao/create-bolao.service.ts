@@ -160,6 +160,9 @@ export class CreateBolaoService {
           status: publication.status,
           publishedAt: publication.publishedAt,
           category: terms.category,
+          initializationStatus: MesaCategoryRules.isPaid(terms)
+            ? 'WAITING_FOR_REGISTRATION_CLOSE'
+            : null,
           entryFee: accessCost,
           accessCost,
           sponsorPrizePool: terms.sponsorPrizePool,

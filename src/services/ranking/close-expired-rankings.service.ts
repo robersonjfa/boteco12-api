@@ -1,10 +1,12 @@
 import { prisma } from '../../lib/prisma';
 import { CloseRankingService } from './close-ranking.service';
 import { MesaLifecycleService } from '../bolao/mesa-lifecycle.service';
+import { MesaInitialScoreService } from '../bolao/mesa-initial-score.service';
 
 export class CloseExpiredRankingsService {
   async execute(): Promise<{ closed: number }> {
     const now = new Date();
+    await MesaInitialScoreService.capturePending();
 
     await MesaLifecycleService.closeDueRegistrations(prisma, now);
     await MesaLifecycleService.finishDueRoundMesas(prisma);

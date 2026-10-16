@@ -14,6 +14,7 @@ const { GetBolaoRankingService } = require('../dist/services/bolao/get-bolao-ran
 const { CloseRankingService } = require('../dist/services/ranking/close-ranking.service')
 const { CloseExpiredRankingsService } = require('../dist/services/ranking/close-expired-rankings.service')
 const { MesaLifecycleService } = require('../dist/services/bolao/mesa-lifecycle.service')
+const { CreateBolaoService } = require('../dist/services/bolao/create-bolao.service')
 const { spawnSync } = require('node:child_process')
 
 const PREFIX = 'mesa-baseline-integration'
@@ -332,4 +333,39 @@ test('falha durante captura reverte todos os baselines e a recuperação concorr
   assert.equal(recovered.initializationStatus, 'READY')
   assert.deepEqual(recovered.participants.map(p => p.scoreInitial), [163, 163])
   assert.equal(await prisma.auditLog.count({ where: { entityId: MESA_ID, action: 'MESA_INITIAL_SCORE_CAPTURED' } }), 1)
+})
+
+test('Mesa nova fica aguardando lotação e não compete enquanto incompleta', async t => {
+  const created = await CreateBolaoService.execute({
+    name: 'Mesa baseline incompleta', description: 'Fixture de inicialização',
+    startDate: new Date('2026-10-12T09:00:00Z'), endDate: null,
+    category: 'PAID', accessCost: 20, eligibility: 'ALL', maxParticipants: 2,
+    registrationCloseMode: 'CAPACITY', durationMode: 'ROUNDS', durationRounds: 2,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
+    createdByUserId: USER_ONE_ID, administrative: true, publicationMode: 'NOW',
+  })
+  t.after(async () => {
+    await prisma.ranking.deleteMany({ where: { id: created.id } })
+    await prisma.auditLog.deleteMany({ where: { entityId: created.id } })
+  })
+  await JoinBolaoService.execute({ rankingId: created.id, userId: USER_ONE_ID })
+  await prisma.user.update({ where: { id: USER_ONE_ID }, data: { scoreTotal: 163 } })
+  await RecalculateRankingService.execute()
+  const mesa = await prisma.ranking.findUniqueOrThrow({ where: { id: created.id } })
+  assert.equal(mesa.initializationStatus, 'WAITING_FOR_REGISTRATION_CLOSE')
+  assert.equal(mesa.referenceRoundId, null)
+  assert.equal(mesa.scoreInitialCapturedAt, null)
+  const detail = await GetBolaoRankingService.execute({ rankingId: created.id })
+  assert.deepEqual(detail.entries.map(p => [p.score, p.scoreRound, p.position, p.scoreInitialCapturedAt]), [[0, 0, 0, null]])
+})
+
+test('READY isolado não libera competição, duração ou liquidação se faltar timestamp individual', async () => {
+  await closeRegistration()
+  await scoreRound()
+  await prisma.rankingParticipant.updateMany({ where: { rankingId: MESA_ID, userId: USER_TWO_ID }, data: { scoreInitialCapturedAt: null } })
+  await scoreRound(3)
+  const detail = await GetBolaoRankingService.execute({ rankingId: MESA_ID })
+  assert.ok(detail.entries.every(p => p.score === 0 && p.position === 0))
+  assert.deepEqual(await MesaLifecycleService.finishDueRoundMesas(prisma), [])
+  await assert.rejects(new CloseRankingService().execute(MESA_ID, { force: true }), /captur/i)
 })

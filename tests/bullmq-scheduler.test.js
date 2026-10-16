@@ -345,6 +345,7 @@ test('close expired audita falhas individuais e reprova o job depois de tentar t
 
   prisma.round.findMany = async () => []
   prisma.ranking.findMany = async input => {
+    if (input.where?.initializationStatus) return []
     if (input.where?.durationMode === 'ROUNDS') return []
     return [{ id: 'mesa-falhou' }, { id: 'mesa-fechou' }]
   }
