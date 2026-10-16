@@ -125,7 +125,7 @@ test('bloqueia criacao de Mesa quando o termino das entradas ja passou', async t
       createdByUserId: 'admin-1',
     }),
     (error) => {
-      assert.equal(error.message, REGISTRATION_CLOSED)
+      assert.equal(error.code, 'mesa_start_date_in_past')
       return true
     }
   )

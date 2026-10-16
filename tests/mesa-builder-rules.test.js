@@ -555,6 +555,7 @@ test('admin edita Mesa ativa de qualquer dono sem zerar arrecadação', async t 
   })
 
   const activeMesa = {
+    startDate: new Date('2026-01-01T03:00:00.000Z'),
     id: 'active-admin-edit', type: 'BOLAO', status: 'ACTIVE',
     createdByUserId: 'owner-1', category: 'PAID', accessCost: 10,
     sponsorPrizePool: 0, prizeDistribution: [{ position: 1, percentage: 100 }],
@@ -623,6 +624,7 @@ test('admin não altera termos financeiros de Mesa com participantes', async t =
   })
 
   prisma.ranking.findUnique = async () => ({
+    startDate: new Date('2026-01-01T03:00:00.000Z'),
     id: 'active-funded', type: 'BOLAO', status: 'ACTIVE',
     createdByUserId: 'owner-1', category: 'PAID', accessCost: 10,
     sponsorPrizePool: 0, prizeDistribution: [{ position: 1, percentage: 100 }],

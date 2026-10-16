@@ -37,7 +37,7 @@ function createInput(overrides = {}) {
   return {
     name: 'Mesa Financeira',
     description: 'Recompensa: 60/30/10 da recompensa líquida após taxa da plataforma.',
-    startDate: new Date('2026-08-01T00:00:00Z'),
+    startDate: new Date('2099-08-01T00:00:00Z'),
     endDate: null,
     entryFee: 10,
     maxParticipants: 50,
@@ -107,10 +107,10 @@ test('Mesa exige data de fim posterior à data de início', async t => {
       entryFee: 0,
       registrationCloseMode: 'DATE',
       maxParticipants: null,
-      entryEndDate: new Date('2026-08-01T12:00:00Z'),
+      entryEndDate: new Date('2099-08-01T12:00:00Z'),
       durationMode: 'DATE',
       durationRounds: null,
-      endDate: new Date('2026-08-01T00:00:00Z'),
+      endDate: new Date('2099-08-01T00:00:00Z'),
     })),
     { message: 'A data de fim deve ser posterior à data de início' }
   )

@@ -338,7 +338,7 @@ test('falha durante captura reverte todos os baselines e a recuperação concorr
 test('Mesa nova fica aguardando lotação e não compete enquanto incompleta', async t => {
   const created = await CreateBolaoService.execute({
     name: 'Mesa baseline incompleta', description: 'Fixture de inicialização',
-    startDate: new Date('2026-10-12T09:00:00Z'), endDate: null,
+    startDate: new Date(), endDate: null,
     category: 'PAID', accessCost: 20, eligibility: 'ALL', maxParticipants: 2,
     registrationCloseMode: 'CAPACITY', durationMode: 'ROUNDS', durationRounds: 2,
     prizeDistribution: [{ position: 1, percentage: 100 }],
