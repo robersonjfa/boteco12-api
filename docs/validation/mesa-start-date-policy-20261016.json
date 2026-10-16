@@ -1,0 +1,77 @@
+{
+  "commit": "7fda388",
+  "checks": [
+    {
+      "label": "POST /api/mesas DRAFT: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas NOW: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas DRAFT: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas NOW: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes DRAFT: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes NOW: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/34f97b8f-03d7-44e0-9f8d-4666e50dbe4b DRAFT: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/34f97b8f-03d7-44e0-9f8d-4666e50dbe4b NOW: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/20e493b6-af7b-4f42-9b23-861547b1a55d DRAFT: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/20e493b6-af7b-4f42-9b23-861547b1a55d NOW: ontem 400 sem mutação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT: preserva instante histórico",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH: preserva instante histórico",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas: hoje aceito",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas: hoje aceito",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes: hoje aceito",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/34f97b8f-03d7-44e0-9f8d-4666e50dbe4b: hoje aceito",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/20e493b6-af7b-4f42-9b23-861547b1a55d: hoje aceito",
+      "status": "PASSOU"
+    }
+  ],
+  "at": "2026-10-16T03:41:00.757Z",
+  "status": "PASSOU",
+  "publicCreation": "PASSOU",
+  "total": 17
+}
