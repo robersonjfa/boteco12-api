@@ -18,6 +18,7 @@ import { MesaCategoryRules } from './mesa-category-rules'
 import { AssertActiveProUserService } from '../subscription/assert-active-pro-user.service'
 import { assertMesaScheduleRules } from './mesa-schedule-rules'
 import { PublishMesaService } from './publish-mesa.service'
+import { assertMesaStartDate } from './mesa-start-date-rules'
 
 type CreateBolaoInput = {
   name: string
@@ -56,6 +57,7 @@ export class CreateBolaoService {
       prizeDistribution,
       createdByUserId,
     } = input
+    assertMesaStartDate(startDate)
     const terms = MesaCategoryRules.validate({
       category: input.category,
       accessCost: input.accessCost,
