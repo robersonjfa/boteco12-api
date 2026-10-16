@@ -346,6 +346,7 @@ test('recompensas não podem superar os lugares disponíveis', () => {
     description: 'Premiação configurada para os participantes.',
     startDate: '2099-08-01T03:00:00.000Z',
     category: 'PAID',
+    eligibility: 'ALL',
     accessCost: 10,
     sponsorPrizePool: 0,
     registrationCloseMode: 'CAPACITY',
