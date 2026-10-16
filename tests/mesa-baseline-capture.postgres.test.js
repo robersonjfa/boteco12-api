@@ -95,8 +95,10 @@ async function seed() {
       {
         userId,
         roundId: ROUND_IDS[1],
-        scoreRound: 10,
-        scoreTotal: 153,
+      scoreRound: 10,
+      scoreTotal: 153,
+      totalDoubles: 3,
+      totalSuperDoubles: 2,
       },
     ]),
   })
@@ -197,6 +199,9 @@ test('rodada OPEN ou CLOSED mantém captura e competição pendentes, inclusive 
 
 test('apuração real captura 163 e o total individual; rodada 32 não pontua nem entra no desempate', async () => {
   await closeRegistration()
+  await prisma.rankingParticipant.updateMany({ where: { rankingId: MESA_ID }, data: {
+    approvedAt: new Date('2026-10-12T08:00:00Z'),
+  } })
   await prisma.user.update({ where: { id: USER_TWO_ID }, data: { scoreTotal: 200 } })
   await prisma.userScoreHistory.update({ where: { userId_roundId: {
     userId: USER_TWO_ID, roundId: ROUND_IDS[1],
@@ -207,6 +212,7 @@ test('apuração real captura 163 e o total individual; rodada 32 não pontua ne
   assert.ok(mesa.scoreInitialCapturedAt instanceof Date)
   assert.deepEqual(mesa.participants.map(p => p.scoreInitial), [163, 210])
   assert.ok(mesa.participants.every(p => p.scoreInitialCapturedAt instanceof Date && p.score === 0))
+  assert.ok(mesa.participants.every(p => p.tiebreakDoubleHits === 0 && p.tiebreakSuperDoubleHits === 0))
   const detail = await GetBolaoRankingService.execute({ rankingId: MESA_ID })
   assert.ok(detail.entries.every(p => p.score === 0 && p.scoreRound === 0))
 })
