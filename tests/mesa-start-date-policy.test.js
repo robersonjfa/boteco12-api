@@ -37,6 +37,7 @@ app.use(errorHandler)
 let transactionCalls = 0
 let storedStart = new Date('2026-10-10T12:34:56.000Z')
 let written
+let updateWhere
 const NOW = new Date('2026-10-16T02:30:00.000Z') // still Oct 15 in São Paulo
 let server
 let origin
@@ -58,7 +59,7 @@ test.before(async () => {
     return callback({
       ranking: {
         create: async ({ data }) => { written = data; return data },
-        updateMany: async ({ data }) => { written = data; return { count: 1 } },
+        updateMany: async ({ data, where }) => { written = data; updateWhere = where; return { count: 1 } },
         findUniqueOrThrow: async () => ({ id: 'mesa-id', ...written }),
       },
       auditLog: { create: async () => ({}) },
@@ -116,6 +117,7 @@ for (const [method, path] of endpoints.filter(([method]) => method !== 'POST')) 
     const response = await send(method, path, { ...payload(), startDate: storedStart.toISOString() })
     assert.equal(response.status, 200)
     assert.equal(written.startDate.getTime(), storedStart.getTime())
+    assert.equal(updateWhere.startDate.getTime(), storedStart.getTime())
   })
   test(`${method}: mudar horário no mesmo dia histórico também é alteração proibida`, async () => {
     const before = transactionCalls
@@ -159,4 +161,34 @@ test('virada do dia em São Paulo passa a rejeitar o dia anterior', async () => 
     assert.equal(response.body.error, 'mesa_start_date_in_past')
     assert.equal(transactionCalls, before)
   } finally { test.mock.timers.setTime(NOW.getTime()) }
+})
+
+test('data futura continua aceita em DRAFT, NOW e AT_START', async () => {
+  for (const publicationMode of ['DRAFT', 'NOW', 'AT_START']) {
+    const response = await send('POST', '/api/admin/mesas', {
+      ...payload(), publicationMode, startDate: '2026-10-17T03:00:00.000Z',
+    })
+    assert.equal(response.status, 201)
+  }
+})
+
+test('hoje aceita publicação imediata sem exigir instante futuro', async () => {
+  const response = await send('POST', '/api/admin/mesas', {
+    ...payload(), publicationMode: 'NOW', startDate: '2026-10-15T03:00:00.000Z',
+  })
+  assert.equal(response.status, 201)
+})
+
+test('edição rejeita snapshot obsoleto sem auditar ou publicar a alteração', async () => {
+  const transaction = prisma.$transaction
+  let sideEffects = 0
+  prisma.$transaction = async callback => callback({
+    ranking: { updateMany: async () => ({ count: 0 }) },
+    auditLog: { create: async () => { sideEffects++ } },
+  })
+  try {
+    const response = await send('PUT', '/api/mesas/mesa-id', { ...payload(), startDate: storedStart.toISOString() })
+    assert.equal(response.status, 409)
+    assert.equal(sideEffects, 0)
+  } finally { prisma.$transaction = transaction }
 })
