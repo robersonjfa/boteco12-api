@@ -1,4 +1,7 @@
 import { Prisma } from '@prisma/client'
+import { AppError } from '../../errors/AppError'
+
+export class InvalidPrizeDistributionError extends Error {}
 
 export type PrizeDistributionItem = {
   position: number
@@ -15,9 +18,21 @@ type Payout = PrizeRow & {
 }
 
 export class BolaoPrizeService {
+  /** Classifica somente a distribuição enviada na criação/edição como erro 400. */
+  static validateInputDistribution(value: unknown): PrizeDistributionItem[] {
+    try {
+      return this.validateDistribution(value)
+    } catch (error) {
+      if (error instanceof InvalidPrizeDistributionError) {
+        throw AppError.badRequest(error.message, 'mesa_prize_distribution_invalid')
+      }
+      throw error
+    }
+  }
+
   static validateDistribution(value: unknown): PrizeDistributionItem[] {
     if (!Array.isArray(value) || value.length === 0) {
-      throw new Error('Informe ao menos uma faixa de recompensa')
+      throw new InvalidPrizeDistributionError('Informe ao menos uma faixa de recompensa')
     }
 
     const distribution = value.map((item, index) => {
@@ -25,17 +40,17 @@ export class BolaoPrizeService {
       const percentage = Number((item as PrizeDistributionItem)?.percentage)
 
       if (!Number.isInteger(position) || position !== index + 1) {
-        throw new Error('As posições com recompensa devem ser sequenciais a partir da 1ª posição')
+        throw new InvalidPrizeDistributionError('As posições com recompensa devem ser sequenciais a partir da 1ª posição')
       }
       if (!Number.isInteger(percentage) || percentage <= 0) {
-        throw new Error('Cada percentual de recompensa deve ser um número inteiro positivo')
+        throw new InvalidPrizeDistributionError('Cada percentual de recompensa deve ser um número inteiro positivo')
       }
 
       return { position, percentage }
     })
 
     if (distribution.reduce((sum, item) => sum + item.percentage, 0) !== 100) {
-      throw new Error('Os percentuais de recompensa devem somar 100%')
+      throw new InvalidPrizeDistributionError('Os percentuais de recompensa devem somar 100%')
     }
 
     return distribution

@@ -109,7 +109,7 @@ export class CreateBolaoService {
 
     const validatedPrizeDistribution = MesaCategoryRules.isFree(terms)
       ? []
-      : BolaoPrizeService.validateDistribution(prizeDistribution)
+      : BolaoPrizeService.validateInputDistribution(prizeDistribution)
 
     try {
       BolaoRegistrationWindowService.assertNotClosed({

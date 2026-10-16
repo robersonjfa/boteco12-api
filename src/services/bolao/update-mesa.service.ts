@@ -126,7 +126,7 @@ export class UpdateMesaService {
 
     const prizeDistribution = MesaCategoryRules.isFree(terms)
       ? []
-      : BolaoPrizeService.validateDistribution(input.prizeDistribution)
+      : BolaoPrizeService.validateInputDistribution(input.prizeDistribution)
     if (
       terms.maxParticipants != null &&
       prizeDistribution.length > terms.maxParticipants
