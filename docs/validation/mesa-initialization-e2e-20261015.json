@@ -1,0 +1,367 @@
+{
+  "generatedAt": "2026-10-16T02:32:05.497Z",
+  "completedAt": "2026-10-16T02:37:11.354Z",
+  "apiCommit": "fdd18a23d7b128e45ec4ab3bd5ca3f8053403479",
+  "checks": [
+    {
+      "label": "FREE, PRO expirado e anônimo não criam Mesa paga",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Mesa incompleta aguarda fechamento e não compete",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Última vaga concorrente confirma só uma entrada",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Última vaga registra referência 32 e captura pendente atomicamente",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Carteira tem um débito, saldo 480 e uma participação",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Débito da última vaga é único no ledger",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Falha na última vaga não fecha nem registra referência",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Repetição após crédito recupera entrada",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Apuração via HTTP captura 163 para ambos, sem pontuar referência",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Participante sem escolhas recebe baseline zero com timestamp",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Evento repetido não altera captura",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Rodada 33 mantém baseline 163 e pontua 10",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Sessão Redis, referência, baseline e score sobrevivem ao reinício",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Rodada 34 mantém baseline 163 e pontua 20",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Liquidação usa caixa 40, taxa 4 e recompensa 36 após duas rodadas competitivas",
+      "status": "PASSOU"
+    },
+    {
+      "label": "Repetir apuração e fechamento não duplica pagamento nem sobrescreve baseline",
+      "status": "PASSOU"
+    }
+  ],
+  "verdict": {
+    "temporalLifecycle": "PASSOU",
+    "checks": 16,
+    "fullCreationContract": "NÃO EXECUTADO",
+    "productionDeployment": "NÃO EXECUTADO",
+    "scope": "Ciclo temporal, concorrência, rollback financeiro, persistência e liquidação via HTTP/banco local"
+  },
+  "frontendCommit": "7be4e04",
+  "timeline": [
+    {
+      "label": "Uma vaga preenchida",
+      "at": "2026-10-16T02:32:39.578Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "ACTIVE",
+      "referenceRoundId": null,
+      "initializationStatus": "WAITING_FOR_REGISTRATION_CLOSE",
+      "registrationClosedAt": null,
+      "scoreInitialCapturedAt": null,
+      "currentParticipants": 1,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 20,
+      "participants": [
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 153,
+          "scoreInitialCapturedAt": null,
+          "score": 0,
+          "position": null
+        }
+      ]
+    },
+    {
+      "label": "Última vaga com rodada 32 aberta",
+      "at": "2026-10-16T02:32:39.638Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "ACTIVE",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "WAITING_FOR_REFERENCE_ROUND",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": null,
+      "currentParticipants": 2,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 153,
+          "scoreInitialCapturedAt": null,
+          "score": 0,
+          "position": null
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 153,
+          "scoreInitialCapturedAt": null,
+          "score": 0,
+          "position": null
+        }
+      ]
+    },
+    {
+      "label": "Falha de saldo na última vaga",
+      "at": "2026-10-16T02:32:39.682Z",
+      "mesaId": "46f0f1dc-fa37-40ec-9563-0ddd4e003c15",
+      "status": "ACTIVE",
+      "referenceRoundId": null,
+      "initializationStatus": "WAITING_FOR_REGISTRATION_CLOSE",
+      "registrationClosedAt": null,
+      "scoreInitialCapturedAt": null,
+      "currentParticipants": 1,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 20,
+      "participants": [
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 153,
+          "scoreInitialCapturedAt": null,
+          "score": 0,
+          "position": null
+        }
+      ]
+    },
+    {
+      "label": "Rodada 32 consolidada",
+      "at": "2026-10-16T02:34:49.921Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "ACTIVE",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+      "currentParticipants": 2,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 0,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 0,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "label": "Captura com participante sem histórico",
+      "at": "2026-10-16T02:34:49.929Z",
+      "mesaId": "46f0f1dc-fa37-40ec-9563-0ddd4e003c15",
+      "status": "ACTIVE",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.699Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.867Z",
+      "currentParticipants": 2,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "45cd2351-5907-4d2f-90ea-ea5da88c28dd",
+          "scoreInitial": 0,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.867Z",
+          "score": 0,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.867Z",
+          "score": 0,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "label": "Evento repetido e recuperação periódica",
+      "at": "2026-10-16T02:34:49.954Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "ACTIVE",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+      "currentParticipants": 2,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 0,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 0,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "label": "Rodada 33 consolidada",
+      "at": "2026-10-16T02:34:59.795Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "ACTIVE",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+      "currentParticipants": 2,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 10,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 10,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "label": "Persistência após reinício da API",
+      "at": "2026-10-16T02:35:19.222Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "ACTIVE",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+      "currentParticipants": 2,
+      "endDate": null,
+      "settledAt": null,
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 10,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 10,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "label": "Rodada 34 consolidada",
+      "at": "2026-10-16T02:35:44.612Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "CLOSED",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+      "currentParticipants": 2,
+      "endDate": "2026-10-16T02:35:44.407Z",
+      "settledAt": "2026-10-16T02:35:44.592Z",
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 20,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 20,
+          "position": 1
+        }
+      ]
+    },
+    {
+      "label": "Repetição após liquidação",
+      "at": "2026-10-16T02:37:11.353Z",
+      "mesaId": "6c8dcf76-f1c7-41c8-95f3-b0cb3a0db944",
+      "status": "CLOSED",
+      "referenceRoundId": "16d50d90-4244-4ea4-aa18-3ea7625d6512",
+      "initializationStatus": "READY",
+      "registrationClosedAt": "2026-10-16T02:32:39.608Z",
+      "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+      "currentParticipants": 2,
+      "endDate": "2026-10-16T02:35:44.407Z",
+      "settledAt": "2026-10-16T02:35:44.592Z",
+      "grossCollected": 40,
+      "participants": [
+        {
+          "userId": "df337cdc-c0cb-4963-a97d-e20e7434a0b8",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 20,
+          "position": 2
+        },
+        {
+          "userId": "e65a3d80-6344-485d-9e11-a2e68bd8754e",
+          "scoreInitial": 163,
+          "scoreInitialCapturedAt": "2026-10-16T02:34:49.875Z",
+          "score": 20,
+          "position": 1
+        }
+      ]
+    }
+  ]
+}
