@@ -14,6 +14,7 @@ import { withMesaFinancialNames } from './mesa-financial-names'
 import { normalizeMesaPrizeRules } from './mesa-prize-rules'
 import { assertMesaScheduleRules } from './mesa-schedule-rules'
 import { PublishMesaService } from './publish-mesa.service'
+import { assertMesaStartDate } from './mesa-start-date-rules'
 
 type UpdateMesaInput = {
   rankingId: string
@@ -54,6 +55,7 @@ export class UpdateMesaService {
         grossCollected: true,
         settledAt: true,
         publishedAt: true,
+        startDate: true,
       },
     })
 
@@ -66,6 +68,8 @@ export class UpdateMesaService {
     if (!input.administrative && mesa.status !== 'DRAFT') {
       throw AppError.conflict('Somente Mesas em rascunho podem ser editadas', 'mesa_update_draft_only')
     }
+
+    assertMesaStartDate(input.startDate, mesa.startDate)
 
     const terms = MesaCategoryRules.validate({
       category: input.category,
@@ -189,6 +193,7 @@ export class UpdateMesaService {
         where: {
           id: input.rankingId,
           type: 'BOLAO',
+          startDate: mesa.startDate,
           status: input.administrative ? mesa.status : 'DRAFT',
           ...(input.administrative ? {} : { createdByUserId: input.requestedByUserId }),
         },
