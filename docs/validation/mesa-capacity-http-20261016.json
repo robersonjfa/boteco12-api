@@ -1,0 +1,137 @@
+{
+  "commit": "eed7e0b",
+  "checks": [
+    {
+      "label": "POST /api/mesas maxParticipants=1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas maxParticipants=0: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas maxParticipants=-1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas maxParticipants=1.5: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas maxParticipants=null: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas maxParticipants=undefined: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas maxParticipants=1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas maxParticipants=0: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas maxParticipants=-1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas maxParticipants=1.5: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas maxParticipants=null: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas maxParticipants=undefined: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes maxParticipants=1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes maxParticipants=0: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes maxParticipants=-1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes maxParticipants=1.5: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes maxParticipants=null: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes maxParticipants=undefined: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/1c456115-5f9b-4540-8278-5c9373453b32 maxParticipants=1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/1c456115-5f9b-4540-8278-5c9373453b32 maxParticipants=0: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/1c456115-5f9b-4540-8278-5c9373453b32 maxParticipants=-1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/1c456115-5f9b-4540-8278-5c9373453b32 maxParticipants=1.5: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/1c456115-5f9b-4540-8278-5c9373453b32 maxParticipants=null: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/1c456115-5f9b-4540-8278-5c9373453b32 maxParticipants=undefined: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/561a0c10-9243-42e4-a83e-46f082520cd3 maxParticipants=1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/561a0c10-9243-42e4-a83e-46f082520cd3 maxParticipants=0: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/561a0c10-9243-42e4-a83e-46f082520cd3 maxParticipants=-1: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/561a0c10-9243-42e4-a83e-46f082520cd3 maxParticipants=1.5: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/561a0c10-9243-42e4-a83e-46f082520cd3 maxParticipants=null: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/561a0c10-9243-42e4-a83e-46f082520cd3 maxParticipants=undefined: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT: edição válida persiste capacidade dois",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH: edição válida persiste capacidade dois",
+      "status": "PASSOU"
+    }
+  ],
+  "at": "2026-10-16T03:33:09.716Z",
+  "status": "PASSOU",
+  "publicCreation": "PASSOU",
+  "total": 32
+}

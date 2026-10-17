@@ -19,7 +19,7 @@ const CreateMesaBaseSchema = z.object({
   accessCost: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   entryFee: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   sponsorPrizePool: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
-  maxParticipants: z.number().int().positive().max(1_000_000).nullable().optional(),
+  maxParticipants: z.number().int().min(2, 'Informe pelo menos dois lugares disponíveis').max(1_000_000).nullable().optional(),
   prizeDistribution: z.array(PrizeDistributionItemSchema).max(10).default([]),
   publicationMode: z.enum(['DRAFT', 'NOW', 'AT_START']).optional(),
 }).strict()

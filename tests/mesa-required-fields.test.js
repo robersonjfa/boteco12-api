@@ -104,3 +104,46 @@ test('entryFee legado continua aceito com tipo e público explícitos', async ()
   assert.equal(response.status, 201)
   assert.equal(response.body.entryFee, 20)
 })
+
+for (const [method, path] of endpoints) {
+  test(`${method} ${path}: capacidade de um lugar retorna 400 antes do handler`, async () => {
+    for (const category of ['PAID', 'FREE', 'SPONSORED_FREE']) {
+      const before = accepted.length
+      const response = await send(method, path, { ...payload(category), maxParticipants: 1 })
+      assert.equal(response.status, 400)
+      assert.equal(response.body.error, 'validation_error')
+      assert.ok(response.body.issues.some(issue => issue.path === 'maxParticipants'))
+      assert.equal(accepted.length, before)
+    }
+  })
+}
+
+test('capacidade rejeita ausente, null, zero, negativo, fracionário, string e acima do limite', async () => {
+  for (const value of [undefined, null, 0, -1, 1.5, '2', 1_000_001]) {
+    const before = accepted.length
+    const response = await send('POST', '/api/mesas', { ...payload(), maxParticipants: value })
+    assert.equal(response.status, 400)
+    assert.ok(response.body.issues.some(issue => issue.path === 'maxParticipants'))
+    assert.equal(accepted.length, before)
+  }
+})
+
+test('capacidade aceita os limites dois e um milhão', async () => {
+  for (const maxParticipants of [2, 1_000_000]) {
+    const response = await send('POST', '/api/mesas', { ...payload(), maxParticipants })
+    assert.equal(response.status, 201)
+    assert.equal(response.body.maxParticipants, maxParticipants)
+  }
+})
+
+test('inscrições por data preservam capacidade ausente ou null e rejeitam limite numérico', async () => {
+  for (const maxParticipants of [undefined, null, 2]) {
+    const body = {
+      ...payload('FREE'), registrationCloseMode: 'DATE', durationMode: 'DATE',
+      maxParticipants, durationRounds: null,
+      entryEndDate: '2099-08-02T03:00:00.000Z', endDate: '2099-08-03T03:00:00.000Z',
+    }
+    const response = await send('POST', '/api/mesas', body)
+    assert.equal(response.status, maxParticipants == null ? 201 : 400)
+  }
+})
