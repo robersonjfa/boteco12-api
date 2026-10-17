@@ -234,6 +234,7 @@ test('nova criação rejeita data final de inscrição legada', () => {
     entryEndDate: '2099-01-15T00:00:00.000Z',
     endDate: '2099-02-01T00:00:00.000Z',
     category: 'PAID',
+    eligibility: 'ALL',
     accessCost: 10,
     sponsorPrizePool: 0,
     maxParticipants: 50,

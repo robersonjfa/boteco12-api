@@ -1,0 +1,93 @@
+{
+  "commit": "77f4a59",
+  "checks": [
+    {
+      "label": "POST admin preserva PAID/ALL",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva PAID/SUBSCRIBERS_ONLY",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva PAID/FREE_ONLY",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva FREE/ALL",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva FREE/SUBSCRIBERS_ONLY",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva FREE/FREE_ONLY",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva SPONSORED_FREE/ALL",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva SPONSORED_FREE/SUBSCRIBERS_ONLY",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST admin preserva SPONSORED_FREE/FREE_ONLY",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas sem category: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/mesas sem eligibility: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas sem category: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/mesas sem eligibility: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes sem category: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "POST /api/admin/boloes sem eligibility: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/b6b3b13d-30d1-42db-9e09-908ad867db7c sem category: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT /api/mesas/b6b3b13d-30d1-42db-9e09-908ad867db7c sem eligibility: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/ec1e27f5-47de-45a2-bf68-91df9096b475 sem category: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH /api/admin/mesas/ec1e27f5-47de-45a2-bf68-91df9096b475 sem eligibility: 400 sem mutação de Mesa",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PUT: edição completa preserva público explícito",
+      "status": "PASSOU"
+    },
+    {
+      "label": "PATCH: edição completa preserva público explícito",
+      "status": "PASSOU"
+    }
+  ],
+  "at": "2026-10-16T02:59:23.456Z",
+  "status": "PASSOU",
+  "publicCreation": "PASSOU",
+  "total": 21
+}
