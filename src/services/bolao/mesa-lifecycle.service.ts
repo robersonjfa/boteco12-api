@@ -7,6 +7,11 @@ type MesaLifecycleClient = {
       durationRounds?: number | null
       category?: 'PAID' | 'FREE' | 'SPONSORED_FREE'
       endDate?: Date | null
+      referenceRoundId?: string | null
+      referenceRound?: { number: number } | null
+      initializationStatus?: string | null
+      scoreInitialCapturedAt?: Date | null
+      participants?: Array<{ scoreInitialCapturedAt: Date | null }>
     }>>
     updateMany(args: unknown): Promise<{ count: number }>
   }
@@ -58,18 +63,29 @@ export class MesaLifecycleService {
         endDate: true,
         registrationClosedAt: true,
         durationRounds: true,
+        referenceRoundId: true,
+        referenceRound: { select: { number: true } },
+        initializationStatus: true,
+        scoreInitialCapturedAt: true,
+        participants: { where: { status: 'APPROVED' }, select: { scoreInitialCapturedAt: true } },
       },
     })
     const finished: string[] = []
 
     for (const mesa of mesas) {
       if (!mesa.registrationClosedAt || !mesa.durationRounds) continue
+      const referenceLifecycle = Boolean(mesa.referenceRoundId || mesa.initializationStatus)
+      if (referenceLifecycle && (mesa.initializationStatus !== 'READY' ||
+          !mesa.scoreInitialCapturedAt || !mesa.referenceRound ||
+          !mesa.participants?.length || mesa.participants.some(p => !p.scoreInitialCapturedAt))) continue
       const rounds = await tx.round.findMany({
         where: {
           status: 'SCORED',
-          closeAt: { not: null, gt: mesa.registrationClosedAt },
+          ...(referenceLifecycle
+            ? { number: { gt: mesa.referenceRound!.number }, closeAt: { not: null } }
+            : { closeAt: { not: null, gt: mesa.registrationClosedAt } }),
         },
-        orderBy: { closeAt: 'asc' },
+        orderBy: referenceLifecycle ? { number: 'asc' } : { closeAt: 'asc' },
         take: mesa.durationRounds,
         select: { closeAt: true },
       })

@@ -102,7 +102,8 @@ test('workflow publica relatório e bloqueia deploy antes dos gates', () => {
     path.resolve(__dirname, '../.github/workflows/deploy.yml'),
     'utf8'
   )
-  assert.match(workflow, /pull_request:\s*\n\s*branches: \[main\]/)
+  // PRs empilhados também executam CI; somente push em main pode implantar.
+  assert.match(workflow, /pull_request:\s*\n\s*push:\s*\n\s*branches: \[main\]/)
   assert.match(workflow, /run: npm run ci:check/)
   assert.match(
     workflow,
@@ -114,8 +115,10 @@ test('workflow publica relatório e bloqueia deploy antes dos gates', () => {
     /services:[\s\S]+postgres:[\s\S]+image: postgres:16-alpine@sha256:[a-f0-9]{64}/
   )
   assert.match(workflow, /run: npm run test:mesa-discovery:postgres/)
+  assert.match(workflow, /run: npm run test:mesa-initialization:postgres/)
   assert.match(workflow, /docker-build:[\s\S]+needs: ci/)
   assert.match(workflow, /deploy:[\s\S]+needs: \[ci, docker-build\]/)
+  assert.match(workflow, /if: github.event_name != 'pull_request' && github.ref == 'refs\/heads\/main'/)
 })
 
 test('workflows fixam actions externas por SHA imutável', () => {

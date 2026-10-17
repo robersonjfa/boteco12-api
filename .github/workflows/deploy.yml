@@ -2,7 +2,6 @@ name: CI/CD API
 
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -69,6 +68,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm run test:mesa-discovery:postgres
+
+      - name: Run Mesa initialization PostgreSQL integration
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm run test:mesa-initialization:postgres
 
       - name: Prove backup restore in a disposable database
         env:

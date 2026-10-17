@@ -19,6 +19,10 @@ export class CloseRankingService {
           status: true,
           endDate: true,
           startDate: true,
+          referenceRoundId: true,
+          referenceRound: { select: { number: true } },
+          initializationStatus: true,
+          scoreInitialCapturedAt: true,
           grossCollected: true,
           prizeDistribution: true,
           settledAt: true,
@@ -34,7 +38,7 @@ export class CloseRankingService {
           maxParticipants: true,
           currentParticipants: true,
           participants: {
-            select: { status: true, entryFeePaid: true, entryPaidAt: true },
+            select: { status: true, entryFeePaid: true, entryPaidAt: true, scoreInitialCapturedAt: true },
           },
         },
       });
@@ -48,6 +52,11 @@ export class CloseRankingService {
       }
 
       const isBolao = ranking.type === 'BOLAO';
+      if (isBolao && (ranking.referenceRoundId || ranking.initializationStatus) &&
+          (ranking.initializationStatus !== 'READY' || !ranking.scoreInitialCapturedAt || !ranking.referenceRound ||
+           ranking.participants.some(p => p.status === 'APPROVED' && !p.scoreInitialCapturedAt))) {
+        throw new Error('Mesa aguarda captura completa do Score Inicial');
+      }
       const allowedStatuses = isBolao ? ['ACTIVE', 'DRAFT'] : ['ACTIVE'];
       if (!allowedStatuses.includes(ranking.status)) {
         throw new Error('Ranking não pode ser encerrado neste estado');
