@@ -1,0 +1,319 @@
+{
+  "commit": "a90f700",
+  "at": "2026-10-16T03:26:27.363Z",
+  "checks": [
+    {
+      "endpoint": "POST /api/mesas",
+      "case": "soma 90%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/mesas",
+      "case": "soma 110%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/mesas",
+      "case": "posição duplicada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/mesas",
+      "case": "posição pulada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/mesas",
+      "case": "primeira posição 2",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/mesas",
+      "case": "percentual fracionário",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Cada percentual de recompensa deve ser um número inteiro positivo"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/mesas",
+      "case": "soma 90%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/mesas",
+      "case": "soma 110%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/mesas",
+      "case": "posição duplicada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/mesas",
+      "case": "posição pulada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/mesas",
+      "case": "primeira posição 2",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/mesas",
+      "case": "percentual fracionário",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Cada percentual de recompensa deve ser um número inteiro positivo"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/boloes",
+      "case": "soma 90%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/boloes",
+      "case": "soma 110%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/boloes",
+      "case": "posição duplicada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/boloes",
+      "case": "posição pulada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/boloes",
+      "case": "primeira posição 2",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "POST /api/admin/boloes",
+      "case": "percentual fracionário",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Cada percentual de recompensa deve ser um número inteiro positivo"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "soma 90%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "soma 110%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "posição duplicada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "posição pulada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "primeira posição 2",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "percentual fracionário",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Cada percentual de recompensa deve ser um número inteiro positivo"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "soma 90%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "soma 110%",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Os percentuais de recompensa devem somar 100%"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "posição duplicada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "posição pulada",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "primeira posição 2",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "As posições com recompensa devem ser sequenciais a partir da 1ª posição"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "percentual fracionário",
+      "status": "PASSOU",
+      "response": {
+        "error": "mesa_prize_distribution_invalid",
+        "message": "Cada percentual de recompensa deve ser um número inteiro positivo"
+      },
+      "unchangedDatabase": true
+    },
+    {
+      "endpoint": "PUT /api/mesas/ac8d3107-d0d6-4d0a-b803-a2c4f4ab6ebd",
+      "case": "distribuição válida",
+      "status": "PASSOU"
+    },
+    {
+      "endpoint": "PATCH /api/admin/mesas/04b66ad2-7b79-47d6-a1c4-73a6cb9da791",
+      "case": "distribuição válida",
+      "status": "PASSOU"
+    }
+  ],
+  "validCreations": 2,
+  "total": 32,
+  "status": "PASSOU"
+}
