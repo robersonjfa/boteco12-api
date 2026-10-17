@@ -119,7 +119,7 @@ export class JoinBolaoService {
           },
           data: {
             currentParticipants: { increment: 1 },
-            ...(bolao.currentParticipants + 1 === bolao.maxParticipants
+            ...(!MesaCategoryRules.isPaid(bolao) && bolao.currentParticipants + 1 === bolao.maxParticipants
               ? { registrationClosedAt: approvedAt }
               : {}),
             ...(hasPaidEntry ? { grossCollected: { increment: accessCost } } : {}),
@@ -127,6 +127,35 @@ export class JoinBolaoService {
         });
         if (reservation.count !== 1) {
           throw new Error('Esta Mesa atingiu o limite de participantes');
+        }
+
+        if (MesaCategoryRules.isPaid(bolao)) {
+          // The reservation holds the row lock until commit. Re-read the actual
+          // count: concurrent joins may have read the same pre-reservation count.
+          const reserved = await tx.ranking.findUniqueOrThrow({
+            where: { id: rankingId },
+            select: { currentParticipants: true, registrationClosedAt: true },
+          });
+          if (reserved.currentParticipants === bolao.maxParticipants &&
+              reserved.registrationClosedAt === null) {
+            // The database enforces a single OPEN round. Hold its status stable
+            // until the final-seat transaction has persisted the reference.
+            const [referenceRound] = await tx.$queryRaw<{ id: string }[]>`
+              SELECT id FROM rounds WHERE status = 'OPEN' FOR SHARE
+            `;
+            if (!referenceRound) {
+              throw new Error('Não há rodada aberta para definir a referência desta Mesa');
+            }
+            await tx.ranking.updateMany({
+              where: { id: rankingId, registrationClosedAt: null, referenceRoundId: null },
+              data: {
+                registrationClosedAt: approvedAt,
+                referenceRoundId: referenceRound.id,
+                initializationStatus: 'WAITING_FOR_REFERENCE_ROUND',
+                scoreInitialCapturedAt: null,
+              },
+            });
+          }
         }
       }
 

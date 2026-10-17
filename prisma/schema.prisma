@@ -47,6 +47,13 @@ enum RankingType {
   BOLAO
 }
 
+enum MesaInitializationStatus {
+  WAITING_FOR_REGISTRATION_CLOSE
+  WAITING_FOR_REFERENCE_ROUND
+  WAITING_FOR_BASELINE_CAPTURE
+  READY
+}
+
 enum RankingStatus {
   DRAFT
   ACTIVE
@@ -298,6 +305,7 @@ model Round {
   scoreHistory     UserScoreHistory[]
   rankingSnapshots RankingSnapshot[]
   roundBenefits    RoundBenefit[]
+  referenceMesas   Ranking[] @relation("MesaReferenceRound")
 
   @@unique([status], map: "rounds_single_open_idx", where: { status: "OPEN" })
   @@map("rounds")
@@ -414,6 +422,10 @@ model Ranking {
   durationMode        MesaDurationMode @default(DATE)
   durationRounds      Int?
   registrationClosedAt DateTime?
+  referenceRoundId     String?
+  initializationStatus MesaInitializationStatus?
+  scoreInitialCapturedAt DateTime?
+  referenceRound Round? @relation("MesaReferenceRound", fields: [referenceRoundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   publishedAt         DateTime?
   sponsorPrizePool    Int @default(0)
   maxParticipants     Int?
@@ -441,6 +453,8 @@ model Ranking {
   @@unique([type, periodRef])
   @@index([periodRef])
   @@index([type, status, registrationClosedAt, entryEndDate, createdAt])
+  @@index([referenceRoundId])
+  @@index([initializationStatus, referenceRoundId])
 }
 
 //////////////////////////////////////////////////////
@@ -454,6 +468,7 @@ model RankingParticipant {
 
   score        Int  @default(0)
   scoreInitial Int  @default(0)
+  scoreInitialCapturedAt DateTime?
   position     Int?
   status       RankingParticipantStatus @default(APPROVED)
   approvedByUserId String?

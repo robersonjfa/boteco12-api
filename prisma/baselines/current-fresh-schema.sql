@@ -17,6 +17,9 @@ CREATE TYPE "BetType" AS ENUM ('NONE', 'DOUBLE', 'SUPER_DOUBLE');
 CREATE TYPE "RankingType" AS ENUM ('GLOBAL', 'PRO', 'BOLAO');
 
 -- CreateEnum
+CREATE TYPE "MesaInitializationStatus" AS ENUM ('WAITING_FOR_REGISTRATION_CLOSE', 'WAITING_FOR_REFERENCE_ROUND', 'WAITING_FOR_BASELINE_CAPTURE', 'READY');
+
+-- CreateEnum
 CREATE TYPE "RankingStatus" AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED');
 
 -- CreateEnum
@@ -220,6 +223,9 @@ CREATE TABLE "rankings" (
     "durationMode" "MesaDurationMode" NOT NULL DEFAULT 'DATE',
     "durationRounds" INTEGER,
     "registrationClosedAt" TIMESTAMP(3),
+    "referenceRoundId" TEXT,
+    "initializationStatus" "MesaInitializationStatus",
+    "scoreInitialCapturedAt" TIMESTAMP(3),
     "publishedAt" TIMESTAMP(3),
     "sponsorPrizePool" INTEGER NOT NULL DEFAULT 0,
     "maxParticipants" INTEGER,
@@ -245,6 +251,7 @@ CREATE TABLE "ranking_participants" (
     "userId" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "scoreInitial" INTEGER NOT NULL DEFAULT 0,
+    "scoreInitialCapturedAt" TIMESTAMP(3),
     "position" INTEGER,
     "status" "RankingParticipantStatus" NOT NULL DEFAULT 'APPROVED',
     "approvedByUserId" TEXT,
@@ -634,6 +641,12 @@ CREATE INDEX "rankings_periodRef_idx" ON "rankings"("periodRef");
 CREATE INDEX "rankings_type_status_registrationClosedAt_entryEndDate_crea_idx" ON "rankings"("type", "status", "registrationClosedAt", "entryEndDate", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "rankings_referenceRoundId_idx" ON "rankings"("referenceRoundId");
+
+-- CreateIndex
+CREATE INDEX "rankings_initializationStatus_referenceRoundId_idx" ON "rankings"("initializationStatus", "referenceRoundId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "rankings_type_periodRef_key" ON "rankings"("type", "periodRef");
 
 -- CreateIndex
@@ -805,6 +818,9 @@ ALTER TABLE "user_score_history" ADD CONSTRAINT "user_score_history_userId_fkey"
 ALTER TABLE "user_score_history" ADD CONSTRAINT "user_score_history_roundId_fkey" FOREIGN KEY ("roundId") REFERENCES "rounds"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "rankings" ADD CONSTRAINT "rankings_referenceRoundId_fkey" FOREIGN KEY ("referenceRoundId") REFERENCES "rounds"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "rankings" ADD CONSTRAINT "rankings_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -878,3 +894,4 @@ ALTER TABLE "AdminAuditLog" ADD CONSTRAINT "AdminAuditLog_adminId_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "user_benefit_inventory" ADD CONSTRAINT "user_benefit_inventory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
