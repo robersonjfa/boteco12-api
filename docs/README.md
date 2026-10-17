@@ -7,6 +7,7 @@ Arquivos:
 - `architecture-current.md`: fotografia do estado atual de `boteco12-api` e `boteco12-frontend`
 - `architecture-target.md`: arquitetura alvo e escopo do futuro `boteco12-infra`
 - `backlog-master.md`: backlog oficial, incluindo o programa de seguranca `SEC-*`
+- `backlog-mesas-regionalizacao.md`: backlog especifico da regionalizacao opcional de Mesas
 - `roadmap.md`: fases de execução com prioridades e entregáveis
 - `security-review.md`: avaliação inicial de segurança e hardening
 

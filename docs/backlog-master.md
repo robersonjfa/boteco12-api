@@ -6,7 +6,7 @@ Data de consolidacao:
 
 Ultima atualizacao:
 
-- 2026-10-08
+- 2026-10-11
 
 Objetivo:
 
@@ -2362,3 +2362,23 @@ Evolucoes futuras ainda sujeitas a decisao de produto:
 - `Maior recompensa` deve considerar valor absoluto ou relacao recompensa/custo?
 - devemos permitir favoritar uma Mesa ou pedir lembrete quando a inscricao ainda nao abriu?
 - participacao anterior na Mesa do mesmo criador deve aumentar relevancia?
+
+### 41. Regionalizar Mesas de forma opcional
+
+Status: Backlog aprovado para refinamento antes da implementacao
+
+Prioridade: P2
+
+Frente: Produto / Backend / Frontend mobile-first / Dados / Privacidade
+
+Decisoes centrais:
+
+- Mesa permanece nacional por padrao
+- regionalizacao e localizacao do perfil sao opcionais
+- MVP suporta abrangencia nacional, estadual ou municipal
+- regiao melhora descoberta, filtros e ordenacao, sem restringir entrada
+- regras atuais de categoria, inscricao, saldo, capacidade e duracao nao mudam
+
+Backlog detalhado:
+
+- [`docs/backlog-mesas-regionalizacao.md`](/Users/roberson/dev/personal/boteco12-api/docs/backlog-mesas-regionalizacao.md)
