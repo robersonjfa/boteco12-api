@@ -88,6 +88,12 @@ enum MesaDurationMode {
   DATE
 }
 
+enum MesaRegionScope {
+  NATIONAL
+  STATE
+  CITY
+}
+
 enum UserAddressPreference {
   UNSPECIFIED
   CUSTOMER_MASCULINE
@@ -177,6 +183,12 @@ model User {
   scoreTotal   Int     @default(0)
   proUpsellDisabled Boolean @default(false)
   addressPreference UserAddressPreference @default(UNSPECIFIED)
+  /// Localização aproximada opcional (pais/UF/municipio). Nunca endereco completo.
+  countryCode       String?   @default("BR") @db.Char(2)
+  stateCode         String?   @db.Char(2)
+  cityCode          String?
+  cityName          String?
+  locationUpdatedAt DateTime?
 
   // Anti brute-force por conta (independente de IP)
   failedLoginAttempts Int       @default(0)
@@ -418,6 +430,11 @@ model Ranking {
   accessCost          Int? @default(0)
   category            MesaCategory @default(PAID)
   eligibility         MesaEligibility @default(SUBSCRIBERS_ONLY)
+  regionScope         MesaRegionScope @default(NATIONAL)
+  countryCode         String? @default("BR") @db.Char(2)
+  stateCode           String? @db.Char(2)
+  cityCode            String?
+  cityName            String?
   registrationCloseMode MesaRegistrationCloseMode @default(CAPACITY)
   durationMode        MesaDurationMode @default(DATE)
   durationRounds      Int?
@@ -455,6 +472,7 @@ model Ranking {
   @@index([type, status, registrationClosedAt, entryEndDate, createdAt])
   @@index([referenceRoundId])
   @@index([initializationStatus, referenceRoundId])
+  @@index([type, status, regionScope, stateCode, cityCode])
 }
 
 //////////////////////////////////////////////////////

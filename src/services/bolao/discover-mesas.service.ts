@@ -2,9 +2,11 @@ import { MesaCategory, Prisma } from '@prisma/client'
 import { hasActiveProSubscriptionAt } from '../../domain/subscription'
 import { prisma } from '../../lib/prisma'
 import { withMesaFinancialNames } from './mesa-financial-names'
+import { mesaRegionLabel, mesaRegionMatch } from './mesa-region-rules'
 
 export type MesaRegistrationFilter = 'ALL' | 'OPEN' | 'CLOSING_SOON' | 'UPCOMING'
 export type MesaAccessFilter = 'ALL' | 'CAN_JOIN'
+export type MesaRegionFilter = 'ALL' | 'NEARBY' | 'STATE' | 'CITY' | 'NATIONAL'
 export type MesaDiscoverySort =
   | 'RECOMMENDED'
   | 'CLOSING_SOON'
@@ -18,6 +20,9 @@ type DiscoverMesasInput = {
   category?: MesaCategory
   registration?: MesaRegistrationFilter
   access?: MesaAccessFilter
+  region?: MesaRegionFilter
+  stateCode?: string
+  cityCode?: string
   sort?: MesaDiscoverySort
   minCost?: number
   maxCost?: number
@@ -122,6 +127,11 @@ const mesaSelect = {
   accessCost: true,
   category: true,
   eligibility: true,
+  regionScope: true,
+  countryCode: true,
+  stateCode: true,
+  cityCode: true,
+  cityName: true,
   registrationCloseMode: true,
   durationMode: true,
   durationRounds: true,
@@ -166,6 +176,11 @@ function buildDiscoveryIndexQuery(input: {
   category?: MesaCategory
   registration: MesaRegistrationFilter
   access: MesaAccessFilter
+  region: MesaRegionFilter
+  stateCode?: string | null
+  cityCode?: string | null
+  viewerStateCode?: string | null
+  viewerCityCode?: string | null
   sort: MesaDiscoverySort
   minCost?: number
   maxCost?: number
@@ -200,6 +215,30 @@ function buildDiscoveryIndexQuery(input: {
   }
   if (input.maxCost != null) {
     baseFilters.push(Prisma.sql`r."accessCost" <= ${input.maxCost}`)
+  }
+  if (input.region === 'NATIONAL') {
+    baseFilters.push(Prisma.sql`r."regionScope"::text = 'NATIONAL'`)
+  } else if (input.region === 'STATE') {
+    const stateCode = (input.stateCode ?? input.viewerStateCode ?? '').toUpperCase()
+    baseFilters.push(stateCode
+      ? Prisma.sql`r."regionScope"::text = 'STATE' AND r."stateCode" = ${stateCode}`
+      : Prisma.sql`FALSE`)
+  } else if (input.region === 'CITY') {
+    const cityCode = input.cityCode ?? input.viewerCityCode ?? null
+    baseFilters.push(cityCode
+      ? Prisma.sql`r."regionScope"::text = 'CITY' AND r."cityCode" = ${cityCode}`
+      : Prisma.sql`FALSE`)
+  } else if (input.region === 'NEARBY') {
+    const stateCode = (input.viewerStateCode ?? '').toUpperCase()
+    const cityCode = input.viewerCityCode ?? null
+    const nearby = [Prisma.sql`r."regionScope"::text = 'NATIONAL'`]
+    if (stateCode) {
+      nearby.push(Prisma.sql`(r."regionScope"::text = 'STATE' AND r."stateCode" = ${stateCode})`)
+    }
+    if (cityCode) {
+      nearby.push(Prisma.sql`(r."regionScope"::text = 'CITY' AND r."cityCode" = ${cityCode})`)
+    }
+    baseFilters.push(Prisma.sql`(${Prisma.join(nearby, ' OR ')})`)
   }
   if (input.query) {
     baseFilters.push(Prisma.sql`(
@@ -320,6 +359,8 @@ export class DiscoverMesasService {
     const user = await prisma.user.findUnique({
       where: { id: input.userId },
       select: {
+        stateCode: true,
+        cityCode: true,
         subscription: {
           select: { status: true, plan: true, startAt: true, endAt: true },
         },
@@ -329,6 +370,9 @@ export class DiscoverMesasService {
 
     const isPro = hasActiveProSubscriptionAt(user?.subscription, now)
     const balance = user?.wallet?.balance ?? 0
+    const viewerStateCode = user?.stateCode ?? null
+    const viewerCityCode = user?.cityCode ?? null
+    const region = input.region ?? 'ALL'
     const offset = (page - 1) * limit
     const indexedRows = await prisma.$queryRaw<MesaDiscoveryIndexRow[]>(
       buildDiscoveryIndexQuery({
@@ -337,6 +381,11 @@ export class DiscoverMesasService {
         category: input.category,
         registration: input.registration ?? 'ALL',
         access: input.access ?? 'ALL',
+        region,
+        stateCode: input.stateCode,
+        cityCode: input.cityCode,
+        viewerStateCode,
+        viewerCityCode,
         sort,
         minCost: input.minCost,
         maxCost: input.maxCost,
@@ -373,6 +422,13 @@ export class DiscoverMesasService {
       const financial = withMesaFinancialNames(mesa)
       return [{
         ...financial,
+        regionScope: mesa.regionScope,
+        regionLabel: mesaRegionLabel(mesa),
+        regionMatch: mesaRegionMatch({ stateCode: viewerStateCode, cityCode: viewerCityCode }, mesa),
+        countryCode: mesa.countryCode,
+        stateCode: mesa.stateCode,
+        cityCode: mesa.cityCode,
+        cityName: mesa.cityName,
         participants: mesa.currentParticipants,
         ownerName: mesa.createdBy?.nickname?.trim() || mesa.createdBy?.name?.trim() || 'Boteco12',
         isOwner: false,
@@ -391,6 +447,16 @@ export class DiscoverMesasService {
       }]
     })
 
+    const [nationalCount, stateCount, cityCount] = await Promise.all([
+      prisma.ranking.count({ where: { type: 'BOLAO', status: 'ACTIVE', regionScope: 'NATIONAL' } }),
+      viewerStateCode
+        ? prisma.ranking.count({ where: { type: 'BOLAO', status: 'ACTIVE', regionScope: 'STATE', stateCode: viewerStateCode } })
+        : 0,
+      viewerCityCode
+        ? prisma.ranking.count({ where: { type: 'BOLAO', status: 'ACTIVE', regionScope: 'CITY', cityCode: viewerCityCode } })
+        : 0,
+    ])
+
     return {
       mesas: rows,
       meta: {
@@ -402,6 +468,12 @@ export class DiscoverMesasService {
           canJoin: summary.canJoin,
           closingSoon: summary.closingSoon,
           upcoming: summary.upcoming,
+        },
+        regionCounts: {
+          national: nationalCount,
+          state: stateCount,
+          city: cityCount,
+          nearby: nationalCount + stateCount + cityCount,
         },
         truncated: false,
       },

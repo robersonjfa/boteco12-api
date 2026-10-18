@@ -13,12 +13,14 @@ import {
   MesaDurationMode,
   MesaEligibility,
   MesaRegistrationCloseMode,
+  MesaRegionScope,
 } from '@prisma/client'
 import { MesaCategoryRules } from './mesa-category-rules'
 import { AssertActiveProUserService } from '../subscription/assert-active-pro-user.service'
 import { assertMesaScheduleRules } from './mesa-schedule-rules'
 import { PublishMesaService } from './publish-mesa.service'
 import { assertMesaStartDate } from './mesa-start-date-rules'
+import { normalizeMesaRegion } from './mesa-region-rules'
 
 type CreateBolaoInput = {
   name: string
@@ -33,6 +35,11 @@ type CreateBolaoInput = {
   sponsorPrizePool?: number
   maxParticipants?: number | null
   eligibility?: MesaEligibility
+  regionScope?: MesaRegionScope
+  countryCode?: string | null
+  stateCode?: string | null
+  cityCode?: string | null
+  cityName?: string | null
   registrationCloseMode?: MesaRegistrationCloseMode
   durationMode?: MesaDurationMode
   durationRounds?: number | null
@@ -58,6 +65,7 @@ export class CreateBolaoService {
       createdByUserId,
     } = input
     assertMesaStartDate(startDate)
+    const region = normalizeMesaRegion(input)
     const terms = MesaCategoryRules.validate({
       category: input.category,
       accessCost: input.accessCost,
@@ -170,6 +178,7 @@ export class CreateBolaoService {
           sponsorPrizePool: terms.sponsorPrizePool,
           maxParticipants: terms.maxParticipants,
           eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
+          ...region,
           registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
           durationMode: input.durationMode ?? MesaDurationMode.ROUNDS,
           durationRounds: input.durationRounds ?? null,
@@ -205,6 +214,10 @@ export class CreateBolaoService {
             sponsorPrizePool: terms.sponsorPrizePool,
             maxParticipants: terms.maxParticipants,
             eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
+            regionScope: region.regionScope,
+            stateCode: region.stateCode,
+            cityCode: region.cityCode,
+            cityName: region.cityName,
             registrationCloseMode: input.registrationCloseMode ?? MesaRegistrationCloseMode.CAPACITY,
             durationMode: input.durationMode ?? MesaDurationMode.ROUNDS,
             durationRounds: input.durationRounds ?? null,
