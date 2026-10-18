@@ -127,6 +127,10 @@ test('descoberta regional filtra no servidor e classifica afinidade', async () =
   )
 
   const nearby = await run('NEARBY')
+  assert.deepEqual(
+    ours(nearby).map(mesa => mesa.id),
+    [IDS.cityJoa, IDS.stateSc, IDS.national],
+  )
   const joacaba = ours(nearby).find(mesa => mesa.id === IDS.cityJoa)
   assert.equal(joacaba.regionMatch, 'CITY')
   assert.equal(joacaba.regionLabel, 'Joaçaba · SC')

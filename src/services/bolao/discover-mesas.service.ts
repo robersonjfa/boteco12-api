@@ -167,7 +167,7 @@ function discoveryOrder(sort: MesaDiscoverySort) {
   if (sort === 'CLOSING_SOON') {
     return Prisma.sql`state_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
   }
-  return Prisma.sql`state_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
+  return Prisma.sql`state_rank ASC, region_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
 }
 
 function buildDiscoveryIndexQuery(input: {
@@ -276,6 +276,9 @@ function buildDiscoveryIndexQuery(input: {
         r."eligibility"::text AS eligibility,
         COALESCE(r."accessCost", r."entryFee") AS access_cost,
         COALESCE(r."rewardPool", r."prizePool") AS reward_pool,
+        r."regionScope"::text AS region_scope,
+        r."stateCode" AS state_code,
+        r."cityCode" AS city_code,
         CASE
           WHEN r."maxParticipants" IS NULL THEN NULL
           ELSE GREATEST(r."maxParticipants" - r."currentParticipants", 0)
@@ -311,7 +314,13 @@ function buildDiscoveryIndexQuery(input: {
           WHEN access_state = 'CAN_JOIN' THEN 1
           WHEN registration_state <> 'UPCOMING' THEN 2
           ELSE 3
-        END AS state_rank
+        END AS state_rank,
+        CASE
+          WHEN region_scope = 'NATIONAL' THEN 2
+          WHEN region_scope = 'CITY' AND city_code = ${input.viewerCityCode} THEN 0
+          WHEN region_scope IN ('STATE', 'CITY') AND state_code = ${input.viewerStateCode} THEN 1
+          ELSE 3
+        END AS region_rank
       FROM classified
     ), filtered AS (
       SELECT *
