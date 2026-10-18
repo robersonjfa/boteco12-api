@@ -38,6 +38,9 @@ CREATE TYPE "MesaRegistrationCloseMode" AS ENUM ('CAPACITY', 'DATE');
 CREATE TYPE "MesaDurationMode" AS ENUM ('ROUNDS', 'DATE');
 
 -- CreateEnum
+CREATE TYPE "MesaRegionScope" AS ENUM ('NATIONAL', 'STATE', 'CITY');
+
+-- CreateEnum
 CREATE TYPE "UserAddressPreference" AS ENUM ('UNSPECIFIED', 'CUSTOMER_MASCULINE', 'CUSTOMER_FEMININE');
 
 -- CreateEnum
@@ -86,6 +89,11 @@ CREATE TABLE "users" (
     "scoreTotal" INTEGER NOT NULL DEFAULT 0,
     "proUpsellDisabled" BOOLEAN NOT NULL DEFAULT false,
     "addressPreference" "UserAddressPreference" NOT NULL DEFAULT 'UNSPECIFIED',
+    "countryCode" CHAR(2) DEFAULT 'BR',
+    "stateCode" CHAR(2),
+    "cityCode" TEXT,
+    "cityName" TEXT,
+    "locationUpdatedAt" TIMESTAMP(3),
     "failedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
     "lockedUntil" TIMESTAMP(3),
     "sessionVersion" INTEGER NOT NULL DEFAULT 0,
@@ -219,6 +227,11 @@ CREATE TABLE "rankings" (
     "accessCost" INTEGER DEFAULT 0,
     "category" "MesaCategory" NOT NULL DEFAULT 'PAID',
     "eligibility" "MesaEligibility" NOT NULL DEFAULT 'SUBSCRIBERS_ONLY',
+    "regionScope" "MesaRegionScope" NOT NULL DEFAULT 'NATIONAL',
+    "countryCode" CHAR(2) DEFAULT 'BR',
+    "stateCode" CHAR(2),
+    "cityCode" TEXT,
+    "cityName" TEXT,
     "registrationCloseMode" "MesaRegistrationCloseMode" NOT NULL DEFAULT 'CAPACITY',
     "durationMode" "MesaDurationMode" NOT NULL DEFAULT 'DATE',
     "durationRounds" INTEGER,
@@ -645,6 +658,9 @@ CREATE INDEX "rankings_referenceRoundId_idx" ON "rankings"("referenceRoundId");
 
 -- CreateIndex
 CREATE INDEX "rankings_initializationStatus_referenceRoundId_idx" ON "rankings"("initializationStatus", "referenceRoundId");
+
+-- CreateIndex
+CREATE INDEX "rankings_type_status_regionScope_stateCode_cityCode_idx" ON "rankings"("type", "status", "regionScope", "stateCode", "cityCode");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "rankings_type_periodRef_key" ON "rankings"("type", "periodRef");
