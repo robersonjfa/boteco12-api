@@ -5,13 +5,16 @@ export class DiscoverMesasController {
   static async handle(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
-      const { q, category, registration, access, sort, minCost, maxCost, page, limit } = req.query as any
+      const { q, category, registration, access, region, stateCode, cityCode, sort, minCost, maxCost, page, limit } = req.query as any
       const result = await DiscoverMesasService.execute({
         userId: req.user.id,
         query: q,
         category,
         registration,
         access,
+        region,
+        stateCode,
+        cityCode,
         sort,
         minCost,
         maxCost,

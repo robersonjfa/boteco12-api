@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
 import { Prisma } from '@prisma/client'
 import { UserAddressPreference } from '@prisma/client'
+import { normalizeProfileLocation } from '../bolao/mesa-region-rules'
 
 interface Input {
   userId: string
@@ -14,6 +15,10 @@ interface Input {
     bio?: string
     profileImage?: string | null
     addressPreference?: UserAddressPreference
+    countryCode?: string
+    stateCode?: string | null
+    cityCode?: string | null
+    cityName?: string | null
   }
 }
 
@@ -78,6 +83,20 @@ export class UpdateProfileService {
         const birthDateToConfirm =
           data.birthDate !== undefined && !current.birthDate
 
+        const hasLocationUpdate =
+          data.countryCode !== undefined ||
+          data.stateCode !== undefined ||
+          data.cityCode !== undefined ||
+          data.cityName !== undefined
+        const location = hasLocationUpdate
+          ? normalizeProfileLocation({
+              countryCode: data.countryCode,
+              stateCode: data.stateCode,
+              cityCode: data.cityCode,
+              cityName: data.cityName,
+            })
+          : null
+
         return tx.user.update({
           where: {
             id: userId,
@@ -101,6 +120,7 @@ export class UpdateProfileService {
             ...(data.addressPreference !== undefined && {
               addressPreference: data.addressPreference,
             }),
+            ...(location && { ...location, locationUpdatedAt: new Date() }),
           },
           select: {
             id: true,
@@ -113,6 +133,11 @@ export class UpdateProfileService {
             bio: true,
             profileImage: true,
             addressPreference: true,
+            countryCode: true,
+            stateCode: true,
+            cityCode: true,
+            cityName: true,
+            locationUpdatedAt: true,
             role: true,
           },
         })

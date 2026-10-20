@@ -13,6 +13,11 @@ const CreateMesaBaseSchema = z.object({
   endDate: z.iso.datetime().nullable().optional(),
   category: z.enum(['PAID', 'FREE', 'SPONSORED_FREE']),
   eligibility: z.enum(['ALL', 'SUBSCRIBERS_ONLY', 'FREE_ONLY']),
+  regionScope: z.enum(['NATIONAL', 'STATE', 'CITY']).default('NATIONAL'),
+  countryCode: z.string().trim().length(2).default('BR'),
+  stateCode: z.string().trim().length(2).nullable().optional(),
+  cityCode: z.string().trim().regex(/^\d{7}$/, 'Informe o código IBGE do município').nullable().optional(),
+  cityName: z.string().trim().min(1).max(120).nullable().optional(),
   registrationCloseMode: z.enum(['CAPACITY', 'DATE']).default('CAPACITY'),
   durationMode: z.enum(['ROUNDS', 'DATE']).default('ROUNDS'),
   durationRounds: z.number().int().positive().max(1000).nullable().optional(),
@@ -132,6 +137,26 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
       message: 'accessCost e entryFee devem possuir o mesmo valor durante a compatibilidade',
     })
   }
+
+  if (input.regionScope === 'STATE') {
+    if (!input.stateCode) {
+      ctx.addIssue({ code: 'custom', path: ['stateCode'], message: 'Informe a sigla do estado' })
+    }
+    if (input.cityCode || input.cityName) {
+      ctx.addIssue({ code: 'custom', path: ['cityCode'], message: 'Abrangência estadual não utiliza município' })
+    }
+  }
+  if (input.regionScope === 'CITY') {
+    if (!input.stateCode) {
+      ctx.addIssue({ code: 'custom', path: ['stateCode'], message: 'Informe a sigla do estado' })
+    }
+    if (!input.cityCode) {
+      ctx.addIssue({ code: 'custom', path: ['cityCode'], message: 'Informe o código IBGE do município' })
+    }
+    if (!input.cityName) {
+      ctx.addIssue({ code: 'custom', path: ['cityName'], message: 'Informe o nome do município' })
+    }
+  }
 })
 
 export const UpdateMesaSchema = CreateMesaSchema
@@ -162,6 +187,9 @@ export const DiscoverMesasQuerySchema = z.object({
   category: z.enum(['PAID', 'FREE', 'SPONSORED_FREE']).optional(),
   registration: z.enum(['ALL', 'OPEN', 'CLOSING_SOON', 'UPCOMING']).default('ALL'),
   access: z.enum(['ALL', 'CAN_JOIN']).default('ALL'),
+  region: z.enum(['ALL', 'NEARBY', 'STATE', 'CITY', 'NATIONAL']).default('ALL'),
+  stateCode: z.string().trim().length(2).optional(),
+  cityCode: z.string().trim().regex(/^\d{7}$/).optional(),
   sort: z.enum([
     'RECOMMENDED',
     'CLOSING_SOON',

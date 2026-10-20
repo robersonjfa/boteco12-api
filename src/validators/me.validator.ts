@@ -19,6 +19,10 @@ export const UpdateProfileSchema = z
       'CUSTOMER_MASCULINE',
       'CUSTOMER_FEMININE',
     ]).optional(),
+    countryCode: z.string().trim().length(2).optional(),
+    stateCode: z.string().trim().length(2).nullable().optional(),
+    cityCode: z.string().trim().regex(/^\d{7}$/, 'Informe o código IBGE do município').nullable().optional(),
+    cityName: z.string().trim().min(1).max(120).nullable().optional(),
   }).strict()
   .refine(obj => Object.keys(obj).length > 0, {
     message: 'Nenhum campo para atualizar',
