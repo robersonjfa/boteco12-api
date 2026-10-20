@@ -53,6 +53,9 @@ type MesaDiscoveryIndexRow = {
   canJoin: number
   closingSoon: number
   upcoming: number
+  regionNational: number | null
+  regionState: number | null
+  regionCity: number | null
 }
 
 export function mesaRegistrationState(mesa: {
@@ -216,30 +219,6 @@ function buildDiscoveryIndexQuery(input: {
   if (input.maxCost != null) {
     baseFilters.push(Prisma.sql`r."accessCost" <= ${input.maxCost}`)
   }
-  if (input.region === 'NATIONAL') {
-    baseFilters.push(Prisma.sql`r."regionScope"::text = 'NATIONAL'`)
-  } else if (input.region === 'STATE') {
-    const stateCode = (input.stateCode ?? input.viewerStateCode ?? '').toUpperCase()
-    baseFilters.push(stateCode
-      ? Prisma.sql`r."regionScope"::text = 'STATE' AND r."stateCode" = ${stateCode}`
-      : Prisma.sql`FALSE`)
-  } else if (input.region === 'CITY') {
-    const cityCode = input.cityCode ?? input.viewerCityCode ?? null
-    baseFilters.push(cityCode
-      ? Prisma.sql`r."regionScope"::text = 'CITY' AND r."cityCode" = ${cityCode}`
-      : Prisma.sql`FALSE`)
-  } else if (input.region === 'NEARBY') {
-    const stateCode = (input.viewerStateCode ?? '').toUpperCase()
-    const cityCode = input.viewerCityCode ?? null
-    const nearby = [Prisma.sql`r."regionScope"::text = 'NATIONAL'`]
-    if (stateCode) {
-      nearby.push(Prisma.sql`(r."regionScope"::text = 'STATE' AND r."stateCode" = ${stateCode})`)
-    }
-    if (cityCode) {
-      nearby.push(Prisma.sql`(r."regionScope"::text = 'CITY' AND r."cityCode" = ${cityCode})`)
-    }
-    baseFilters.push(Prisma.sql`(${Prisma.join(nearby, ' OR ')})`)
-  }
   if (input.query) {
     baseFilters.push(Prisma.sql`(
       r."name" ILIKE '%' || ${input.query} || '%'
@@ -263,6 +242,34 @@ function buildDiscoveryIndexQuery(input: {
   const accessFilter = input.access === 'CAN_JOIN'
     ? Prisma.sql`access_state = 'CAN_JOIN'`
     : Prisma.sql`TRUE`
+  const regionFilter = (() => {
+    if (input.region === 'NATIONAL') return Prisma.sql`region_scope = 'NATIONAL'`
+    if (input.region === 'STATE') {
+      const stateCode = (input.stateCode ?? input.viewerStateCode ?? '').toUpperCase()
+      return stateCode
+        ? Prisma.sql`region_scope = 'STATE' AND state_code = ${stateCode}`
+        : Prisma.sql`FALSE`
+    }
+    if (input.region === 'CITY') {
+      const cityCode = input.cityCode ?? input.viewerCityCode ?? null
+      return cityCode
+        ? Prisma.sql`region_scope = 'CITY' AND city_code = ${cityCode}`
+        : Prisma.sql`FALSE`
+    }
+    if (input.region === 'NEARBY') {
+      const stateCode = (input.viewerStateCode ?? '').toUpperCase()
+      const cityCode = input.viewerCityCode ?? null
+      const nearby = [Prisma.sql`region_scope = 'NATIONAL'`]
+      if (stateCode) {
+        nearby.push(Prisma.sql`(region_scope = 'STATE' AND state_code = ${stateCode})`)
+      }
+      if (cityCode) {
+        nearby.push(Prisma.sql`(region_scope = 'CITY' AND city_code = ${cityCode})`)
+      }
+      return Prisma.sql`(${Prisma.join(nearby, ' OR ')})`
+    }
+    return Prisma.sql`TRUE`
+  })()
   const upperOrdinal = input.offset + input.limit
 
   return Prisma.sql`
@@ -322,10 +329,20 @@ function buildDiscoveryIndexQuery(input: {
           ELSE 3
         END AS region_rank
       FROM classified
-    ), filtered AS (
+    ), filtered_all AS (
       SELECT *
       FROM scored
       WHERE ${registrationFilter} AND ${accessFilter}
+    ), region_stats AS (
+      SELECT
+        COUNT(*) FILTER (WHERE region_scope = 'NATIONAL')::int AS national,
+        COUNT(*) FILTER (WHERE region_scope = 'STATE' AND state_code = ${input.viewerStateCode})::int AS state,
+        COUNT(*) FILTER (WHERE region_scope = 'CITY' AND city_code = ${input.viewerCityCode})::int AS city
+      FROM filtered_all
+    ), filtered AS (
+      SELECT *
+      FROM filtered_all
+      WHERE ${regionFilter}
     ), ordered AS (
       SELECT
         filtered.*,
@@ -348,8 +365,12 @@ function buildDiscoveryIndexQuery(input: {
       stats.total,
       stats.can_join AS "canJoin",
       stats.closing_soon AS "closingSoon",
-      stats.upcoming
+      stats.upcoming,
+      region_stats.national AS "regionNational",
+      region_stats.state AS "regionState",
+      region_stats.city AS "regionCity"
     FROM stats
+    CROSS JOIN region_stats
     LEFT JOIN ordered page
       ON page.ordinal > ${input.offset}
       AND page.ordinal <= ${upperOrdinal}
@@ -456,15 +477,9 @@ export class DiscoverMesasService {
       }]
     })
 
-    const [nationalCount, stateCount, cityCount] = await Promise.all([
-      prisma.ranking.count({ where: { type: 'BOLAO', status: 'ACTIVE', regionScope: 'NATIONAL' } }),
-      viewerStateCode
-        ? prisma.ranking.count({ where: { type: 'BOLAO', status: 'ACTIVE', regionScope: 'STATE', stateCode: viewerStateCode } })
-        : 0,
-      viewerCityCode
-        ? prisma.ranking.count({ where: { type: 'BOLAO', status: 'ACTIVE', regionScope: 'CITY', cityCode: viewerCityCode } })
-        : 0,
-    ])
+    const regionNational = indexedRows[0]?.regionNational ?? 0
+    const regionState = indexedRows[0]?.regionState ?? 0
+    const regionCity = indexedRows[0]?.regionCity ?? 0
 
     return {
       mesas: rows,
@@ -479,10 +494,10 @@ export class DiscoverMesasService {
           upcoming: summary.upcoming,
         },
         regionCounts: {
-          national: nationalCount,
-          state: stateCount,
-          city: cityCount,
-          nearby: nationalCount + stateCount + cityCount,
+          national: regionNational,
+          state: regionState,
+          city: regionCity,
+          nearby: regionNational + regionState + regionCity,
         },
         truncated: false,
       },

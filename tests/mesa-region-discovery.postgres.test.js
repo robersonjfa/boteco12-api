@@ -108,6 +108,7 @@ test('descoberta regional filtra no servidor e classifica afinidade', async () =
   const run = region => DiscoverMesasService.execute({
     userId: VIEWER,
     region,
+    query: PREFIX,
     page: 1,
     limit: 50,
   })
@@ -138,10 +139,10 @@ test('descoberta regional filtra no servidor e classifica afinidade', async () =
   const otherCity = ours(all).find(mesa => mesa.id === IDS.cityOther)
   assert.equal(otherCity.regionMatch, 'STATE')
 
-  assert.ok(nearby.meta.regionCounts.national >= 1)
-  assert.ok(nearby.meta.regionCounts.state >= 1)
-  assert.ok(nearby.meta.regionCounts.city >= 1)
-  assert.ok(nearby.meta.regionCounts.nearby >= 3)
+  assert.equal(nearby.meta.regionCounts.national, 1)
+  assert.equal(nearby.meta.regionCounts.state, 1)
+  assert.equal(nearby.meta.regionCounts.city, 1)
+  assert.equal(nearby.meta.regionCounts.nearby, 3)
 
   await cleanup()
 })
