@@ -2,9 +2,11 @@ import { MesaCategory, Prisma } from '@prisma/client'
 import { hasActiveProSubscriptionAt } from '../../domain/subscription'
 import { prisma } from '../../lib/prisma'
 import { withMesaFinancialNames } from './mesa-financial-names'
+import { mesaRegionLabel, mesaRegionMatch } from './mesa-region-rules'
 
 export type MesaRegistrationFilter = 'ALL' | 'OPEN' | 'CLOSING_SOON' | 'UPCOMING'
 export type MesaAccessFilter = 'ALL' | 'CAN_JOIN'
+export type MesaRegionFilter = 'ALL' | 'NEARBY' | 'STATE' | 'CITY' | 'NATIONAL'
 export type MesaDiscoverySort =
   | 'RECOMMENDED'
   | 'CLOSING_SOON'
@@ -18,6 +20,9 @@ type DiscoverMesasInput = {
   category?: MesaCategory
   registration?: MesaRegistrationFilter
   access?: MesaAccessFilter
+  region?: MesaRegionFilter
+  stateCode?: string
+  cityCode?: string
   sort?: MesaDiscoverySort
   minCost?: number
   maxCost?: number
@@ -48,6 +53,9 @@ type MesaDiscoveryIndexRow = {
   canJoin: number
   closingSoon: number
   upcoming: number
+  regionNational: number | null
+  regionState: number | null
+  regionCity: number | null
 }
 
 export function mesaRegistrationState(mesa: {
@@ -122,6 +130,11 @@ const mesaSelect = {
   accessCost: true,
   category: true,
   eligibility: true,
+  regionScope: true,
+  countryCode: true,
+  stateCode: true,
+  cityCode: true,
+  cityName: true,
   registrationCloseMode: true,
   durationMode: true,
   durationRounds: true,
@@ -157,7 +170,7 @@ function discoveryOrder(sort: MesaDiscoverySort) {
   if (sort === 'CLOSING_SOON') {
     return Prisma.sql`state_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
   }
-  return Prisma.sql`state_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
+  return Prisma.sql`state_rank ASC, region_rank ASC, "entryEndDate" ASC NULLS LAST, "createdAt" DESC, id ASC`
 }
 
 function buildDiscoveryIndexQuery(input: {
@@ -166,6 +179,11 @@ function buildDiscoveryIndexQuery(input: {
   category?: MesaCategory
   registration: MesaRegistrationFilter
   access: MesaAccessFilter
+  region: MesaRegionFilter
+  stateCode?: string | null
+  cityCode?: string | null
+  viewerStateCode?: string | null
+  viewerCityCode?: string | null
   sort: MesaDiscoverySort
   minCost?: number
   maxCost?: number
@@ -224,6 +242,34 @@ function buildDiscoveryIndexQuery(input: {
   const accessFilter = input.access === 'CAN_JOIN'
     ? Prisma.sql`access_state = 'CAN_JOIN'`
     : Prisma.sql`TRUE`
+  const regionFilter = (() => {
+    if (input.region === 'NATIONAL') return Prisma.sql`region_scope = 'NATIONAL'`
+    if (input.region === 'STATE') {
+      const stateCode = (input.stateCode ?? input.viewerStateCode ?? '').toUpperCase()
+      return stateCode
+        ? Prisma.sql`region_scope = 'STATE' AND state_code = ${stateCode}`
+        : Prisma.sql`FALSE`
+    }
+    if (input.region === 'CITY') {
+      const cityCode = input.cityCode ?? input.viewerCityCode ?? null
+      return cityCode
+        ? Prisma.sql`region_scope = 'CITY' AND city_code = ${cityCode}`
+        : Prisma.sql`FALSE`
+    }
+    if (input.region === 'NEARBY') {
+      const stateCode = (input.viewerStateCode ?? '').toUpperCase()
+      const cityCode = input.viewerCityCode ?? null
+      const nearby = [Prisma.sql`region_scope = 'NATIONAL'`]
+      if (stateCode) {
+        nearby.push(Prisma.sql`(region_scope = 'STATE' AND state_code = ${stateCode})`)
+      }
+      if (cityCode) {
+        nearby.push(Prisma.sql`(region_scope = 'CITY' AND city_code = ${cityCode})`)
+      }
+      return Prisma.sql`(${Prisma.join(nearby, ' OR ')})`
+    }
+    return Prisma.sql`TRUE`
+  })()
   const upperOrdinal = input.offset + input.limit
 
   return Prisma.sql`
@@ -237,6 +283,9 @@ function buildDiscoveryIndexQuery(input: {
         r."eligibility"::text AS eligibility,
         COALESCE(r."accessCost", r."entryFee") AS access_cost,
         COALESCE(r."rewardPool", r."prizePool") AS reward_pool,
+        r."regionScope"::text AS region_scope,
+        r."stateCode" AS state_code,
+        r."cityCode" AS city_code,
         CASE
           WHEN r."maxParticipants" IS NULL THEN NULL
           ELSE GREATEST(r."maxParticipants" - r."currentParticipants", 0)
@@ -272,12 +321,28 @@ function buildDiscoveryIndexQuery(input: {
           WHEN access_state = 'CAN_JOIN' THEN 1
           WHEN registration_state <> 'UPCOMING' THEN 2
           ELSE 3
-        END AS state_rank
+        END AS state_rank,
+        CASE
+          WHEN region_scope = 'NATIONAL' THEN 2
+          WHEN region_scope = 'CITY' AND city_code = ${input.viewerCityCode} THEN 0
+          WHEN region_scope IN ('STATE', 'CITY') AND state_code = ${input.viewerStateCode} THEN 1
+          ELSE 3
+        END AS region_rank
       FROM classified
-    ), filtered AS (
+    ), filtered_all AS (
       SELECT *
       FROM scored
       WHERE ${registrationFilter} AND ${accessFilter}
+    ), region_stats AS (
+      SELECT
+        COUNT(*) FILTER (WHERE region_scope = 'NATIONAL')::int AS national,
+        COUNT(*) FILTER (WHERE region_scope = 'STATE' AND state_code = ${input.viewerStateCode})::int AS state,
+        COUNT(*) FILTER (WHERE region_scope = 'CITY' AND city_code = ${input.viewerCityCode})::int AS city
+      FROM filtered_all
+    ), filtered AS (
+      SELECT *
+      FROM filtered_all
+      WHERE ${regionFilter}
     ), ordered AS (
       SELECT
         filtered.*,
@@ -300,8 +365,12 @@ function buildDiscoveryIndexQuery(input: {
       stats.total,
       stats.can_join AS "canJoin",
       stats.closing_soon AS "closingSoon",
-      stats.upcoming
+      stats.upcoming,
+      region_stats.national AS "regionNational",
+      region_stats.state AS "regionState",
+      region_stats.city AS "regionCity"
     FROM stats
+    CROSS JOIN region_stats
     LEFT JOIN ordered page
       ON page.ordinal > ${input.offset}
       AND page.ordinal <= ${upperOrdinal}
@@ -320,6 +389,8 @@ export class DiscoverMesasService {
     const user = await prisma.user.findUnique({
       where: { id: input.userId },
       select: {
+        stateCode: true,
+        cityCode: true,
         subscription: {
           select: { status: true, plan: true, startAt: true, endAt: true },
         },
@@ -329,6 +400,9 @@ export class DiscoverMesasService {
 
     const isPro = hasActiveProSubscriptionAt(user?.subscription, now)
     const balance = user?.wallet?.balance ?? 0
+    const viewerStateCode = user?.stateCode ?? null
+    const viewerCityCode = user?.cityCode ?? null
+    const region = input.region ?? 'ALL'
     const offset = (page - 1) * limit
     const indexedRows = await prisma.$queryRaw<MesaDiscoveryIndexRow[]>(
       buildDiscoveryIndexQuery({
@@ -337,6 +411,11 @@ export class DiscoverMesasService {
         category: input.category,
         registration: input.registration ?? 'ALL',
         access: input.access ?? 'ALL',
+        region,
+        stateCode: input.stateCode,
+        cityCode: input.cityCode,
+        viewerStateCode,
+        viewerCityCode,
         sort,
         minCost: input.minCost,
         maxCost: input.maxCost,
@@ -373,6 +452,13 @@ export class DiscoverMesasService {
       const financial = withMesaFinancialNames(mesa)
       return [{
         ...financial,
+        regionScope: mesa.regionScope,
+        regionLabel: mesaRegionLabel(mesa),
+        regionMatch: mesaRegionMatch({ stateCode: viewerStateCode, cityCode: viewerCityCode }, mesa),
+        countryCode: mesa.countryCode,
+        stateCode: mesa.stateCode,
+        cityCode: mesa.cityCode,
+        cityName: mesa.cityName,
         participants: mesa.currentParticipants,
         ownerName: mesa.createdBy?.nickname?.trim() || mesa.createdBy?.name?.trim() || 'Boteco12',
         isOwner: false,
@@ -391,6 +477,10 @@ export class DiscoverMesasService {
       }]
     })
 
+    const regionNational = indexedRows[0]?.regionNational ?? 0
+    const regionState = indexedRows[0]?.regionState ?? 0
+    const regionCity = indexedRows[0]?.regionCity ?? 0
+
     return {
       mesas: rows,
       meta: {
@@ -402,6 +492,12 @@ export class DiscoverMesasService {
           canJoin: summary.canJoin,
           closingSoon: summary.closingSoon,
           upcoming: summary.upcoming,
+        },
+        regionCounts: {
+          national: regionNational,
+          state: regionState,
+          city: regionCity,
+          nearby: regionNational + regionState + regionCity,
         },
         truncated: false,
       },

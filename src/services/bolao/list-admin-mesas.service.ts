@@ -1,6 +1,7 @@
 import { MesaCategory, Prisma, RankingStatus } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 import { withMesaFinancialNames } from './mesa-financial-names'
+import { mesaRegionLabel } from './mesa-region-rules'
 
 type ListAdminMesasInput = {
   bucket?: 'OPEN' | 'CLOSED'
@@ -19,6 +20,11 @@ const mesaSelect = {
   accessCost: true,
   category: true,
   eligibility: true,
+  regionScope: true,
+  countryCode: true,
+  stateCode: true,
+  cityCode: true,
+  cityName: true,
   registrationCloseMode: true,
   durationMode: true,
   durationRounds: true,
@@ -103,7 +109,10 @@ export class ListAdminMesasService {
       },
       { open: 0, closed: 0 }
     )
-    const mesas = rows.map(withMesaFinancialNames)
+    const mesas = rows.map(mesa => ({
+      ...withMesaFinancialNames(mesa),
+      regionLabel: mesaRegionLabel(mesa),
+    }))
 
     return {
       mesas,
