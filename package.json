@@ -68,13 +68,14 @@
   "overrides": {
     "brace-expansion": "1.1.21",
     "deepmerge-ts": "8.0.2",
-    "follow-redirects": "1.16.0",
+    "follow-redirects": "1.16.2",
     "form-data": "4.0.6",
     "mysql2": "3.24.3",
     "path-to-regexp": "0.1.13",
     "picomatch": "2.3.2",
     "proxy-addr": "2.0.8",
-    "qs": "6.16.0"
+    "qs": "6.16.0",
+    "body-parser": "1.20.9"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -85,16 +86,16 @@
     "bullmq": "^5.80.2",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
-    "express": "^4.22.2",
-    "express-rate-limit": "^8.7.0",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.1",
     "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.11.1",
-    "nodemailer": "^10.0.14",
+    "nodemailer": "^10.2.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "prisma": "^7.10.0",
-    "zod": "^4.3.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
