@@ -31,15 +31,16 @@ const {
 } = require('../dist/services/ranking/get-ranking.service')
 const { CreateMesaSchema } = require('../dist/validators/bolao.validator')
 
-test('Mesa por lugares usa rodadas e Mesa por data usa datas explícitas', () => {
-  const base = {
+test('Mesa Free encerra por data e dura por rodadas', () => {
+  const free = {
     name: 'Mesa Free da Freguesia',
     description: 'Mesa gratuita com prazo de proteção.',
     startDate: '2099-08-01T03:00:00.000Z',
     category: 'FREE',
     eligibility: 'ALL',
-    registrationCloseMode: 'CAPACITY',
-    maxParticipants: 50,
+    registrationCloseMode: 'DATE',
+    entryEndDate: '2099-08-15T02:59:59.000Z',
+    maxParticipants: null,
     durationMode: 'ROUNDS',
     durationRounds: 5,
     accessCost: 0,
@@ -47,31 +48,30 @@ test('Mesa por lugares usa rodadas e Mesa por data usa datas explícitas', () =>
     prizeDistribution: [],
   }
 
-  assert.equal(CreateMesaSchema.safeParse(base).success, true)
+  assert.equal(CreateMesaSchema.safeParse(free).success, true)
   assert.equal(CreateMesaSchema.safeParse({
-    ...base,
+    ...free,
+    registrationCloseMode: 'CAPACITY',
+    maxParticipants: 50,
+    entryEndDate: null,
+  }).success, false)
+  assert.equal(CreateMesaSchema.safeParse({
+    ...free,
+    durationMode: 'DATE',
+    durationRounds: null,
     endDate: '2099-09-01T02:59:59.000Z',
   }).success, false)
   assert.equal(CreateMesaSchema.safeParse({
-    ...base,
-    registrationCloseMode: 'DATE',
-    maxParticipants: null,
-    entryEndDate: '2099-08-15T02:59:59.000Z',
-    durationMode: 'DATE',
-    durationRounds: null,
-    endDate: '2099-09-01T02:59:59.000Z',
+    ...free,
+    category: 'SPONSORED_FREE',
+    sponsorPrizePool: 100,
+    prizeDistribution: [{ position: 1, percentage: 100 }],
   }).success, true)
   assert.equal(CreateMesaSchema.safeParse({
-    ...base,
+    ...free,
     category: 'PAID',
     accessCost: 10,
     prizeDistribution: [{ position: 1, percentage: 100 }],
-    registrationCloseMode: 'DATE',
-    maxParticipants: null,
-    entryEndDate: '2099-08-15T02:59:59.000Z',
-    durationMode: 'DATE',
-    durationRounds: null,
-    endDate: '2099-09-01T02:59:59.000Z',
   }).success, false)
 })
 
@@ -117,12 +117,13 @@ test('usuário Na Calçada cria Mesa Free sem assinatura PRO', async t => {
     name: 'Mesa Free da Calçada',
     description: 'Mesa aberta e gratuita para a freguesia.',
     startDate: new Date('2099-08-01T03:00:00.000Z'),
+    entryEndDate: new Date('2099-08-15T02:59:59.000Z'),
     endDate: null,
     category: 'FREE',
     accessCost: 0,
     sponsorPrizePool: 0,
-    maxParticipants: 50,
-    registrationCloseMode: 'CAPACITY',
+    maxParticipants: null,
+    registrationCloseMode: 'DATE',
     durationMode: 'ROUNDS',
     durationRounds: 5,
     prizeDistribution: [],

@@ -32,12 +32,17 @@ test.before(async () => {
 test.after(async () => { await new Promise(resolve => server.close(resolve)) })
 
 function payload(category = 'PAID', eligibility = 'ALL') {
+  const free = category === 'FREE'
   return {
     name: 'Mesa com campos explícitos', description: 'Regras da Mesa.',
     startDate: '2099-08-01T03:00:00.000Z', category, eligibility,
+    registrationCloseMode: free ? 'DATE' : 'CAPACITY',
+    entryEndDate: free ? '2099-08-02T03:00:00.000Z' : undefined,
+    durationMode: 'ROUNDS',
     accessCost: category === 'PAID' ? 20 : 0,
     sponsorPrizePool: category === 'SPONSORED_FREE' ? 100 : 0,
-    maxParticipants: 2, durationRounds: 2,
+    maxParticipants: free ? undefined : 2,
+    durationRounds: 2,
     prizeDistribution: category === 'FREE' ? [] : [{ position: 1, percentage: 100 }],
   }
 }
@@ -88,10 +93,10 @@ for (const category of ['PAID', 'FREE', 'SPONSORED_FREE']) {
   for (const eligibility of ['ALL', 'SUBSCRIBERS_ONLY', 'FREE_ONLY']) {
     test(`campos explícitos ${category}/${eligibility} preservam a escolha enviada`, async () => {
       const response = await send('POST', '/api/admin/mesas', payload(category, eligibility))
-      assert.equal(response.status, 201)
+      assert.equal(response.status, 201, JSON.stringify(response.body))
       assert.equal(response.body.category, category)
       assert.equal(response.body.eligibility, eligibility)
-      assert.equal(response.body.registrationCloseMode, 'CAPACITY')
+      assert.equal(response.body.registrationCloseMode, category === 'FREE' ? 'DATE' : 'CAPACITY')
       assert.equal(response.body.durationMode, 'ROUNDS')
     })
   }
@@ -139,11 +144,31 @@ test('capacidade aceita os limites dois e um milhão', async () => {
 test('inscrições por data preservam capacidade ausente ou null e rejeitam limite numérico', async () => {
   for (const maxParticipants of [undefined, null, 2]) {
     const body = {
-      ...payload('FREE'), registrationCloseMode: 'DATE', durationMode: 'DATE',
-      maxParticipants, durationRounds: null,
-      entryEndDate: '2099-08-02T03:00:00.000Z', endDate: '2099-08-03T03:00:00.000Z',
+      ...payload('FREE'),
+      maxParticipants,
+      durationRounds: 2,
     }
     const response = await send('POST', '/api/mesas', body)
     assert.equal(response.status, maxParticipants == null ? 201 : 400)
   }
+})
+
+test('Mesa Free encerra somente por data e tem duração por rodadas', async () => {
+  const capacity = await send('POST', '/api/mesas', {
+    ...payload('FREE'),
+    registrationCloseMode: 'CAPACITY',
+    maxParticipants: 5,
+    entryEndDate: undefined,
+  })
+  assert.equal(capacity.status, 400)
+  assert.ok(capacity.body.issues.some(issue => issue.path === 'registrationCloseMode'))
+
+  const dateDuration = await send('POST', '/api/mesas', {
+    ...payload('FREE'),
+    durationMode: 'DATE',
+    endDate: '2099-08-20T03:00:00.000Z',
+    durationRounds: null,
+  })
+  assert.equal(dateDuration.status, 400)
+  assert.ok(dateDuration.body.issues.some(issue => issue.path === 'durationMode'))
 })

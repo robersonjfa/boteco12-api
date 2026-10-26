@@ -59,11 +59,24 @@ export const CreateMesaSchema = CreateMesaBaseSchema.superRefine((input, ctx) =>
     ctx.addIssue({ code: 'custom', path: ['sponsorPrizePool'], message: 'Esta categoria não utiliza premiação patrocinada' })
   }
 
-  if (input.registrationCloseMode === 'CAPACITY' && input.durationMode !== 'ROUNDS') {
-    ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa por lugares deve encerrar por quantidade de rodadas' })
+  if (input.category === 'PAID') {
+    if (input.registrationCloseMode !== 'CAPACITY') {
+      ctx.addIssue({ code: 'custom', path: ['registrationCloseMode'], message: 'Mesa com Tampinhas encerra inscrições por lotação' })
+    }
+    if (input.durationMode !== 'ROUNDS') {
+      ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa com Tampinhas tem duração por rodadas' })
+    }
   }
-  if (input.registrationCloseMode === 'DATE' && input.durationMode !== 'DATE') {
-    ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa com inscrições por data deve possuir data de fechamento' })
+  if (input.category === 'FREE') {
+    if (input.registrationCloseMode !== 'DATE') {
+      ctx.addIssue({ code: 'custom', path: ['registrationCloseMode'], message: 'Mesa Free encerra inscrições somente por data' })
+    }
+    if (input.durationMode !== 'ROUNDS') {
+      ctx.addIssue({ code: 'custom', path: ['durationMode'], message: 'Mesa Free tem duração por rodadas' })
+    }
+    if (input.maxParticipants != null) {
+      ctx.addIssue({ code: 'custom', path: ['maxParticipants'], message: 'Mesa Free não possui limite de participantes' })
+    }
   }
 
   if (input.registrationCloseMode === 'CAPACITY' && !input.maxParticipants) {
