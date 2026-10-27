@@ -16,7 +16,7 @@ type MesaLifecycleClient = {
     updateMany(args: unknown): Promise<{ count: number }>
   }
   round?: {
-    findMany(args: unknown): Promise<Array<{ closeAt: Date | null }>>
+    findMany(args: unknown): Promise<Array<{ id?: string; closeAt: Date | null }>>
   }
 }
 
@@ -34,11 +34,28 @@ export class MesaLifecycleService {
       select: { id: true, entryEndDate: true },
     })
 
+    const openRound = tx.round
+      ? (await tx.round.findMany({
+          where: { status: 'OPEN' },
+          select: { id: true },
+          take: 1,
+        }))[0]
+      : undefined
+
     for (const mesa of due) {
       if (!mesa.entryEndDate) continue
       await tx.ranking.updateMany({
         where: { id: mesa.id, status: 'ACTIVE', registrationClosedAt: null },
-        data: { registrationClosedAt: mesa.entryEndDate },
+        data: {
+          registrationClosedAt: mesa.entryEndDate,
+          ...(openRound?.id
+            ? {
+                referenceRoundId: openRound.id,
+                initializationStatus: 'WAITING_FOR_REFERENCE_ROUND',
+                scoreInitialCapturedAt: null,
+              }
+            : {}),
+        },
       })
     }
   }

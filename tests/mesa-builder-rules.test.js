@@ -729,6 +729,7 @@ test('último lugar encerra as inscrições por capacidade no instante da reserv
   t.after(() => { prisma.$transaction = originalTransaction })
 
   let reservationData
+  let referenceData
   prisma.$transaction = async callback => callback({
     ranking: {
       findUnique: async () => ({
@@ -738,8 +739,14 @@ test('último lugar encerra as inscrições por capacidade no instante da reserv
         currentParticipants: 1, createdByUserId: 'owner',
         startDate: new Date('2020-01-01T00:00:00.000Z'), entryEndDate: null, endDate: null,
       }),
-      updateMany: async ({ data }) => { reservationData = data; return { count: 1 } },
+      findUniqueOrThrow: async () => ({ currentParticipants: 2, registrationClosedAt: null }),
+      updateMany: async ({ data }) => {
+        if (data.currentParticipants) reservationData = data
+        else referenceData = data
+        return { count: 1 }
+      },
     },
+    $queryRaw: async () => [{ id: 'round-32' }],
     rankingParticipant: {
       findUnique: async () => null,
       create: async ({ data }) => ({ id: 'last-seat', ...data }),
@@ -752,7 +759,9 @@ test('último lugar encerra as inscrições por capacidade no instante da reserv
   await JoinBolaoService.execute({ rankingId: 'mesa-last-seat', userId: 'customer' })
 
   assert.equal(reservationData.currentParticipants.increment, 1)
-  assert.ok(reservationData.registrationClosedAt instanceof Date)
+  assert.ok(referenceData.registrationClosedAt instanceof Date)
+  assert.equal(referenceData.referenceRoundId, 'round-32')
+  assert.equal(referenceData.initializationStatus, 'WAITING_FOR_REFERENCE_ROUND')
 })
 
 test('Mesa com inscrições por data aceita entrada sem exigir capacidade', async t => {
