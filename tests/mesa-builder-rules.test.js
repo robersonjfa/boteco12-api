@@ -65,6 +65,7 @@ test('Mesa Free encerra por data e dura por rodadas', () => {
     ...free,
     category: 'SPONSORED_FREE',
     sponsorPrizePool: 100,
+    sponsorName: 'Patrocinador Teste',
     prizeDistribution: [{ position: 1, percentage: 100 }],
   }).success, true)
   assert.equal(CreateMesaSchema.safeParse({
@@ -147,6 +148,7 @@ test('endpoint comum não cria Mesa Patrocinada nem com User.role legado de admi
     category: 'SPONSORED_FREE',
     accessCost: 0,
     sponsorPrizePool: 100,
+    sponsorName: 'Patrocinador',
     maxParticipants: 50,
     registrationCloseMode: 'CAPACITY',
     durationMode: 'ROUNDS',

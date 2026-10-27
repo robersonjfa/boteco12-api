@@ -41,6 +41,7 @@ function payload(category = 'PAID', eligibility = 'ALL') {
     durationMode: 'ROUNDS',
     accessCost: category === 'PAID' ? 20 : 0,
     sponsorPrizePool: category === 'SPONSORED_FREE' ? 100 : 0,
+    sponsorName: category === 'SPONSORED_FREE' ? 'Patrocinador Teste' : undefined,
     maxParticipants: free ? undefined : 2,
     durationRounds: 2,
     prizeDistribution: category === 'FREE' ? [] : [{ position: 1, percentage: 100 }],
@@ -171,4 +172,32 @@ test('Mesa Free encerra somente por data e tem duração por rodadas', async () 
   })
   assert.equal(dateDuration.status, 400)
   assert.ok(dateDuration.body.issues.some(issue => issue.path === 'durationMode'))
+})
+
+test('Mesa Patrocinada exige nome do patrocinador e aceita logo opcional', async () => {
+  const withoutName = await send('POST', '/api/admin/mesas', {
+    ...payload('SPONSORED_FREE'),
+    sponsorName: undefined,
+  })
+  assert.equal(withoutName.status, 400)
+  assert.ok(withoutName.body.issues.some(issue => issue.path === 'sponsorName'))
+
+  const withName = await send('POST', '/api/admin/mesas', payload('SPONSORED_FREE'))
+  assert.equal(withName.status, 201)
+  assert.equal(withName.body.sponsorName, 'Patrocinador Teste')
+  assert.equal(withName.body.sponsorLogoUrl ?? null, null)
+
+  const withLogo = await send('POST', '/api/admin/mesas', {
+    ...payload('SPONSORED_FREE'),
+    sponsorLogoUrl: 'https://cdn.example.com/logo.png',
+  })
+  assert.equal(withLogo.status, 201)
+  assert.equal(withLogo.body.sponsorLogoUrl, 'https://cdn.example.com/logo.png')
+
+  const freeWithSponsor = await send('POST', '/api/mesas', {
+    ...payload('FREE'),
+    sponsorName: 'Patrocinador Indevido',
+  })
+  assert.equal(freeWithSponsor.status, 400)
+  assert.ok(freeWithSponsor.body.issues.some(issue => issue.path === 'sponsorName'))
 })

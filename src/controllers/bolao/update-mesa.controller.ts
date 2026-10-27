@@ -20,6 +20,8 @@ export class UpdateMesaController {
         accessCost: req.body.accessCost,
         entryFee: req.body.entryFee,
         sponsorPrizePool: req.body.sponsorPrizePool,
+        sponsorName: req.body.sponsorName,
+        sponsorLogoUrl: req.body.sponsorLogoUrl,
         maxParticipants: req.body.maxParticipants,
         eligibility: req.body.eligibility,
         regionScope: req.body.regionScope,

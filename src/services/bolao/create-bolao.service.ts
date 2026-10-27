@@ -33,6 +33,8 @@ type CreateBolaoInput = {
   /** @deprecated Compatibility input. Use accessCost. */
   entryFee?: number
   sponsorPrizePool?: number
+  sponsorName?: string | null
+  sponsorLogoUrl?: string | null
   maxParticipants?: number | null
   eligibility?: MesaEligibility
   regionScope?: MesaRegionScope
@@ -71,6 +73,7 @@ export class CreateBolaoService {
       accessCost: input.accessCost,
       entryFee: input.entryFee,
       sponsorPrizePool: input.sponsorPrizePool,
+      sponsorName: input.sponsorName,
       maxParticipants: input.maxParticipants,
       registrationCloseMode: input.registrationCloseMode,
     })
@@ -176,6 +179,8 @@ export class CreateBolaoService {
           entryFee: accessCost,
           accessCost,
           sponsorPrizePool: terms.sponsorPrizePool,
+          sponsorName: input.sponsorName?.trim() ?? null,
+          sponsorLogoUrl: input.sponsorLogoUrl ?? null,
           maxParticipants: terms.maxParticipants,
           eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
           ...region,
@@ -212,6 +217,8 @@ export class CreateBolaoService {
             entryFee: accessCost,
             category: terms.category,
             sponsorPrizePool: terms.sponsorPrizePool,
+          sponsorName: input.sponsorName?.trim() ?? null,
+          sponsorLogoUrl: input.sponsorLogoUrl ?? null,
             maxParticipants: terms.maxParticipants,
             eligibility: input.eligibility ?? MesaEligibility.SUBSCRIBERS_ONLY,
             regionScope: region.regionScope,
@@ -257,6 +264,8 @@ export class CreateBolaoService {
       entryFee: result.entryFee,
       accessCost: result.accessCost,
       sponsorPrizePool: result.sponsorPrizePool,
+      sponsorName: result.sponsorName,
+      sponsorLogoUrl: result.sponsorLogoUrl,
       maxParticipants: result.maxParticipants,
       currentParticipants: result.currentParticipants,
       startDate: result.startDate,
