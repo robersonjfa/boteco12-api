@@ -75,6 +75,12 @@ export class MesaCategoryRules {
       if (accessCost !== 0 || sponsorPrizePool !== 0) {
         throw new Error('Mesa Free não possui cobrança nem recompensa em Tampinhas')
       }
+      if (registrationCloseMode !== MesaRegistrationCloseMode.DATE) {
+        throw new Error('Mesa Free encerra inscrições somente por data')
+      }
+      if (maxParticipants != null) {
+        throw new Error('Mesa Free não possui limite de participantes')
+      }
     }
 
     return { category, accessCost, sponsorPrizePool, maxParticipants, registrationCloseMode }
