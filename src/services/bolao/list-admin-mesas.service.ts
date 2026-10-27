@@ -31,6 +31,8 @@ const mesaSelect = {
   registrationClosedAt: true,
   publishedAt: true,
   sponsorPrizePool: true,
+  sponsorName: true,
+  sponsorLogoUrl: true,
   maxParticipants: true,
   currentParticipants: true,
   startDate: true,

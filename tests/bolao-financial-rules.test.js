@@ -247,6 +247,7 @@ test('admin cria Mesa FREE patrocinada sem custo e com premio financiado', async
   const result = await CreateBolaoService.execute(createInput({
     administrative: true,
     category: 'SPONSORED_FREE',
+    sponsorName: 'Patrocinador Teste',
     accessCost: 0,
     entryFee: undefined,
     sponsorPrizePool: 100,
