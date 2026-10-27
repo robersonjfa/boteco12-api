@@ -38,8 +38,7 @@ export class MesaInitialScoreService {
           initializationStatus: 'WAITING_FOR_BASELINE_CAPTURE',
         } })
         if (mesa.participants.length === 0 ||
-            mesa.participants.length !== mesa.currentParticipants ||
-            mesa.currentParticipants !== mesa.maxParticipants) return
+            mesa.participants.length !== mesa.currentParticipants) return
 
         const userIds = mesa.participants.map(p => p.userId)
         const histories = await tx.userScoreHistory.findMany({
