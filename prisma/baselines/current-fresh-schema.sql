@@ -241,6 +241,8 @@ CREATE TABLE "rankings" (
     "scoreInitialCapturedAt" TIMESTAMP(3),
     "publishedAt" TIMESTAMP(3),
     "sponsorPrizePool" INTEGER NOT NULL DEFAULT 0,
+    "sponsorName" TEXT,
+    "sponsorLogoUrl" TEXT,
     "maxParticipants" INTEGER,
     "currentParticipants" INTEGER NOT NULL DEFAULT 0,
     "durationDays" INTEGER,

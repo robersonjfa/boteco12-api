@@ -445,6 +445,8 @@ model Ranking {
   referenceRound Round? @relation("MesaReferenceRound", fields: [referenceRoundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   publishedAt         DateTime?
   sponsorPrizePool    Int @default(0)
+  sponsorName         String?
+  sponsorLogoUrl      String?
   maxParticipants     Int?
   currentParticipants Int  @default(0)
   durationDays        Int?

@@ -146,6 +146,8 @@ export class GetBolaoRankingService {
         scoreInitialCapturedAt: bolao.scoreInitialCapturedAt,
         publishedAt: bolao.publishedAt,
         sponsorPrizePool: bolao.sponsorPrizePool,
+        sponsorName: bolao.sponsorName,
+        sponsorLogoUrl: bolao.sponsorLogoUrl,
         prizeDistribution: bolao.prizeDistribution,
         grossCollected: bolao.grossCollected,
         platformFee: bolao.platformFee,

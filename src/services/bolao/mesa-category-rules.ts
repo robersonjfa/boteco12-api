@@ -5,6 +5,7 @@ export type MesaCategoryTerms = {
   accessCost?: number | null
   entryFee?: number | null
   sponsorPrizePool?: number | null
+  sponsorName?: string | null
   maxParticipants?: number | null
   registrationCloseMode?: MesaRegistrationCloseMode | null
 }
@@ -65,6 +66,9 @@ export class MesaCategoryRules {
         throw new Error('Mesa com Tampinhas não utiliza premiação patrocinada')
       }
     } else if (category === MesaCategory.SPONSORED_FREE) {
+      if (!value.sponsorName?.trim()) {
+        throw new Error('Informe o nome do patrocinador')
+      }
       if (!Number.isInteger(accessCost) || accessCost < 0) {
         throw new Error('O acesso em tampinhas deve ser um número inteiro não negativo')
       }
