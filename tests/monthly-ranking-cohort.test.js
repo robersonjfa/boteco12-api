@@ -78,16 +78,16 @@ test('cria rankings Geral e PRO do mes com primeira rodada e snapshots da coorte
   assert.deepEqual(linkedRounds.map(item => item.roundId), ['round-20', 'round-20'])
   assert.deepEqual(
     participantBatches[0].map(item => [item.userId, item.scoreInitial]),
-    [['normal-1', 12], ['pro-1', 25]]
+    [['normal-1', 0], ['pro-1', 0]]
   )
   assert.deepEqual(
     participantBatches[1].map(item => [item.userId, item.scoreInitial]),
-    [['pro-1', 25]]
+    [['pro-1', 0]]
   )
   assert.equal(result.registrationOpen, true)
 })
 
-test('assinatura iniciada depois do dia 1 nao entra mesmo antes do fechamento da primeira rodada', async t => {
+test('assinatura iniciada depois do fechamento da referencia nao entra no ciclo', async t => {
   const originalTransaction = prisma.$transaction
   t.after(() => { prisma.$transaction = originalTransaction })
 
@@ -108,7 +108,7 @@ test('assinatura iniciada depois do dia 1 nao entra mesmo antes do fechamento da
       findMany: async () => [user(
         'pro-after-cutoff',
         10,
-        activeSubscription({ startAt: new Date('2026-08-02T00:00:00Z') })
+        activeSubscription({ startAt: new Date('2026-08-21T00:00:00Z') })
       )],
     },
     rankingParticipant: {
@@ -172,7 +172,7 @@ test('coorte PRO rejeita EXPIRED e preserva CANCELLED valido na data de corte', 
   )
 })
 
-test('assinatura paga no dia 15, depois do corte, entra no Ranking PRO apenas no mes seguinte', async t => {
+test('assinatura paga depois do fechamento entra apenas no GLOBAL e no PRO do mes seguinte', async t => {
   const originalTransaction = prisma.$transaction
   t.after(() => {
     prisma.$transaction = originalTransaction
@@ -180,6 +180,7 @@ test('assinatura paga no dia 15, depois do corte, entra no Ranking PRO apenas no
 
   let usersQueried = false
   let participantsCreated = false
+  const participantBatches = []
   prisma.$transaction = async callback => callback({
     round: {
       findFirst: async () => ({
@@ -202,13 +203,14 @@ test('assinatura paga no dia 15, depois do corte, entra no Ranking PRO apenas no
     user: {
       findMany: async () => {
         usersQueried = true
-        return [user('late-pro', 40, activeSubscription())]
+        return [user('late-pro', 40, activeSubscription({ startAt: new Date('2026-08-15T00:00:00Z') }))]
       },
     },
     rankingParticipant: {
-      createMany: async () => {
+      createMany: async ({ data }) => {
         participantsCreated = true
-        return { count: 1 }
+        participantBatches.push(data)
+        return { count: data.length }
       },
     },
     auditLog: { create: async () => ({}) },
@@ -220,8 +222,10 @@ test('assinatura paga no dia 15, depois do corte, entra no Ranking PRO apenas no
   })
 
   assert.equal(result.registrationOpen, false)
-  assert.equal(usersQueried, false)
-  assert.equal(participantsCreated, false)
+  assert.equal(usersQueried, true)
+  assert.equal(participantsCreated, true)
+  assert.equal(participantBatches[0].length, 1)
+  assert.equal(participantBatches[1].length, 0)
 })
 
 test('rejeita periodo mensal invalido', async () => {

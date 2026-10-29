@@ -1,3 +1,5 @@
+import { prisma } from '../../lib/prisma'
+import { SaoPauloPeriodService } from '../time/sao-paulo-period.service'
 import { BuildPeriodRankingFromHistoryService } from './build-period-ranking-from-history.service'
 
 type MonthlyRankingScope = 'general' | 'pro'
@@ -19,12 +21,19 @@ export class BuildMonthlyRankingFromHistoryService {
       throw new Error('Invalid month. Expected a value from 01 to 12')
     }
 
-    const start = new Date(Date.UTC(year, month - 1, 1))
-    const end = new Date(Date.UTC(year, month, 1))
+    void year
+    void month
+    const { start, end } = SaoPauloPeriodService.parse(periodRef)
+    const reference = await prisma.round.findFirst({
+      where: { closeAt: { gte: start, lt: end } },
+      orderBy: [{ closeAt: 'asc' }, { number: 'asc' }],
+      select: { id: true },
+    })
     const rows = await BuildPeriodRankingFromHistoryService.execute({
       start,
       end,
       scope,
+      excludeRoundId: reference?.id,
     })
 
     return rows.map(row => ({

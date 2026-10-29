@@ -21,16 +21,19 @@ export class BuildPeriodRankingFromHistoryService {
     start,
     end,
     scope = 'general',
+    excludeRoundId,
   }: {
     start: Date
     end: Date
     scope?: PeriodRankingScope
+    excludeRoundId?: string
   }): Promise<PeriodRankingRow[]> {
     const history = await prisma.userScoreHistory.findMany({
       where: {
         round: {
           status: 'SCORED',
           closeAt: { gte: start, lt: end },
+          ...(excludeRoundId ? { id: { not: excludeRoundId } } : {}),
         },
       },
       orderBy: [
