@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { CloseRankingService } from './close-ranking.service';
 import { MesaLifecycleService } from '../bolao/mesa-lifecycle.service';
 import { MesaInitialScoreService } from '../bolao/mesa-initial-score.service';
+import { SaoPauloPeriodService } from '../time/sao-paulo-period.service';
 
 export class CloseExpiredRankingsService {
   async execute(): Promise<{ closed: number }> {
@@ -30,6 +31,7 @@ export class CloseExpiredRankingsService {
       },
       select: {
         id: true,
+        periodRef: true,
       },
     });
 
@@ -46,6 +48,17 @@ export class CloseExpiredRankingsService {
      * 2️⃣ Fechar um por um usando serviço oficial
      */
     for (const ranking of expiredRankings) {
+      if (ranking.periodRef) {
+        const { start, end } = SaoPauloPeriodService.parse(ranking.periodRef)
+        const reference = await prisma.round.findFirst({
+          where: { closeAt: { gte: start, lt: end } },
+          orderBy: [{ closeAt: 'asc' }, { number: 'asc' }],
+          select: { status: true },
+        })
+        if (reference && reference.status !== 'SCORED') {
+          continue
+        }
+      }
       try {
         await closeService.execute(ranking.id);
         closedCount++;
