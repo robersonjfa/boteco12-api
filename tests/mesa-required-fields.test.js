@@ -200,4 +200,13 @@ test('Mesa Patrocinada exige nome do patrocinador e aceita logo opcional', async
   })
   assert.equal(freeWithSponsor.status, 400)
   assert.ok(freeWithSponsor.body.issues.some(issue => issue.path === 'sponsorName'))
+
+  for (const sponsorLogoUrl of ['javascript:alert(1)', 'data:text/html,x']) {
+    const badLogo = await send('POST', '/api/admin/mesas', {
+      ...payload('SPONSORED_FREE'),
+      sponsorLogoUrl,
+    })
+    assert.equal(badLogo.status, 400)
+    assert.ok(badLogo.body.issues.some(issue => issue.path === 'sponsorLogoUrl'))
+  }
 })

@@ -25,7 +25,11 @@ const CreateMesaBaseSchema = z.object({
   entryFee: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   sponsorPrizePool: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   sponsorName: z.string().trim().min(1, 'Informe o nome do patrocinador').max(120).nullable().optional(),
-  sponsorLogoUrl: z.url().max(2048).nullable().optional(),
+  sponsorLogoUrl: z.url()
+    .max(2048)
+    .refine(value => /^https?:\/\//i.test(value), 'Informe uma URL http(s) válida')
+    .nullable()
+    .optional(),
   maxParticipants: z.number().int().min(2, 'Informe pelo menos dois lugares disponíveis').max(1_000_000).nullable().optional(),
   prizeDistribution: z.array(PrizeDistributionItemSchema).max(10).default([]),
   publicationMode: z.enum(['DRAFT', 'NOW', 'AT_START']).optional(),
