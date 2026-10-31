@@ -66,15 +66,6 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm run ci:check
 
-      - name: Run monthly rankings validation
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/boteco12_monthly_ci
-          PGPASSWORD: ci
-        run: |
-          set -euo pipefail
-          psql -h localhost -U ci -d ci -c 'CREATE DATABASE boteco12_monthly_ci'
-          npx prisma migrate deploy
-          npm run test:monthly-rankings
 
       - name: Run Mesa discovery PostgreSQL integration
         env:
@@ -107,6 +98,11 @@ jobs:
           restored_tables="$(psql "$RESTORE_DATABASE_URL" -Atc \
             "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'")"
           test "$restored_tables" -gt 0
+
+      - name: Run monthly rankings validation
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm run test:monthly-rankings
 
       - name: Publish security gate report
         if: always()
