@@ -23,7 +23,9 @@ env:
 jobs:
   ci:
     name: Build and release checks
-    runs-on: ubuntu-latest
+    # Pina em 24.04: o runner 26 traz pg_dump/restore 18, que emitem
+    # `SET transaction_timeout` e quebram o restore no Postgres 16 do serviço.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     services:
