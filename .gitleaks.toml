@@ -1,0 +1,14 @@
+# Allowlist estreita: a regra genérica de API key confunde identificadores
+# sintéticos de simulação, hashes de commit e senhas de teste com segredos.
+# Outras regras (AWS, chaves privadas, tokens de provedor) seguem ativas.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = 'Fixtures sintéticas de simulação, validação e testes'
+targetRules = ['generic-api-key']
+paths = [
+  '''docs/simulations/''',
+  '''docs/validation/''',
+  '''tests/security-identity-validation\.test\.js$''',
+]
