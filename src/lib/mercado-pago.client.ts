@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import { randomUUID } from 'crypto'
+import { AppError } from '../errors/AppError'
 
 /**
  * Cliente HTTP para a API do Mercado Pago.
@@ -10,6 +11,13 @@ import { randomUUID } from 'crypto'
  * Toda mutação envia `X-Idempotency-Key` para garantir que retentativas
  * de rede não criem operações duplicadas no MP.
  */
+function assertPaymentId(paymentId: string): string {
+  if (!/^\d{1,32}$/.test(paymentId)) {
+    throw AppError.badRequest('paymentId inválido', 'invalid_payment_id')
+  }
+  return paymentId
+}
+
 export class MercadoPagoClient {
   private readonly http: AxiosInstance
 
@@ -41,7 +49,8 @@ export class MercadoPagoClient {
   }
 
   async getPayment(paymentId: string) {
-    const { data } = await this.http.get(`/v1/payments/${paymentId}`)
+    const safePaymentId = assertPaymentId(paymentId)
+    const { data } = await this.http.get(`/v1/payments/${safePaymentId}`)
     return data
   }
 
@@ -51,9 +60,10 @@ export class MercadoPagoClient {
    * Documentação: https://www.mercadopago.com.br/developers/pt/reference/chargebacks/_payments_id_refunds/post
    */
   async refundPayment(paymentId: string, amount?: number) {
+    const safePaymentId = assertPaymentId(paymentId)
     const body = amount != null ? { amount } : {}
     const { data } = await this.http.post(
-      `/v1/payments/${paymentId}/refunds`,
+      `/v1/payments/${safePaymentId}/refunds`,
       body,
       { headers: { 'X-Idempotency-Key': randomUUID() } }
     )

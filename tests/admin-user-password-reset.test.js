@@ -1,23 +1,23 @@
 const assert = require('node:assert/strict')
+const crypto = require('node:crypto')
 const test = require('node:test')
 
 const { prisma } = require('../dist/lib/prisma')
 const email = require('../dist/lib/email')
 const sessions = require('../dist/lib/redis-session-store')
-const { verifyPassword } = require('../dist/security/password')
 const {
   AdminUserManagementService,
 } = require('../dist/services/admin/admin-user-management.service')
 
-test('admin gera senha aleatória, envia somente por email e revoga sessões', async t => {
+test('admin invalida a senha, envia link de reset e revoga sessões', async t => {
   const originalFindUnique = prisma.user.findUnique
   const originalTransaction = prisma.$transaction
-  const originalSend = email.sendTemporaryPasswordEmail
+  const originalSend = email.sendPasswordResetEmail
   const originalRevoke = sessions.revokeUserSessions
   t.after(() => {
     prisma.user.findUnique = originalFindUnique
     prisma.$transaction = originalTransaction
-    email.sendTemporaryPasswordEmail = originalSend
+    email.sendPasswordResetEmail = originalSend
     sessions.revokeUserSessions = originalRevoke
   })
 
@@ -28,6 +28,7 @@ test('admin gera senha aleatória, envia somente por email e revoga sessões', a
 
   let passwordUpdate
   let audit
+  let createdToken
   let invalidatedTokens = false
   prisma.$transaction = async callback => callback({
     user: {
@@ -41,6 +42,10 @@ test('admin gera senha aleatória, envia somente por email e revoga sessões', a
         invalidatedTokens = true
         return { count: 1 }
       },
+      create: async ({ data }) => {
+        createdToken = data
+        return data
+      },
     },
     adminAuditLog: {
       create: async ({ data }) => {
@@ -51,7 +56,7 @@ test('admin gera senha aleatória, envia somente por email e revoga sessões', a
   })
 
   let delivery
-  email.sendTemporaryPasswordEmail = async input => {
+  email.sendPasswordResetEmail = async input => {
     delivery = input
   }
   let revokedUserId
@@ -67,17 +72,25 @@ test('admin gera senha aleatória, envia somente por email e revoga sessões', a
 
   assert.deepEqual(result, { ok: true, deliveredBy: 'email' })
   assert.equal(delivery.to, 'usuario@example.com')
-  assert.match(delivery.temporaryPassword, /^B12a-[A-Za-z0-9_-]{24}$/)
-  assert.equal(await verifyPassword(delivery.temporaryPassword, passwordUpdate.password), true)
+  assert.equal(delivery.expiresInMinutes, 30)
+  assert.match(delivery.resetUrl, /\/reset-password\?token=[a-f0-9]{64}$/)
+  const rawToken = new URL(delivery.resetUrl).searchParams.get('token')
+  assert.equal(createdToken.userId, 'target-user')
+  assert.equal(
+    createdToken.tokenHash,
+    crypto.createHash('sha256').update(rawToken).digest('hex')
+  )
+  assert.ok(createdToken.expiresAt > new Date())
+  assert.equal(passwordUpdate.password.startsWith('$f12-sha256$'), true)
   assert.deepEqual(passwordUpdate.sessionVersion, { increment: 1 })
   assert.equal(invalidatedTokens, true)
   assert.equal(revokedUserId, 'target-user')
   assert.equal(audit.action, 'USER_PASSWORD_RESET')
   assert.deepEqual(audit.payload, {
     reason: 'Solicitação confirmada pelo suporte',
-    delivery: 'email',
+    delivery: 'email_reset_link',
   })
-  assert.equal(JSON.stringify(audit).includes(delivery.temporaryPassword), false)
+  assert.equal(JSON.stringify(audit).includes(rawToken), false)
   assert.equal('temporaryPassword' in result, false)
 })
 
@@ -109,7 +122,7 @@ test('falha de entrega não revoga sessões nem expõe a senha', async t => {
       'target-user',
       'Solicitação do suporte'
     ),
-    { code: 'temporary_password_delivery_failed', statusCode: 503 }
+    { code: 'password_reset_delivery_failed', statusCode: 503 }
   )
   assert.equal(revoked, false)
 })
