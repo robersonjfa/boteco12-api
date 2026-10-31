@@ -61,7 +61,8 @@
     "mesa:integrity:diagnose": "npm run build && node scripts/diagnose-mesa-integrity.js",
     "mesa:scores:repair:dry": "npm run build && node scripts/repair-closed-bolao-scores.js",
     "mesa:scores:repair:apply": "npm run build && node scripts/repair-closed-bolao-scores.js --apply",
-    "security:live": "node scripts/security-live-check.js"
+    "security:live": "node scripts/security-live-check.js",
+    "test:monthly-rankings": "node scripts/validate-monthly-rankings.js"
   },
   "prisma": {
     "seed": "npm run build && node prisma/seed.js"

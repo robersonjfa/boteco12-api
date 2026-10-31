@@ -281,8 +281,10 @@ async function main() {
   })
 
   const summary = results.reduce((acc, item) => { acc[item.status] = (acc[item.status] ?? 0) + 1; return acc }, {})
+  const failed = results.filter(item => item.status === 'FALHOU')
   console.log('\nRESUMO', JSON.stringify(summary), 'total', results.length)
   require('node:fs').writeFileSync('/tmp/monthly-validation.json', JSON.stringify({ generatedAt: new Date().toISOString(), summary, results }, null, 2))
+  if (failed.length > 0) process.exitCode = 1
 }
 
 main()
