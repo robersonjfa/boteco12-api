@@ -4,7 +4,12 @@ import { AppError } from '../../errors/AppError'
 import { revokeUserSessions } from '../../lib/redis-session-store'
 import crypto from 'crypto'
 import { hashPassword } from '../../security/password'
-import { sendTemporaryPasswordEmail } from '../../lib/email'
+import { sendPasswordResetEmail } from '../../lib/email'
+import {
+  buildPasswordResetUrl,
+  createPasswordResetTokenMaterial,
+  PASSWORD_RESET_TTL_MIN,
+} from '../auth/password-reset-token'
 
 type AdminContext = {
   adminUserId: string
@@ -46,8 +51,11 @@ export class AdminUserManagementService {
 
     // O prefixo garante a política mínima; a parte aleatória fornece 144 bits
     // de entropia. A senha nunca é retornada ao painel nem persistida em texto.
-    const temporaryPassword = `B12a-${crypto.randomBytes(18).toString('base64url')}`
-    const passwordHash = await hashPassword(temporaryPassword)
+    // Senha aleatória desconhecida: invalida a senha atual e as sessões.
+    // O acesso é devolvido por link de reset, nunca pela senha em texto.
+    const invalidatedPassword = `B12a-${crypto.randomBytes(18).toString('base64url')}`
+    const passwordHash = await hashPassword(invalidatedPassword)
+    const { rawToken, tokenHash, expiresAt } = createPasswordResetTokenMaterial()
 
     try {
       await prisma.$transaction(async tx => {
@@ -66,6 +74,10 @@ export class AdminUserManagementService {
           data: { usedAt: new Date() },
         })
 
+        await tx.passwordResetToken.create({
+          data: { userId: targetUserId, tokenHash, expiresAt },
+        })
+
         await tx.adminAuditLog.create({
           data: {
             adminId: context.adminUserId,
@@ -74,7 +86,7 @@ export class AdminUserManagementService {
             entityId: targetUserId,
             payload: {
               reason: trimmedReason,
-              delivery: 'email',
+              delivery: 'email_reset_link',
             },
             ipAddress: context.ipAddress,
           },
@@ -82,15 +94,16 @@ export class AdminUserManagementService {
 
         // Se o provedor rejeitar o envio, a transação é revertida e a senha
         // atual continua válida, evitando bloquear o usuário sem comunicação.
-        await sendTemporaryPasswordEmail({
+        await sendPasswordResetEmail({
           to: target.email,
-          temporaryPassword,
+          resetUrl: buildPasswordResetUrl(rawToken),
+          expiresInMinutes: PASSWORD_RESET_TTL_MIN,
         })
       })
     } catch {
       throw new AppError(
-        'Não foi possível enviar a nova senha por email. Nenhuma alteração foi aplicada.',
-        'temporary_password_delivery_failed',
+        'Não foi possível enviar o link de redefinição por email. Nenhuma alteração foi aplicada.',
+        'password_reset_delivery_failed',
         503
       )
     }

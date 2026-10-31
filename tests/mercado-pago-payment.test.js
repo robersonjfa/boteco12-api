@@ -193,3 +193,11 @@ test('credita fichas e conclui pagamento aprovado na mesma transacao', async t =
     currency_id: 'BRL',
   })
 })
+
+test('rejeita paymentId fora do formato numérico antes de chamar o Mercado Pago', async () => {
+  const client = new MercadoPagoClient('TEST-token')
+  for (const paymentId of ['abc', '../../etc/passwd', '']) {
+    await assert.rejects(client.getPayment(paymentId), { code: 'invalid_payment_id' })
+    await assert.rejects(client.refundPayment(paymentId), { code: 'invalid_payment_id' })
+  }
+})
