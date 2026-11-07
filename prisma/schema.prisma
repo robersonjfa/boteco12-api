@@ -201,6 +201,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  miniPredictions MiniPrediction[]
+  createdDuels MiniDuel[] @relation("MiniDuelCreator")
+  receivedDuels MiniDuel[] @relation("MiniDuelRecipient")
+  acceptedDuels MiniDuel[] @relation("MiniDuelOpponent")
+  wonDuels MiniDuel[] @relation("MiniDuelWinner")
   tickets          Ticket[]
   rankings         RankingParticipant[]
   approvedBolaoParticipants RankingParticipant[] @relation("BolaoParticipantApprover")
@@ -961,4 +966,71 @@ model UserBenefitInventory {
   @@unique([userId, type])
   @@index([userId])
   @@map("user_benefit_inventory")
+}
+
+
+// Mini rounds are independent of Round, Ticket and all rankings.
+model MiniRound {
+  id String @id @default(uuid())
+  name String
+  status String @default("DRAFT")
+  closeAt DateTime
+  confirmedAt DateTime?
+  confirmedBy String?
+  createdAt DateTime @default(now())
+  matches MiniMatch[]
+  predictions MiniPrediction[]
+  duels MiniDuel[]
+  @@index([status, closeAt])
+  @@map("mini_rounds")
+}
+
+model MiniMatch {
+  id String @id @default(uuid())
+  miniId String
+  position Int
+  homeTeam String
+  awayTeam String
+  matchTime DateTime
+  result String?
+  mini MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  @@unique([miniId, position])
+  @@map("mini_matches")
+}
+
+model MiniPrediction {
+  id String @id @default(uuid())
+  miniId String
+  userId String
+  prediction String
+  createdAt DateTime @default(now())
+  mini MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([miniId, userId])
+  @@map("mini_predictions")
+}
+
+model MiniDuel {
+  id String @id @default(uuid())
+  requestKey String @unique @default(uuid())
+  miniId String
+  creatorId String
+  recipientId String?
+  opponentId String?
+  amount Int
+  status String @default("WAITING")
+  winnerId String?
+  settlement Json?
+  createdAt DateTime @default(now())
+  settledAt DateTime?
+  mini MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  creator User @relation("MiniDuelCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  recipient User? @relation("MiniDuelRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  opponent User? @relation("MiniDuelOpponent", fields: [opponentId], references: [id], onDelete: Restrict)
+  winner User? @relation("MiniDuelWinner", fields: [winnerId], references: [id], onDelete: Restrict)
+  @@index([status, miniId])
+  @@index([creatorId, createdAt])
+  @@index([recipientId, createdAt])
+  @@index([opponentId, createdAt])
+  @@map("mini_duels")
 }
