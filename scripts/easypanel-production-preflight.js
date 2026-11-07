@@ -16,6 +16,9 @@ async function rpc(path, json, token) {
       ...(token ? { authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ json }),
+  }).catch(error => {
+    // Keep credentials, hostnames, headers and response bodies out of logs.
+    throw new Error(`EasyPanel connection failed (${error?.cause?.code || 'network_error'})`)
   })
 
   let body = {}

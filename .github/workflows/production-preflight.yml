@@ -2,6 +2,14 @@ name: Production migration preflight
 
 on:
   workflow_dispatch:
+    inputs:
+      panel_endpoint:
+        description: Endpoint to inspect (official selects the documented production IP)
+        type: choice
+        default: configured
+        options:
+          - configured
+          - official
 
 permissions:
   contents: read
@@ -18,7 +26,7 @@ jobs:
 
       - name: Validate EasyPanel access configuration
         env:
-          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_URL: ${{ inputs.panel_endpoint == 'official' && 'http://72.60.51.161:3000' || secrets.EASYPANEL_URL }}
           EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
           EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
         run: |
@@ -37,7 +45,7 @@ jobs:
 
       - name: Run sanitized read-only production preflight
         env:
-          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
+          EASYPANEL_URL: ${{ inputs.panel_endpoint == 'official' && 'http://72.60.51.161:3000' || secrets.EASYPANEL_URL }}
           EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
           EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
           EASYPANEL_PROJECT: f12-prd
