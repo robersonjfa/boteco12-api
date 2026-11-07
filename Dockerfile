@@ -7,7 +7,8 @@ FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates openssl
+RUN apk upgrade --no-cache musl musl-utils zlib \
+  && apk add --no-cache ca-certificates openssl
 
 COPY package*.json ./
 RUN npm ci
@@ -33,7 +34,8 @@ FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18
 ENV NODE_ENV=production
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates curl krb5-libs openldap openssl postgresql-client \
+RUN apk upgrade --no-cache musl musl-utils zlib \
+  && apk add --no-cache ca-certificates curl krb5-libs openldap openssl postgresql-client \
   && mkdir -p /app/backups \
   && chown -R node:node /app \
   && rm -rf \
