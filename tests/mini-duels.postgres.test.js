@@ -8,10 +8,11 @@ const prefix = `mini-test-${randomUUID()}`
 const sameDate = new Date('2020-01-01T00:00:00Z')
 const users = []
 const minis = []
+const initialBalances = new Map()
 let admin
 async function user(balance = 100, createdAt = sameDate) {
   const u = await prisma.user.create({ data: { name: prefix, email: `${randomUUID()}@example.test`, password: 'unused-test-hash', cpf: randomUUID(), birthDate: new Date('1990-01-01'), createdAt, wallet: { create: { balance } } } })
-  users.push(u.id); return u
+  users.push(u.id); initialBalances.set(u.id, balance); return u
 }
 async function mini(picks = ['1', 'X']) {
   const m = await MiniService.create(prefix, [0, 1].map(i => ({ homeTeam: `Casa ${i}`, awayTeam: `Fora ${i}`, matchTime: new Date(Date.now() + (i + 4) * 3600000) })), admin.id)
@@ -28,7 +29,6 @@ async function balance(u) { return (await prisma.wallet.findUnique({ where: { us
 test('duelos: jornada, saldo, privacidade, concorrência, apuração e isolamento de rankings', async t => {
   admin = await user()
   const rankingCount = await prisma.ranking.count()
-  const scores = new Map()
   try {
     await t.test('salvar é definitivo e exige todos os jogos; prazo é 1 hora antes', async () => {
       const m = await mini(); const a = await user()
@@ -125,6 +125,9 @@ test('duelos: jornada, saldo, privacidade, concorrência, apuração e isolament
     const wallets=await prisma.wallet.findMany({where:{userId:{in:users}}})
     const ledger=await prisma.walletLedger.findMany({where:{wallet:{userId:{in:users}}}})
     assert.ok(wallets.every(w=>w.balance>=0))
+    const active = await prisma.miniDuel.findMany({ where: { miniId: { in: minis }, status: { in: ['WAITING', 'CONFIRMED'] } } })
+    const held = active.reduce((sum,d)=>sum+d.amount*(d.opponentId?2:1),0)
+    assert.equal(wallets.reduce((sum,w)=>sum+w.balance,0)+held,[...initialBalances.values()].reduce((sum,b)=>sum+b,0))
     assert.equal(new Set(ledger.filter(l=>l.idempotencyKey).map(l=>l.idempotencyKey)).size,ledger.filter(l=>l.idempotencyKey).length)
   } finally {
     await prisma.miniDuel.deleteMany({where:{miniId:{in:minis}}})
