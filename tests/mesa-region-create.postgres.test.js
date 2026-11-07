@@ -74,5 +74,14 @@ test('criação persiste a região escolhida e nasce nacional por padrão', asyn
   assert.equal(state.stateCode, 'SC')
   assert.equal(state.cityCode, null)
 
+  await assert.rejects(CreateBolaoService.execute(payload({
+    administrative: false,
+    regionScope: 'CITY', stateCode: 'SC', cityCode: '4209003', cityName: 'Joaçaba',
+  })), { code: 'mesa_region_profile_required' })
+
+  await assert.rejects(CreateBolaoService.execute(payload({
+    regionScope: 'CITY', stateCode: 'SC', cityCode: '3550308', cityName: 'São Paulo',
+  })), { code: 'location_invalid' })
+
   await cleanup()
 })

@@ -1,3 +1,5 @@
+import locationRoutes from './routes/location.routes'
+import miniRoutes from './routes/mini.routes'
 import express, { Request, Response, NextFunction } from 'express'
 import dotenv from 'dotenv'
 import session from 'express-session'
@@ -176,6 +178,8 @@ app.use(requestLogger)
 /* ======================================================
    🟢 PUBLIC ROUTES
 ====================================================== */
+app.use('/api', locationRoutes)
+app.use('/api', miniRoutes)
 app.use('/api', ticketRoutes)
 app.use('/api', userRoutes)
 app.use('/api', rankingRoutes)

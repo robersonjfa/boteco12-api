@@ -2379,6 +2379,17 @@ Decisoes centrais:
 - regiao melhora descoberta, filtros e ordenacao, sem restringir entrada
 - regras atuais de categoria, inscricao, saldo, capacidade e duracao nao mudam
 
+Refinamento solicitado em 2026-11-06 (pendente de implementacao):
+
+- ocultar o campo tecnico de codigo IBGE no perfil e nos formularios de Mesa,
+  mantendo seu uso interno
+- permitir localizar municipio por nome/UF e tambem por CEP, preenchendo
+  municipio, UF e codigo IBGE automaticamente
+- o cadastro atual nao possui CEP; usa pais, UF, codigo e nome do municipio
+- usar CEP apenas para consulta opcional, sem persistir CEP nem endereco completo
+- prever CEP invalido/inexistente e indisponibilidade da consulta, mantendo
+  a alternativa de busca por nome
+
 Backlog detalhado:
 
 - [`docs/backlog-mesas-regionalizacao.md`](/Users/roberson/dev/personal/boteco12-api/docs/backlog-mesas-regionalizacao.md)

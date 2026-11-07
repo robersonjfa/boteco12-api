@@ -1,3 +1,4 @@
+import { LocationService } from '../location/location.service'
 import {
   MesaCategory,
   MesaDurationMode,
@@ -53,6 +54,11 @@ export class UpdateMesaService {
       where: { id: input.rankingId },
       select: {
         id: true,
+        regionScope: true,
+        stateCode: true,
+        cityCode: true,
+        cityName: true,
+        countryCode: true,
         type: true,
         status: true,
         createdByUserId: true,
@@ -81,8 +87,18 @@ export class UpdateMesaService {
     }
 
     assertMesaStartDate(input.startDate, mesa.startDate)
-    const region = normalizeMesaRegion(input)
+    const normalizedRegion = normalizeMesaRegion({ ...mesa, ...input, regionScope: input.regionScope ?? mesa.regionScope })
+    const region = { ...normalizedRegion, ...await LocationService.canonical(normalizedRegion) }
 
+    if (!input.administrative && region.regionScope !== 'NATIONAL') {
+      const profile = await prisma.user.findUnique({ where: { id: input.requestedByUserId }, select: { stateCode: true, cityCode: true } })
+      if (profile?.stateCode !== region.stateCode || (region.regionScope === 'CITY' && profile?.cityCode !== region.cityCode)) {
+        throw AppError.badRequest('Atualize sua localização no perfil para usar esta região', 'mesa_region_profile_required')
+      }
+    }
+    if (mesa.status !== 'DRAFT' && ((mesa.regionScope ?? 'NATIONAL') !== region.regionScope || (mesa.stateCode ?? null) !== region.stateCode || (mesa.cityCode ?? null) !== region.cityCode)) {
+      throw AppError.conflict('A abrangência de uma Mesa publicada não pode ser alterada')
+    }
     const terms = MesaCategoryRules.validate({
       category: input.category,
       accessCost: input.accessCost,

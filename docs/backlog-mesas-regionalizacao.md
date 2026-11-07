@@ -14,6 +14,56 @@ Permitir que uma Mesa tenha contexto nacional, estadual ou municipal para
 aproximar clientes, comunidades, bares e patrocinadores locais, sem criar
 barreira obrigatoria no cadastro, na criacao ou na participacao.
 
+## Refinamento de UX - 2026-11-06: municipio por nome ou CEP
+
+Status: solicitado pelo produto; pendente de implementacao.
+
+Atualizacao de entrega em 06/11/2026: implementado e validado localmente; release
+de producao em preparacao. Seletor compartilhado no perfil, criacao e edicao de
+Mesa, com nomes do IBGE e consulta opcional via ViaCEP. Codigo IBGE oculto;
+validacao canonica de municipio/UF no servidor. A edicao de rascunhos preserva
+a regiao e a abrangencia publicada nao pode ser alterada silenciosamente.
+Evidencias: `tests/location.test.js`, integracoes PostgreSQL de regionalizacao,
+`tests/e2e/minis-location.spec.ts`, `mesa-region.spec.ts` e `admin-mesa-list.spec.ts`.
+
+Evidencia do estado atual:
+
+- o perfil armazena pais, UF, codigo IBGE e nome do municipio; nao ha campo de
+  CEP no cadastro atual nem integracao de consulta de CEP identificada
+- o campo tecnico `Codigo IBGE do municipio` esta visivel no perfil e nos
+  formularios de criacao/edicao de Mesa
+
+Entrega solicitada:
+
+- ocultar o campo de codigo IBGE nas interfaces de perfil e criacao/edicao de
+  Mesa; manter o identificador interno para validacao e relacionamento
+- permitir localizar o municipio por nome e UF ou por CEP, sem exigir que o
+  usuario conheca ou digite o codigo IBGE
+- preencher automaticamente municipio, UF e codigo IBGE a partir da selecao
+  por nome ou do resultado da consulta de CEP
+- apresentar municipio e UF de forma legivel para confirmacao antes de salvar
+
+Criterios de aceite:
+
+- nenhuma das interfaces exige digitacao ou exibe o codigo IBGE como campo
+  para o usuario
+- busca por nome continua disponivel, com UF para distinguir cidades homonimas
+- consulta por CEP aceita oito digitos com ou sem hifen e retorna municipio/UF
+  com identificador IBGE valido
+- CEP invalido, inexistente ou servico indisponivel apresenta mensagem clara
+  e permite continuar pela busca por nome, sem apagar uma selecao valida
+- CEP e apenas uma entrada de consulta; nao se torna obrigatorio e nao e
+  persistido no perfil ou na Mesa neste escopo
+- a consulta nao salva rua, numero, bairro ou endereco completo
+- selecao por nome e por CEP produzem a mesma identificacao canonica do municipio
+  e respeitam as mesmas permissoes de regionalizacao
+- localizacao permanece opcional e registros existentes continuam funcionando
+
+Dependencias para implementacao: selecionar a fonte de municipios e o servico
+de consulta de CEP, validar a correspondencia do codigo IBGE e documentar o uso
+do servico externo na documentacao de privacidade. Consulta para identificar
+municipio nao representa comprovacao de residencia nem busca de usuarios por CEP.
+
 ## Decisoes fechadas
 
 - regionalizar uma Mesa e opcional

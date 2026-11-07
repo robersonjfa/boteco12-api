@@ -1,3 +1,4 @@
+import { LocationService } from '../location/location.service'
 import { prisma } from '../../lib/prisma'
 import { randomUUID } from 'crypto'
 import { AppError } from '../../errors/AppError'
@@ -67,7 +68,14 @@ export class CreateBolaoService {
       createdByUserId,
     } = input
     assertMesaStartDate(startDate)
-    const region = normalizeMesaRegion(input)
+    const normalizedRegion = normalizeMesaRegion(input)
+    const region = { ...normalizedRegion, ...await LocationService.canonical(normalizedRegion) }
+    if (!input.administrative && region.regionScope !== 'NATIONAL') {
+      const profile = await prisma.user.findUnique({ where: { id: input.createdByUserId }, select: { stateCode: true, cityCode: true } })
+      if (profile?.stateCode !== region.stateCode || (region.regionScope === 'CITY' && profile?.cityCode !== region.cityCode)) {
+        throw AppError.badRequest('Atualize sua localização no perfil para usar esta região', 'mesa_region_profile_required')
+      }
+    }
     const terms = MesaCategoryRules.validate({
       category: input.category,
       accessCost: input.accessCost,
