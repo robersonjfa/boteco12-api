@@ -1,4 +1,5 @@
 import { Job } from 'bullmq'
+import { MiniService } from '../../services/mini/mini.service'
 import { JOB_NAMES, Boteco12JobName } from '../constants'
 import { OpenScheduledRoundsJobService } from '../../services/jobs/open-scheduled-rounds.job.service'
 import { CloseScheduledRoundsJobService } from '../../services/jobs/close-scheduled-rounds.job.service'
@@ -17,6 +18,8 @@ export async function processBoteco12Job(job: Job) {
   )
 
   switch (name) {
+    case JOB_NAMES.RECONCILE_MINI_DUELS:
+      return MiniService.reconcile()
     case JOB_NAMES.OPEN_SCHEDULED_ROUNDS:
       return OpenScheduledRoundsJobService.execute()
     case JOB_NAMES.CLOSE_SCHEDULED_ROUNDS:

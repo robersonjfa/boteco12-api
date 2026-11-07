@@ -77,6 +77,11 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
         run: npm run test:mesa-initialization:postgres
 
+      - name: Run mini duel PostgreSQL integration
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm run test:minis:postgres
+
       - name: Prove backup restore in a disposable database
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci

@@ -58,6 +58,7 @@ const {
   InternalJobRunnerService,
 } = require('../dist/services/internal/internal-job-runner.service')
 const { prisma } = require('../dist/lib/prisma')
+const { MiniService } = require('../dist/services/mini/mini.service')
 const { AppError } = require('../dist/errors/AppError')
 const { OpenRoundService } = require('../dist/services/round/open-round.service')
 const {
@@ -73,6 +74,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   const names = schedules.map(item => item.jobName)
 
   assert.deepEqual(ids.sort(), [
+    SCHEDULER_IDS.RECONCILE_MINI_DUELS,
     SCHEDULER_IDS.CLOSE_EXPIRED_RANKINGS,
     SCHEDULER_IDS.CLOSE_SCHEDULED_ROUNDS,
     SCHEDULER_IDS.ENSURE_MONTHLY_RANKINGS,
@@ -103,7 +105,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   assert.equal(subscriptions.tz, SCHEDULE_TIMEZONE)
 
   const everyMinute = schedules.filter(item => item.everyMs === EVERY_MINUTE_MS)
-  assert.equal(everyMinute.length, 4)
+  assert.equal(everyMinute.length, 5)
 })
 
 test('gate do worker inclui a recuperação manual das Mesas agendadas', () => {
@@ -147,6 +149,7 @@ test('config BullMQ valida REDIS_URL e nao exige Redis para sumarizar URL', () =
 
 test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   const calls = []
+  const originalMini = MiniService.reconcile
   const originalOpen = OpenScheduledRoundsJobService.execute
   const originalClose = CloseScheduledRoundsJobService.execute
   const originalExpired = CloseExpiredRankingsJobService.execute
@@ -155,6 +158,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   const originalSubscriptions = RevalidateSubscriptionsJobService.execute
 
   t.after(() => {
+    MiniService.reconcile = originalMini
     OpenScheduledRoundsJobService.execute = originalOpen
     CloseScheduledRoundsJobService.execute = originalClose
     CloseExpiredRankingsJobService.execute = originalExpired
@@ -163,6 +167,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
     RevalidateSubscriptionsJobService.execute = originalSubscriptions
   })
 
+  MiniService.reconcile = async () => { calls.push('mini-duels'); return { processed: 0 } }
   OpenScheduledRoundsJobService.execute = async () => {
     calls.push('open')
     return { opened: 0, skipped: 0 }
@@ -200,6 +205,7 @@ test('roteamento job -> service cobre todos os nomes conhecidos', async t => {
   }
 
   assert.deepEqual(calls.sort(), [
+    'mini-duels',
     'close',
     'expired',
     'monthly:reconcile',

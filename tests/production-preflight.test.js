@@ -21,7 +21,8 @@ test('preflight de producao e manual, protegido e somente leitura', () => {
   assert.match(workflow, /environment: production/)
   assert.match(workflow, /permissions:\s*\n\s*contents: read/)
   assert.match(workflow, /Missing EasyPanel secrets/)
-  assert.match(workflow, /EASYPANEL_URL: \$\{\{ secrets\.EASYPANEL_URL \}\}/)
+  assert.match(workflow, /EASYPANEL_URL: \$\{\{ inputs\.panel_endpoint == 'official' && 'http:\/\/72\.60\.51\.161:3000' \|\| secrets\.EASYPANEL_URL \}\}/)
+  assert.match(workflow, /type: choice\s*\n\s*default: configured\s*\n\s*options:\s*\n\s*- configured\s*\n\s*- official/)
   assert.match(workflow, /node scripts\/easypanel-production-preflight\.js/)
 
   assert.match(preflightSource, /projects\/getDockerContainers/)

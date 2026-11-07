@@ -13,8 +13,19 @@ Vale para o MVP de abrangência nacional, estadual e municipal.
 | `cityName` | não | exibição | snapshot, não é chave |
 | `locationUpdatedAt` | não | auditoria básica | atualizado a cada alteração |
 
-Não são coletados: endereço completo, CEP, coordenadas, GPS, localização por IP
+Não são persistidos: endereço completo, CEP, coordenadas, GPS, localização por IP
 ou qualquer inferência silenciosa.
+
+Desde a evolução de 06/11/2026, o usuário pode consultar voluntariamente um CEP
+para identificar município e UF. A API envia o CEP ao ViaCEP por HTTPS e valida
+o município no catálogo oficial do IBGE. O CEP é usado apenas durante a consulta:
+não fica no perfil, na Mesa, em cache de consultas de CEP ou em URLs dos nossos
+endpoints. O logger não registra o corpo da requisição. Rua, bairro e demais
+campos devolvidos pelo ViaCEP são descartados e não retornam ao navegador.
+
+O catálogo municipal público do IBGE pode ser mantido em memória por 24 horas.
+Esse cache contém apenas municípios, sem CEP nem associação com usuários.
+Falha de consulta permite continuar por nome/UF. A consulta não comprova residência.
 
 ## Base e finalidade
 
@@ -45,7 +56,7 @@ ou qualquer inferência silenciosa.
 ## Fora do MVP
 
 - Mesa exclusiva para moradores de uma região.
-- Verificação de residência, CEP ou entrega por região.
+- Verificação de residência ou entrega por região usando CEP.
 - Geolocalização por GPS, raio ou distância em quilômetros.
 - Múltiplas cidades/estados na mesma Mesa, bairros e mapas.
 - Notificações por proximidade e ranking regional separado.

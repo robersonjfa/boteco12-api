@@ -1,3 +1,4 @@
+import { LocationService } from '../location/location.service'
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
 import { Prisma } from '@prisma/client'
@@ -30,6 +31,20 @@ interface Input {
 export class UpdateProfileService {
   static async execute({ userId, data }: Input) {
     try {
+        const hasLocationUpdate =
+          data.countryCode !== undefined ||
+          data.stateCode !== undefined ||
+          data.cityCode !== undefined ||
+          data.cityName !== undefined
+        const location = hasLocationUpdate
+          ? await LocationService.canonical(normalizeProfileLocation({
+              countryCode: data.countryCode,
+              stateCode: data.stateCode,
+              cityCode: data.cityCode,
+              cityName: data.cityName,
+            }))
+          : null
+
       return await prisma.$transaction(async tx => {
         const current = await tx.user.findUnique({
           where: { id: userId },
@@ -83,19 +98,6 @@ export class UpdateProfileService {
         const birthDateToConfirm =
           data.birthDate !== undefined && !current.birthDate
 
-        const hasLocationUpdate =
-          data.countryCode !== undefined ||
-          data.stateCode !== undefined ||
-          data.cityCode !== undefined ||
-          data.cityName !== undefined
-        const location = hasLocationUpdate
-          ? normalizeProfileLocation({
-              countryCode: data.countryCode,
-              stateCode: data.stateCode,
-              cityCode: data.cityCode,
-              cityName: data.cityName,
-            })
-          : null
 
         return tx.user.update({
           where: {
