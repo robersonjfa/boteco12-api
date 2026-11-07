@@ -37,7 +37,13 @@ async function cleanup() {
   await prisma.user.deleteMany({ where: { id: ADMIN } })
 }
 
-test('criação persiste a região escolhida e nasce nacional por padrão', async () => {
+test('criação persiste a região escolhida e nasce nacional por padrão', async t => {
+  // This suite exercises PostgreSQL persistence. Provider contracts are tested
+  // separately in location.test.js; runner connectivity must not affect it.
+  const axios = require('axios')
+  const originalGet = axios.get
+  axios.get = async () => ({ data: [{ id: 4209003, nome: 'Joaçaba' }] })
+  t.after(() => { axios.get = originalGet })
   await cleanup()
   await prisma.user.create({
     data: { id: ADMIN, name: 'Admin', email: `${ADMIN}@example.test`, password: 'hash' },
