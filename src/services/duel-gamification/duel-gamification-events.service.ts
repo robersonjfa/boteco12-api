@@ -8,6 +8,7 @@ export type DuelGameEventName =
   | 'duel_accepted'
   | 'duel_settled'
   | 'duel_expired'
+  | 'duel_return'
 
 export type DuelGameEventInput = {
   name: DuelGameEventName

@@ -37,6 +37,11 @@ router.patch('/duels/gamification/me/privacy', authMiddleware, handle(req => {
 router.get('/duels/:id', authMiddleware, handle(req => MiniService.detail(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/accept', authMiddleware, handle(req => MiniService.accept(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/cancel', authMiddleware, handle(req => MiniService.cancel(id.parse(req.params.id), req.user!.id)))
+router.get('/admin/duels/gamification/health', authMiddleware, authorize('COMPETITION_READ'), handle(() => DuelGamificationProfileService.diagnostics()))
+router.patch('/admin/duels/gamification/enrollments/:id', authMiddleware, authorize('COMPETITION_WRITE', { audit: true, entity: 'DUEL_GAME_ENROLLMENT' }), handle(req => {
+  const body = z.object({ enrolled: z.boolean() }).strict().parse(req.body)
+  return DuelGamificationProfileService.setEnrollment(id.parse(req.params.id), body.enrolled)
+}))
 router.get('/admin/duels/gamification/funnel', authMiddleware, authorize('COMPETITION_READ'), handle(async () => {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   const rows = await prisma.duelGameEvent.groupBy({

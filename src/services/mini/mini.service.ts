@@ -199,6 +199,15 @@ export class MiniService {
         achievements: achievements.map(item => item.code),
       }
     }
+    if (duel.status === 'SETTLED' && participant) {
+      void recordDuelGameEvent({
+        name: 'duel_return',
+        dedupeKey: `duel:return:${duel.id}:${userId}`,
+        userId,
+        duelId: duel.id,
+        miniId: duel.miniId,
+      })
+    }
     void recordDuelGameEvent({
       name: 'duel_detail_opened',
       dedupeKey: `duel:detail:${duel.id}:${userId}:${localDayFor(new Date())}`,
