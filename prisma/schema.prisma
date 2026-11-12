@@ -173,19 +173,19 @@ model User {
   password String
   role     UserRole @default(NORMAL)
 
-  nickname     String?
-  cpf          String? @unique
-  profileImage String?
-  bio          String?
-  phone        String?
+  nickname          String?
+  cpf               String?               @unique
+  profileImage      String?
+  bio               String?
+  phone             String?
   /// Data de nascimento (somente data). Obrigatória em novos cadastros; null em contas legadas.
-  birthDate    DateTime? @db.Date
-  scoreTotal   Int     @default(0)
-  proUpsellDisabled Boolean @default(false)
+  birthDate         DateTime?             @db.Date
+  scoreTotal        Int                   @default(0)
+  proUpsellDisabled Boolean               @default(false)
   addressPreference UserAddressPreference @default(UNSPECIFIED)
   /// Localização aproximada opcional (pais/UF/municipio). Nunca endereco completo.
-  countryCode       String?   @default("BR") @db.Char(2)
-  stateCode         String?   @db.Char(2)
+  countryCode       String?               @default("BR") @db.Char(2)
+  stateCode         String?               @db.Char(2)
   cityCode          String?
   cityName          String?
   locationUpdatedAt DateTime?
@@ -201,23 +201,23 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  miniPredictions MiniPrediction[]
-  createdDuels MiniDuel[] @relation("MiniDuelCreator")
-  receivedDuels MiniDuel[] @relation("MiniDuelRecipient")
-  acceptedDuels MiniDuel[] @relation("MiniDuelOpponent")
-  wonDuels MiniDuel[] @relation("MiniDuelWinner")
-  tickets          Ticket[]
-  rankings         RankingParticipant[]
+  miniPredictions           MiniPrediction[]
+  createdDuels              MiniDuel[]           @relation("MiniDuelCreator")
+  receivedDuels             MiniDuel[]           @relation("MiniDuelRecipient")
+  acceptedDuels             MiniDuel[]           @relation("MiniDuelOpponent")
+  wonDuels                  MiniDuel[]           @relation("MiniDuelWinner")
+  tickets                   Ticket[]
+  rankings                  RankingParticipant[]
   approvedBolaoParticipants RankingParticipant[] @relation("BolaoParticipantApprover")
-  auditLogs        AuditLog[]
-  scoreHistory     UserScoreHistory[]
-  rankingSnapshots RankingSnapshot[]
-  createdBolao     Ranking[]            @relation("BolaoCreator")
-  subscription     Subscription?
-  wallet           Wallet?
-  roundBenefits    RoundBenefit[]
-  bolaoInvites     BolaoInvite[]
-  payments         Payment[]
+  auditLogs                 AuditLog[]
+  scoreHistory              UserScoreHistory[]
+  rankingSnapshots          RankingSnapshot[]
+  createdBolao              Ranking[]            @relation("BolaoCreator")
+  subscription              Subscription?
+  wallet                    Wallet?
+  roundBenefits             RoundBenefit[]
+  bolaoInvites              BolaoInvite[]
+  payments                  Payment[]
 
   UserAdminRole UserAdminRole[]
   AdminAuditLog AdminAuditLog[]
@@ -225,6 +225,12 @@ model User {
   benefitInventory UserBenefitInventory[]
 
   passwordResetTokens PasswordResetToken[]
+
+  duelGameProfile  DuelGameProfile?
+  duelXpGrants     DuelXpGrant[]
+  duelXpDays       DuelXpDay[]
+  duelAchievements DuelAchievement[]
+  duelCosmetics    DuelCosmeticUnlock[]
 
   @@index([adminBlockedAt])
   @@map("users")
@@ -322,7 +328,7 @@ model Round {
   scoreHistory     UserScoreHistory[]
   rankingSnapshots RankingSnapshot[]
   roundBenefits    RoundBenefit[]
-  referenceMesas   Ranking[] @relation("MesaReferenceRound")
+  referenceMesas   Ranking[]          @relation("MesaReferenceRound")
 
   @@unique([status], map: "rounds_single_open_idx", where: { status: "OPEN" })
   @@map("rounds")
@@ -350,7 +356,7 @@ model RoundMatch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  round        Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  round        Round        @relation(fields: [roundId], references: [id], onDelete: Cascade)
   homeTeamData TeamVariant? @relation("HomeTeam", fields: [homeTeamId], references: [id])
   awayTeamData TeamVariant? @relation("AwayTeam", fields: [awayTeamId], references: [id])
 
@@ -431,36 +437,36 @@ model Ranking {
   endDate      DateTime?
   periodRef    String?
 
-  entryFee            Int  @default(0)
-  accessCost          Int? @default(0)
-  category            MesaCategory @default(PAID)
-  eligibility         MesaEligibility @default(SUBSCRIBERS_ONLY)
-  regionScope         MesaRegionScope @default(NATIONAL)
-  countryCode         String? @default("BR") @db.Char(2)
-  stateCode           String? @db.Char(2)
-  cityCode            String?
-  cityName            String?
-  registrationCloseMode MesaRegistrationCloseMode @default(CAPACITY)
-  durationMode        MesaDurationMode @default(DATE)
-  durationRounds      Int?
-  registrationClosedAt DateTime?
-  referenceRoundId     String?
-  initializationStatus MesaInitializationStatus?
+  entryFee               Int                       @default(0)
+  accessCost             Int?                      @default(0)
+  category               MesaCategory              @default(PAID)
+  eligibility            MesaEligibility           @default(SUBSCRIBERS_ONLY)
+  regionScope            MesaRegionScope           @default(NATIONAL)
+  countryCode            String?                   @default("BR") @db.Char(2)
+  stateCode              String?                   @db.Char(2)
+  cityCode               String?
+  cityName               String?
+  registrationCloseMode  MesaRegistrationCloseMode @default(CAPACITY)
+  durationMode           MesaDurationMode          @default(DATE)
+  durationRounds         Int?
+  registrationClosedAt   DateTime?
+  referenceRoundId       String?
+  initializationStatus   MesaInitializationStatus?
   scoreInitialCapturedAt DateTime?
-  referenceRound Round? @relation("MesaReferenceRound", fields: [referenceRoundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  publishedAt         DateTime?
-  sponsorPrizePool    Int @default(0)
-  sponsorName         String?
-  sponsorLogoUrl      String?
-  maxParticipants     Int?
-  currentParticipants Int  @default(0)
-  durationDays        Int?
-  prizeDistribution   Json?
-  grossCollected      Int       @default(0)
-  platformFee         Int       @default(0)
-  prizePool           Int       @default(0)
-  rewardPool          Int?      @default(0)
-  settledAt           DateTime?
+  referenceRound         Round?                    @relation("MesaReferenceRound", fields: [referenceRoundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  publishedAt            DateTime?
+  sponsorPrizePool       Int                       @default(0)
+  sponsorName            String?
+  sponsorLogoUrl         String?
+  maxParticipants        Int?
+  currentParticipants    Int                       @default(0)
+  durationDays           Int?
+  prizeDistribution      Json?
+  grossCollected         Int                       @default(0)
+  platformFee            Int                       @default(0)
+  prizePool              Int                       @default(0)
+  rewardPool             Int?                      @default(0)
+  settledAt              DateTime?
 
   createdByUserId String?
 
@@ -473,13 +479,13 @@ model Ranking {
 
   createdBy User? @relation("BolaoCreator", fields: [createdByUserId], references: [id])
 
-  @@map("rankings")
   @@unique([type, periodRef])
   @@index([periodRef])
   @@index([type, status, registrationClosedAt, entryEndDate, createdAt])
   @@index([referenceRoundId])
   @@index([initializationStatus, referenceRoundId])
   @@index([type, status, regionScope, stateCode, cityCode])
+  @@map("rankings")
 }
 
 //////////////////////////////////////////////////////
@@ -491,27 +497,27 @@ model RankingParticipant {
   rankingId String
   userId    String
 
-  score        Int  @default(0)
-  scoreInitial Int  @default(0)
-  scoreInitialCapturedAt DateTime?
-  position     Int?
-  status       RankingParticipantStatus @default(APPROVED)
-  approvedByUserId String?
-  approvedAt       DateTime?
-  rejectedAt       DateTime?
-  entryFeePaid     Int       @default(0)
-  entryPaidAt      DateTime?
-  tiebreakSuperDoubleHits Int      @default(0)
-  tiebreakDoubleHits      Int      @default(0)
+  score                   Int                      @default(0)
+  scoreInitial            Int                      @default(0)
+  scoreInitialCapturedAt  DateTime?
+  position                Int?
+  status                  RankingParticipantStatus @default(APPROVED)
+  approvedByUserId        String?
+  approvedAt              DateTime?
+  rejectedAt              DateTime?
+  entryFeePaid            Int                      @default(0)
+  entryPaidAt             DateTime?
+  tiebreakSuperDoubleHits Int                      @default(0)
+  tiebreakDoubleHits      Int                      @default(0)
   tiebreakUserCreatedAt   DateTime?
   tiebreakRuleVersion     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ranking Ranking @relation(fields: [rankingId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  approvedBy User? @relation("BolaoParticipantApprover", fields: [approvedByUserId], references: [id])
+  ranking    Ranking @relation(fields: [rankingId], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvedBy User?   @relation("BolaoParticipantApprover", fields: [approvedByUserId], references: [id])
 
   @@unique([rankingId, userId])
   @@index([rankingId])
@@ -613,7 +619,7 @@ model Subscription {
   provider               PaymentProvider?
   externalSubscriptionId String?
   externalCustomerId     String?
-  subscriptionPackageId  String? @db.Text
+  subscriptionPackageId  String?          @db.Text
 
   packageId String?         @db.Text
   package   PaymentPackage? @relation(fields: [packageId], references: [id], onDelete: Restrict)
@@ -656,10 +662,10 @@ model WalletLedger {
   id       String @id @default(uuid())
   walletId String
 
-  type        WalletTransactionType
-  amount      Int
-  description String?
-  idempotencyKey String? @unique
+  type           WalletTransactionType
+  amount         Int
+  description    String?
+  idempotencyKey String?               @unique
 
   createdAt DateTime @default(now())
 
@@ -761,20 +767,20 @@ model Payment {
   packageId String?         @db.Text
   package   PaymentPackage? @relation(fields: [packageId], references: [id], onDelete: Restrict)
 
-  subscriptionPlan SubscriptionPlan?
-  subscriptionPackageId String? @db.Text
+  subscriptionPlan           SubscriptionPlan?
+  subscriptionPackageId      String?           @db.Text
   subscriptionValidityMonths Int?
 
   amountCents Int
   coinsAmount Int
   bonusCoins  Int @default(0)
 
-  externalPaymentId String? @unique @db.Text
-  externalReference String? @unique @db.Text
+  externalPaymentId    String? @unique @db.Text
+  externalReference    String? @unique @db.Text
   externalPreferenceId String? @unique @db.Text
-  checkoutUrl String? @db.Text
+  checkoutUrl          String? @db.Text
 
-  isCredited Boolean @default(false)
+  isCredited  Boolean   @default(false)
   processedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -916,20 +922,20 @@ model SystemLock {
 }
 
 model Art {
-  id           String   @id @default(uuid()) @db.Uuid
-  title        String   @db.VarChar(120)
-  description  String?  @db.VarChar(500)
-  imageData    String   @db.Text
-  imageMime    String   @db.VarChar(20)
-  imageWidth   Int
-  imageHeight  Int
-  published    Boolean  @default(true)
-  showOnHome   Boolean  @default(false)
-  sortOrder    Int      @default(0)
-  likeCount    Int      @default(0)
-  publishedAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String    @id @default(uuid()) @db.Uuid
+  title       String    @db.VarChar(120)
+  description String?   @db.VarChar(500)
+  imageData   String    @db.Text
+  imageMime   String    @db.VarChar(20)
+  imageWidth  Int
+  imageHeight Int
+  published   Boolean   @default(true)
+  showOnHome  Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  likeCount   Int       @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([published, showOnHome, sortOrder, publishedAt])
   @@map("arts")
@@ -968,69 +974,157 @@ model UserBenefitInventory {
   @@map("user_benefit_inventory")
 }
 
-
 // Mini rounds are independent of Round, Ticket and all rankings.
 model MiniRound {
-  id String @id @default(uuid())
-  name String
-  status String @default("DRAFT")
-  closeAt DateTime
-  confirmedAt DateTime?
-  confirmedBy String?
-  createdAt DateTime @default(now())
-  matches MiniMatch[]
-  predictions MiniPrediction[]
-  duels MiniDuel[]
+  id           String           @id @default(uuid())
+  name         String
+  status       String           @default("DRAFT")
+  closeAt      DateTime
+  confirmedAt  DateTime?
+  confirmedBy  String?
+  createdAt    DateTime         @default(now())
+  matches      MiniMatch[]
+  predictions  MiniPrediction[]
+  duels        MiniDuel[]
+  duelXpGrants DuelXpGrant[]
+
   @@index([status, closeAt])
   @@map("mini_rounds")
 }
 
 model MiniMatch {
-  id String @id @default(uuid())
-  miniId String
-  position Int
-  homeTeam String
-  awayTeam String
+  id        String    @id @default(uuid())
+  miniId    String
+  position  Int
+  homeTeam  String
+  awayTeam  String
   matchTime DateTime
-  result String?
-  mini MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  result    String?
+  mini      MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+
   @@unique([miniId, position])
   @@map("mini_matches")
 }
 
 model MiniPrediction {
-  id String @id @default(uuid())
-  miniId String
-  userId String
+  id         String    @id @default(uuid())
+  miniId     String
+  userId     String
   prediction String
-  createdAt DateTime @default(now())
-  mini MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt  DateTime  @default(now())
+  mini       MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
   @@unique([miniId, userId])
   @@map("mini_predictions")
 }
 
 model MiniDuel {
-  id String @id @default(uuid())
-  requestKey String @unique @default(uuid())
-  miniId String
-  creatorId String
-  recipientId String?
-  opponentId String?
-  amount Int
-  status String @default("WAITING")
-  winnerId String?
-  settlement Json?
-  createdAt DateTime @default(now())
-  settledAt DateTime?
-  mini MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
-  creator User @relation("MiniDuelCreator", fields: [creatorId], references: [id], onDelete: Restrict)
-  recipient User? @relation("MiniDuelRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
-  opponent User? @relation("MiniDuelOpponent", fields: [opponentId], references: [id], onDelete: Restrict)
-  winner User? @relation("MiniDuelWinner", fields: [winnerId], references: [id], onDelete: Restrict)
+  id           String           @id @default(uuid())
+  requestKey   String           @unique @default(uuid())
+  miniId       String
+  creatorId    String
+  recipientId  String?
+  opponentId   String?
+  amount       Int
+  status       String           @default("WAITING")
+  winnerId     String?
+  settlement   Json?
+  createdAt    DateTime         @default(now())
+  settledAt    DateTime?
+  mini         MiniRound        @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  creator      User             @relation("MiniDuelCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  recipient    User?            @relation("MiniDuelRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  opponent     User?            @relation("MiniDuelOpponent", fields: [opponentId], references: [id], onDelete: Restrict)
+  winner       User?            @relation("MiniDuelWinner", fields: [winnerId], references: [id], onDelete: Restrict)
+  gameReceipt  DuelGameReceipt?
+  duelXpGrants DuelXpGrant[]
+
   @@index([status, miniId])
   @@index([creatorId, createdAt])
   @@index([recipientId, createdAt])
   @@index([opponentId, createdAt])
   @@map("mini_duels")
+}
+
+//////////////////////////////////////////////////////
+// DUEL GAMIFICATION (duel-game-v1)
+//////////////////////////////////////////////////////
+
+model DuelGameProfile {
+  userId     String   @id
+  xp         Int      @default(0)
+  titleId    String?
+  frameId    String?
+  visibility String   @default("PUBLIC")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("duel_game_profiles")
+}
+
+model DuelGameReceipt {
+  id          String   @id @default(uuid())
+  duelId      String   @unique
+  ruleVersion String   @default("duel-game-v1")
+  processedAt DateTime @default(now())
+  outcome     Json
+  duel        MiniDuel @relation(fields: [duelId], references: [id], onDelete: Restrict)
+
+  @@map("duel_game_receipts")
+}
+
+model DuelXpGrant {
+  id        String    @id @default(uuid())
+  userId    String
+  miniId    String
+  duelId    String
+  delta     Int
+  reason    String
+  localDay  String
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mini      MiniRound @relation(fields: [miniId], references: [id], onDelete: Restrict)
+  duel      MiniDuel  @relation(fields: [duelId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, miniId])
+  @@index([userId, localDay])
+  @@map("duel_xp_grants")
+}
+
+model DuelXpDay {
+  id        String   @id @default(uuid())
+  userId    String
+  localDay  String
+  xp        Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, localDay])
+  @@map("duel_xp_days")
+}
+
+model DuelAchievement {
+  id           String   @id @default(uuid())
+  userId       String
+  code         String
+  sourceDuelId String?
+  earnedAt     DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+  @@map("duel_achievements")
+}
+
+model DuelCosmeticUnlock {
+  id         String   @id @default(uuid())
+  userId     String
+  itemId     String
+  source     String
+  unlockedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@map("duel_cosmetic_unlocks")
 }
