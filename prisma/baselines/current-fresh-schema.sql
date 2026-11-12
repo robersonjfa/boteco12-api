@@ -691,6 +691,20 @@ CREATE TABLE "duel_cosmetic_unlocks" (
     CONSTRAINT "duel_cosmetic_unlocks_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "duel_game_events" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "dedupeKey" TEXT NOT NULL,
+    "userId" TEXT,
+    "duelId" TEXT,
+    "miniId" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "duel_game_events_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
@@ -975,6 +989,15 @@ CREATE UNIQUE INDEX "duel_achievements_userId_code_key" ON "duel_achievements"("
 
 -- CreateIndex
 CREATE UNIQUE INDEX "duel_cosmetic_unlocks_userId_itemId_key" ON "duel_cosmetic_unlocks"("userId", "itemId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "duel_game_events_dedupeKey_key" ON "duel_game_events"("dedupeKey");
+
+-- CreateIndex
+CREATE INDEX "duel_game_events_name_createdAt_idx" ON "duel_game_events"("name", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "duel_game_events_userId_createdAt_idx" ON "duel_game_events"("userId", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
