@@ -8,6 +8,7 @@ import { EnsureMonthlyRankingsJobService } from '../../services/jobs/ensure-mont
 import { RevalidateSubscriptionsJobService } from '../../services/jobs/revalidate-subscriptions.job.service'
 import { logger } from '../../lib/logger'
 import { PublishScheduledMesasJobService } from '../../services/jobs/publish-scheduled-mesas.job.service'
+import { ProcessDuelGamificationJobService } from '../../services/jobs/process-duel-gamification.job.service'
 
 export async function processBoteco12Job(job: Job) {
   const name = job.name as Boteco12JobName
@@ -20,6 +21,8 @@ export async function processBoteco12Job(job: Job) {
   switch (name) {
     case JOB_NAMES.RECONCILE_MINI_DUELS:
       return MiniService.reconcile()
+    case JOB_NAMES.PROCESS_DUEL_GAMIFICATION:
+      return ProcessDuelGamificationJobService.execute()
     case JOB_NAMES.OPEN_SCHEDULED_ROUNDS:
       return OpenScheduledRoundsJobService.execute()
     case JOB_NAMES.CLOSE_SCHEDULED_ROUNDS:

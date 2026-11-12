@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma'
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware'
 import { authorize } from '../middleware/authorize.middleware'
 import { MiniService } from '../services/mini/mini.service'
+import { DuelGamificationProfileService } from '../services/duel-gamification/duel-gamification-profile.service'
 
 const router = Router()
 const id = z.string().uuid()
@@ -23,6 +24,16 @@ router.post('/minis/:id/duels', authMiddleware, handle(req => {
   return MiniService.createDuel(id.parse(req.params.id), req.user!.id, body.amount, body.recipientId, body.requestKey)
 }, 201))
 router.get('/duels', authMiddleware, handle(req => MiniService.duels(req.user!.id, z.enum(['mine', 'public']).default('mine').parse(req.query.mode), page(req.query.page))))
+router.get('/duels/gamification/me', authMiddleware, handle(req => DuelGamificationProfileService.me(req.user!.id)))
+router.get('/duels/gamification/players/:id', authMiddleware, handle(req => DuelGamificationProfileService.player(req.user!.id, id.parse(req.params.id))))
+router.patch('/duels/gamification/me/equipment', authMiddleware, handle(req => {
+  const body = z.object({ titleId: z.string().trim().min(1).max(64).optional(), frameId: z.string().trim().min(1).max(64).optional() }).strict().parse(req.body)
+  return DuelGamificationProfileService.updateEquipment(req.user!.id, body)
+}))
+router.patch('/duels/gamification/me/privacy', authMiddleware, handle(req => {
+  const body = z.object({ visibility: z.enum(['PUBLIC', 'HIDDEN']) }).strict().parse(req.body)
+  return DuelGamificationProfileService.updatePrivacy(req.user!.id, body.visibility)
+}))
 router.get('/duels/:id', authMiddleware, handle(req => MiniService.detail(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/accept', authMiddleware, handle(req => MiniService.accept(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/cancel', authMiddleware, handle(req => MiniService.cancel(id.parse(req.params.id), req.user!.id)))

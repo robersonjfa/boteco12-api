@@ -75,6 +75,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
 
   assert.deepEqual(ids.sort(), [
     SCHEDULER_IDS.RECONCILE_MINI_DUELS,
+    SCHEDULER_IDS.PROCESS_DUEL_GAMIFICATION,
     SCHEDULER_IDS.CLOSE_EXPIRED_RANKINGS,
     SCHEDULER_IDS.CLOSE_SCHEDULED_ROUNDS,
     SCHEDULER_IDS.ENSURE_MONTHLY_RANKINGS,
@@ -84,6 +85,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
     SCHEDULER_IDS.REVALIDATE_SUBSCRIPTIONS,
   ].sort())
 
+  assert.ok(names.includes(JOB_NAMES.PROCESS_DUEL_GAMIFICATION))
   assert.ok(names.includes(JOB_NAMES.OPEN_SCHEDULED_ROUNDS))
   assert.ok(names.includes(JOB_NAMES.CLOSE_SCHEDULED_ROUNDS))
   assert.ok(names.includes(JOB_NAMES.CLOSE_EXPIRED_RANKINGS))
@@ -105,7 +107,7 @@ test('registra todos os schedules obrigatorios com ids deterministicos', () => {
   assert.equal(subscriptions.tz, SCHEDULE_TIMEZONE)
 
   const everyMinute = schedules.filter(item => item.everyMs === EVERY_MINUTE_MS)
-  assert.equal(everyMinute.length, 5)
+  assert.equal(everyMinute.length, 6)
 })
 
 test('gate do worker inclui a recuperação manual das Mesas agendadas', () => {

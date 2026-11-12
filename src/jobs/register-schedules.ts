@@ -22,6 +22,7 @@ export type RegisteredSchedule = {
 export function getRequiredSchedules(): RegisteredSchedule[] {
   return [
     { schedulerId: SCHEDULER_IDS.RECONCILE_MINI_DUELS, jobName: JOB_NAMES.RECONCILE_MINI_DUELS, everyMs: EVERY_MINUTE_MS },
+    { schedulerId: SCHEDULER_IDS.PROCESS_DUEL_GAMIFICATION, jobName: JOB_NAMES.PROCESS_DUEL_GAMIFICATION, everyMs: EVERY_MINUTE_MS },
     {
       schedulerId: SCHEDULER_IDS.OPEN_SCHEDULED_ROUNDS,
       jobName: JOB_NAMES.OPEN_SCHEDULED_ROUNDS,

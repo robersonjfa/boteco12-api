@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
+import { gameSummariesForUsers } from '../duel-gamification/duel-gamification-summary.service'
 import { WalletService } from '../wallet/wallet.service'
 import { CalculateTicketScoreService } from '../score/calculate-ticket-score.service'
 import { RankingTiebreakService } from '../ranking/ranking-tiebreak.service'
@@ -136,7 +137,19 @@ export class MiniService {
       prisma.miniDuel.findMany({ where, include: duelInclude, orderBy: { createdAt: 'desc' }, take: 20, skip: (page - 1) * 20 }),
       prisma.miniDuel.count({ where }),
     ])
-    return { duels, total, page, limit: 20 }
+    const summaries = await gameSummariesForUsers(
+      duels.flatMap(duel => [duel.creatorId, duel.opponentId, duel.recipientId])
+    )
+    return {
+      duels: duels.map(duel => ({
+        ...duel,
+        creatorGame: summaries.get(duel.creatorId) ?? null,
+        opponentGame: duel.opponentId ? summaries.get(duel.opponentId) ?? null : null,
+      })),
+      total,
+      page,
+      limit: 20,
+    }
   }
 
   static async detail(id: string, userId: string) {
@@ -149,7 +162,13 @@ export class MiniService {
     if (!participant && duel.recipientId) throw AppError.notFound('Duelo')
     const reveal = participant && duel.mini.closeAt.getTime() <= Date.now()
     const predictions = reveal ? await prisma.miniPrediction.findMany({ where: { miniId: duel.miniId, userId: { in: [duel.creatorId, duel.opponentId ?? ''] } }, select: { userId: true, prediction: true } }) : []
-    return { ...duel, predictions }
+    const summaries = await gameSummariesForUsers([duel.creatorId, duel.opponentId, duel.recipientId])
+    return {
+      ...duel,
+      predictions,
+      creatorGame: summaries.get(duel.creatorId) ?? null,
+      opponentGame: duel.opponentId ? summaries.get(duel.opponentId) ?? null : null,
+    }
   }
 
   static async confirm(id: string, results: string[], adminId: string) {

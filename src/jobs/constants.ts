@@ -2,6 +2,7 @@ export const BOTECO12_QUEUE_NAME = 'boteco12-jobs' as const
 
 export const JOB_NAMES = {
   RECONCILE_MINI_DUELS: 'reconcile-mini-duels',
+  PROCESS_DUEL_GAMIFICATION: 'process-duel-gamification',
   OPEN_SCHEDULED_ROUNDS: 'open-scheduled-rounds',
   CLOSE_SCHEDULED_ROUNDS: 'close-scheduled-rounds',
   CLOSE_EXPIRED_RANKINGS: 'close-expired-rankings',
@@ -15,6 +16,7 @@ export type Boteco12JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]
 
 export const SCHEDULER_IDS = {
   RECONCILE_MINI_DUELS: 'scheduler:reconcile-mini-duels',
+  PROCESS_DUEL_GAMIFICATION: 'scheduler:process-duel-gamification',
   OPEN_SCHEDULED_ROUNDS: 'scheduler:open-scheduled-rounds',
   CLOSE_SCHEDULED_ROUNDS: 'scheduler:close-scheduled-rounds',
   CLOSE_EXPIRED_RANKINGS: 'scheduler:close-expired-rankings',
