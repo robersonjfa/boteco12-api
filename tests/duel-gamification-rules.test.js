@@ -2,6 +2,7 @@ const assert = require('node:assert/strict')
 const test = require('node:test')
 
 const {
+  isDuelGamificationEnabled,
   levelForXp,
   localDayFor,
   xpDeltaForDay,
@@ -17,6 +18,13 @@ test('níveis seguem os limiares congelados', () => {
   assert.equal(levelForXp(700).id, 'casca-grossa')
   assert.equal(levelForXp(1500).id, 'lenda')
   assert.equal(levelForXp(99999).id, 'lenda')
+})
+
+test('flag liga por padrao em producao e aceita false explicito', () => {
+  assert.equal(isDuelGamificationEnabled({ NODE_ENV: 'production' }), true)
+  assert.equal(isDuelGamificationEnabled({ NODE_ENV: 'production', DUEL_GAMIFICATION_ENABLED: 'false' }), false)
+  assert.equal(isDuelGamificationEnabled({ NODE_ENV: 'test' }), false)
+  assert.equal(isDuelGamificationEnabled({ NODE_ENV: 'test', DUEL_GAMIFICATION_ENABLED: 'true' }), true)
 })
 
 test('dia local usa America/Sao_Paulo', () => {

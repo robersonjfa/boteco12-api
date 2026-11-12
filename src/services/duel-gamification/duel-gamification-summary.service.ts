@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma'
-import { levelForXp } from './duel-gamification.rules'
+import { isDuelGamificationEnabled, levelForXp } from './duel-gamification.rules'
 
 const DEFAULT_TITLE = 'title:chegando'
 const DEFAULT_FRAME = 'frame:padrao'
@@ -14,7 +14,7 @@ export async function gameSummariesForUsers(
   userIds: Array<string | null | undefined>
 ): Promise<Map<string, DuelGameSummary>> {
   const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))]
-  if (process.env.DUEL_GAMIFICATION_ENABLED !== 'true' || ids.length === 0) {
+  if (!isDuelGamificationEnabled() || ids.length === 0) {
     return new Map()
   }
 

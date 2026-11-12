@@ -3,7 +3,9 @@ import { prisma } from '../../lib/prisma'
 import { logger } from '../../lib/logger'
 import {
   DAILY_XP_CAP,
+  DEFAULT_PRODUCTION_ACTIVATION,
   DUEL_GAME_RULE_VERSION,
+  isDuelGamificationEnabled,
   isValidMatchResult,
   localDayFor,
   unlockedCosmeticsForXp,
@@ -22,7 +24,7 @@ type ParticipantResult = {
 
 export class ProcessDuelGamificationService {
   static enabled(): boolean {
-    return process.env.DUEL_GAMIFICATION_ENABLED === 'true'
+    return isDuelGamificationEnabled()
   }
 
   static paused(): boolean {
@@ -31,6 +33,7 @@ export class ProcessDuelGamificationService {
 
   static activationCut(): Date | null {
     const raw = process.env.DUEL_GAMIFICATION_ACTIVATED_AT
+      ?? (process.env.NODE_ENV === 'production' ? DEFAULT_PRODUCTION_ACTIVATION : null)
     if (!raw) return null
     const parsed = new Date(raw)
     return Number.isNaN(parsed.getTime()) ? null : parsed

@@ -7,6 +7,7 @@ import {
   DUEL_TITLES,
   levelForXp,
   nextLevelForXp,
+  isDuelGamificationEnabled,
 } from './duel-gamification.rules'
 
 const DEFAULT_TITLE = 'title:chegando'
@@ -17,7 +18,7 @@ const KNOWN_ITEMS = new Set<string>([
 ])
 
 function enabled(): boolean {
-  return process.env.DUEL_GAMIFICATION_ENABLED === 'true'
+  return isDuelGamificationEnabled()
 }
 
 function publicLevel(xp: number) {

@@ -2,6 +2,13 @@ export const DUEL_GAME_RULE_VERSION = 'duel-game-v1'
 export const XP_PER_MINI = 20
 export const DAILY_XP_CAP = 60
 export const DUEL_GAME_TIME_ZONE = 'America/Sao_Paulo'
+export const DEFAULT_PRODUCTION_ACTIVATION = '2026-11-12T00:00:00Z'
+
+export function isDuelGamificationEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.DUEL_GAMIFICATION_ENABLED === 'false') return false
+  if (env.DUEL_GAMIFICATION_ENABLED === 'true') return true
+  return env.NODE_ENV === 'production'
+}
 
 export const DUEL_LEVELS = [
   { id: 'chegando', name: 'Chegando no Boteco', minXp: 0 },
