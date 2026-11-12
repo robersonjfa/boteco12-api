@@ -63,7 +63,7 @@
     "mesa:scores:repair:apply": "npm run build && node scripts/repair-closed-bolao-scores.js --apply",
     "security:live": "node scripts/security-live-check.js",
     "test:monthly-rankings": "node scripts/validate-monthly-rankings.js",
-    "test:minis:postgres": "npm run build && B12_POSTGRES_INTEGRATION=true node --test tests/mini-duels.postgres.test.js tests/mini-http.postgres.test.js tests/duel-gamification.postgres.test.js"
+    "test:minis:postgres": "npm run build && B12_POSTGRES_INTEGRATION=true node --test tests/mini-duels.postgres.test.js tests/mini-http.postgres.test.js tests/duel-gamification.postgres.test.js tests/duel-gamification-events.postgres.test.js"
   },
   "prisma": {
     "seed": "npm run build && node prisma/seed.js"
