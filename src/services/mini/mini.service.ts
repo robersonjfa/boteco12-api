@@ -3,7 +3,7 @@ import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
 import { gameSummariesForUsers } from '../duel-gamification/duel-gamification-summary.service'
 import { recordDuelGameEvent } from '../duel-gamification/duel-gamification-events.service'
-import { localDayFor } from '../duel-gamification/duel-gamification.rules'
+import { isDuelGamificationEnabled, levelForXp, localDayFor } from '../duel-gamification/duel-gamification.rules'
 import { WalletService } from '../wallet/wallet.service'
 import { CalculateTicketScoreService } from '../score/calculate-ticket-score.service'
 import { RankingTiebreakService } from '../ranking/ranking-tiebreak.service'
@@ -183,6 +183,22 @@ export class MiniService {
     const reveal = participant && duel.mini.closeAt.getTime() <= Date.now()
     const predictions = reveal ? await prisma.miniPrediction.findMany({ where: { miniId: duel.miniId, userId: { in: [duel.creatorId, duel.opponentId ?? ''] } }, select: { userId: true, prediction: true } }) : []
     const summaries = await gameSummariesForUsers([duel.creatorId, duel.opponentId, duel.recipientId])
+    let game = null
+    if (isDuelGamificationEnabled()) {
+      const [grant, achievements, profile] = await Promise.all([
+        prisma.duelXpGrant.findUnique({ where: { userId_miniId: { userId, miniId: duel.miniId } } }),
+        prisma.duelAchievement.findMany({ where: { userId, sourceDuelId: duel.id }, select: { code: true } }),
+        prisma.duelGameProfile.findUnique({ where: { userId }, select: { xp: true } }),
+      ])
+      const xp = profile?.xp ?? 0
+      const level = levelForXp(xp)
+      game = {
+        xpDelta: grant?.delta ?? 0,
+        reason: grant?.reason ?? 'PENDING',
+        level: { id: level.id, name: level.name, minXp: level.minXp },
+        achievements: achievements.map(item => item.code),
+      }
+    }
     void recordDuelGameEvent({
       name: 'duel_detail_opened',
       dedupeKey: `duel:detail:${duel.id}:${userId}:${localDayFor(new Date())}`,
@@ -196,6 +212,7 @@ export class MiniService {
       predictions,
       creatorGame: summaries.get(duel.creatorId) ?? null,
       opponentGame: duel.opponentId ? summaries.get(duel.opponentId) ?? null : null,
+      game,
     }
   }
 
