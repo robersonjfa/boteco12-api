@@ -1128,3 +1128,22 @@ model DuelCosmeticUnlock {
   @@unique([userId, itemId])
   @@map("duel_cosmetic_unlocks")
 }
+
+//////////////////////////////////////////////////////
+// DUEL GAME EVENTS (DG-02)
+//////////////////////////////////////////////////////
+
+model DuelGameEvent {
+  id        String   @id @default(uuid())
+  name      String
+  dedupeKey String   @unique
+  userId    String?
+  duelId    String?
+  miniId    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId, createdAt])
+  @@map("duel_game_events")
+}
