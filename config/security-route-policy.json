@@ -1,64 +1,425 @@
 {
   "schemaVersion": 1,
   "routes": [
-    { "file": "src/routes/admin-access.routes.ts", "method": "get", "path": "/admin/context", "auth": "requireAdminAccess", "permission": null },
-    { "file": "src/routes/admin-logs.routes.ts", "method": "get", "path": "/admin/logs", "auth": "authMiddleware", "permission": "AUDIT_READ" },
-    { "file": "src/routes/admin-operational.routes.ts", "method": "get", "path": "/admin/operational/status", "auth": "authMiddleware", "permission": "AUDIT_READ" },
-    { "file": "src/routes/admin-subscriptions.routes.ts", "method": "get", "path": "/admin/subscriptions", "auth": "authMiddleware", "permission": "FINANCE_READ" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "get", "path": "/admin/monetization/wallet/:userId", "auth": "authMiddleware", "permission": "FINANCE_READ" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "get", "path": "/admin/monetization/ledger/:userId", "auth": "authMiddleware", "permission": "FINANCE_READ" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "get", "path": "/admin/monetization/subscriptions/:userId", "auth": "authMiddleware", "permission": "FINANCE_READ" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "post", "path": "/admin/monetization/wallet/:userId/credit", "auth": "authMiddleware", "permission": "FINANCE_EXECUTE" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "post", "path": "/admin/monetization/wallet/:userId/debit", "auth": "authMiddleware", "permission": "FINANCE_EXECUTE" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "get", "path": "/admin/monetization/benefits/:userId", "auth": "authMiddleware", "permission": "FINANCE_READ" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "post", "path": "/admin/monetization/benefits/:userId/free", "auth": "authMiddleware", "permission": "FINANCE_EXECUTE" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "post", "path": "/admin/monetization/benefits/:userId/paid", "auth": "authMiddleware", "permission": "FINANCE_EXECUTE" },
-    { "file": "src/routes/admin-monetization.routes.ts", "method": "post", "path": "/admin/monetization/benefits/:userId/paid/debit", "auth": "authMiddleware", "permission": "FINANCE_EXECUTE" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "get", "path": "/admin/rounds", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "post", "path": "/admin/rounds", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "patch", "path": "/admin/rounds/:roundId", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "post", "path": "/admin/rounds/:roundId/open", "auth": "authMiddleware", "permission": "COMPETITION_EXECUTE" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "post", "path": "/admin/rounds/:roundId/result", "auth": "authMiddleware", "permission": "COMPETITION_EXECUTE" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "post", "path": "/admin/rounds/:roundId/close", "auth": "authMiddleware", "permission": "COMPETITION_EXECUTE" },
-    { "file": "src/routes/admin-round.routes.ts", "method": "post", "path": "/admin/rounds/:roundId/cancel", "auth": "authMiddleware", "permission": "COMPETITION_EXECUTE" },
-    { "file": "src/routes/admin-bolao.routes.ts", "method": "get", "path": "/api/admin/mesas/integrity", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
-    { "file": "src/routes/admin-bolao.routes.ts", "method": "get", "path": "/api/admin/mesas", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
-    { "file": "src/routes/admin-bolao.routes.ts", "method": "get", "path": "/api/admin/boloes", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
-    { "file": "src/routes/admin-bolao.routes.ts", "method": "post", "path": "/api/admin/mesas", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/admin-bolao.routes.ts", "method": "patch", "path": "/api/admin/mesas/:rankingId", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/admin-bolao.routes.ts", "method": "post", "path": "/api/admin/boloes", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users", "auth": "authMiddleware", "permission": "USER_READ" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users/:userId/history", "auth": "authMiddleware", "permission": "AUDIT_READ" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/password-reset", "auth": "authMiddleware", "permission": "USER_PASSWORD_RESET" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "get", "path": "/admin/users/:userId/pii", "auth": "authMiddleware", "permission": "USER_PII_READ" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/admin-roles", "auth": "authMiddleware", "permission": "USER_WRITE" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/block", "auth": "authMiddleware", "permission": "USER_BLOCK" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/unblock", "auth": "authMiddleware", "permission": "USER_UNBLOCK" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/subscription", "auth": "authMiddleware", "permission": "USER_PLAN_WRITE" },
-    { "file": "src/routes/admin-users.routes.ts", "method": "post", "path": "/admin/users/:userId/subscription/cancel", "auth": "authMiddleware", "permission": "USER_PLAN_WRITE" },
-    { "file": "src/routes/team.routes.ts", "method": "get", "path": "/api/admin/teams", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
-    { "file": "src/routes/team.routes.ts", "method": "post", "path": "/api/admin/teams", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/team.routes.ts", "method": "put", "path": "/api/admin/teams/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/team.routes.ts", "method": "delete", "path": "/api/admin/teams/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/art.routes.ts", "method": "get", "path": "/api/admin/arts", "auth": "authMiddleware", "permission": "COMPETITION_READ" },
-    { "file": "src/routes/art.routes.ts", "method": "post", "path": "/api/admin/arts", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/art.routes.ts", "method": "put", "path": "/api/admin/arts/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/art.routes.ts", "method": "delete", "path": "/api/admin/arts/:id", "auth": "authMiddleware", "permission": "COMPETITION_WRITE" },
-    { "file": "src/routes/internal/alerts-jobs.routes.ts", "method": "post", "path": "/jobs/alerts/run", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/score-round", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/close-expired-rankings", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/publish-scheduled-mesas", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/open-round", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/open-scheduled-rounds", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/close-scheduled-rounds", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/recompute-scored-rounds", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/jobs.routes.ts", "method": "post", "path": "/ensure-monthly-rankings", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/subscription-jobs.routes.ts", "method": "post", "path": "/jobs/subscriptions/revalidate", "auth": "internalJobAuth", "permission": null },
-    { "file": "src/routes/internal/webhooks.routes.ts", "method": "post", "path": "/webhooks/mercado-pago", "auth": "verifyMercadoPagoSignature", "permission": null },
-    { "file": "src/routes/internal.routes.ts", "method": "post", "path": "/jobs/generate-ranking-snapshot", "auth": "internalJobAuth", "permission": "JOB_EXECUTE" },
-    {"file": "src/routes/mini.routes.ts", "method": "get", "path": "/admin/minis", "auth": "authMiddleware", "permission": "COMPETITION_READ"},
-    {"file": "src/routes/mini.routes.ts", "method": "post", "path": "/admin/minis", "auth": "authMiddleware", "permission": "COMPETITION_WRITE"},
-    {"file": "src/routes/mini.routes.ts", "method": "post", "path": "/admin/minis/:id/publish", "auth": "authMiddleware", "permission": "COMPETITION_WRITE"},
-    {"file": "src/routes/mini.routes.ts", "method": "post", "path": "/admin/minis/:id/results", "auth": "authMiddleware", "permission": "COMPETITION_EXECUTE"}
+    {
+      "file": "src/routes/admin-access.routes.ts",
+      "method": "get",
+      "path": "/admin/context",
+      "auth": "requireAdminAccess",
+      "permission": null
+    },
+    {
+      "file": "src/routes/admin-logs.routes.ts",
+      "method": "get",
+      "path": "/admin/logs",
+      "auth": "authMiddleware",
+      "permission": "AUDIT_READ"
+    },
+    {
+      "file": "src/routes/admin-operational.routes.ts",
+      "method": "get",
+      "path": "/admin/operational/status",
+      "auth": "authMiddleware",
+      "permission": "AUDIT_READ"
+    },
+    {
+      "file": "src/routes/admin-subscriptions.routes.ts",
+      "method": "get",
+      "path": "/admin/subscriptions",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_READ"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "get",
+      "path": "/admin/monetization/wallet/:userId",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_READ"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "get",
+      "path": "/admin/monetization/ledger/:userId",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_READ"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "get",
+      "path": "/admin/monetization/subscriptions/:userId",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_READ"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "post",
+      "path": "/admin/monetization/wallet/:userId/credit",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "post",
+      "path": "/admin/monetization/wallet/:userId/debit",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "get",
+      "path": "/admin/monetization/benefits/:userId",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_READ"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "post",
+      "path": "/admin/monetization/benefits/:userId/free",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "post",
+      "path": "/admin/monetization/benefits/:userId/paid",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-monetization.routes.ts",
+      "method": "post",
+      "path": "/admin/monetization/benefits/:userId/paid/debit",
+      "auth": "authMiddleware",
+      "permission": "FINANCE_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "get",
+      "path": "/admin/rounds",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "post",
+      "path": "/admin/rounds",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "patch",
+      "path": "/admin/rounds/:roundId",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "post",
+      "path": "/admin/rounds/:roundId/open",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "post",
+      "path": "/admin/rounds/:roundId/result",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "post",
+      "path": "/admin/rounds/:roundId/close",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-round.routes.ts",
+      "method": "post",
+      "path": "/admin/rounds/:roundId/cancel",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_EXECUTE"
+    },
+    {
+      "file": "src/routes/admin-bolao.routes.ts",
+      "method": "get",
+      "path": "/api/admin/mesas/integrity",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/admin-bolao.routes.ts",
+      "method": "get",
+      "path": "/api/admin/mesas",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/admin-bolao.routes.ts",
+      "method": "get",
+      "path": "/api/admin/boloes",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/admin-bolao.routes.ts",
+      "method": "post",
+      "path": "/api/admin/mesas",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/admin-bolao.routes.ts",
+      "method": "patch",
+      "path": "/api/admin/mesas/:rankingId",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/admin-bolao.routes.ts",
+      "method": "post",
+      "path": "/api/admin/boloes",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "get",
+      "path": "/admin/users",
+      "auth": "authMiddleware",
+      "permission": "USER_READ"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "get",
+      "path": "/admin/users/:userId/history",
+      "auth": "authMiddleware",
+      "permission": "AUDIT_READ"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "post",
+      "path": "/admin/users/:userId/password-reset",
+      "auth": "authMiddleware",
+      "permission": "USER_PASSWORD_RESET"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "get",
+      "path": "/admin/users/:userId/pii",
+      "auth": "authMiddleware",
+      "permission": "USER_PII_READ"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "post",
+      "path": "/admin/users/:userId/admin-roles",
+      "auth": "authMiddleware",
+      "permission": "USER_WRITE"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "post",
+      "path": "/admin/users/:userId/block",
+      "auth": "authMiddleware",
+      "permission": "USER_BLOCK"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "post",
+      "path": "/admin/users/:userId/unblock",
+      "auth": "authMiddleware",
+      "permission": "USER_UNBLOCK"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "post",
+      "path": "/admin/users/:userId/subscription",
+      "auth": "authMiddleware",
+      "permission": "USER_PLAN_WRITE"
+    },
+    {
+      "file": "src/routes/admin-users.routes.ts",
+      "method": "post",
+      "path": "/admin/users/:userId/subscription/cancel",
+      "auth": "authMiddleware",
+      "permission": "USER_PLAN_WRITE"
+    },
+    {
+      "file": "src/routes/team.routes.ts",
+      "method": "get",
+      "path": "/api/admin/teams",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/team.routes.ts",
+      "method": "post",
+      "path": "/api/admin/teams",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/team.routes.ts",
+      "method": "put",
+      "path": "/api/admin/teams/:id",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/team.routes.ts",
+      "method": "delete",
+      "path": "/api/admin/teams/:id",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/art.routes.ts",
+      "method": "get",
+      "path": "/api/admin/arts",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/art.routes.ts",
+      "method": "post",
+      "path": "/api/admin/arts",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/art.routes.ts",
+      "method": "put",
+      "path": "/api/admin/arts/:id",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/art.routes.ts",
+      "method": "delete",
+      "path": "/api/admin/arts/:id",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/internal/alerts-jobs.routes.ts",
+      "method": "post",
+      "path": "/jobs/alerts/run",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/score-round",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/close-expired-rankings",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/publish-scheduled-mesas",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/open-round",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/open-scheduled-rounds",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/close-scheduled-rounds",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/recompute-scored-rounds",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/jobs.routes.ts",
+      "method": "post",
+      "path": "/ensure-monthly-rankings",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/subscription-jobs.routes.ts",
+      "method": "post",
+      "path": "/jobs/subscriptions/revalidate",
+      "auth": "internalJobAuth",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal/webhooks.routes.ts",
+      "method": "post",
+      "path": "/webhooks/mercado-pago",
+      "auth": "verifyMercadoPagoSignature",
+      "permission": null
+    },
+    {
+      "file": "src/routes/internal.routes.ts",
+      "method": "post",
+      "path": "/jobs/generate-ranking-snapshot",
+      "auth": "internalJobAuth",
+      "permission": "JOB_EXECUTE"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "get",
+      "path": "/admin/minis",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "post",
+      "path": "/admin/minis",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "post",
+      "path": "/admin/minis/:id/publish",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "post",
+      "path": "/admin/minis/:id/results",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_EXECUTE"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "get",
+      "path": "/admin/duels/gamification/funnel",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    }
   ]
 }
