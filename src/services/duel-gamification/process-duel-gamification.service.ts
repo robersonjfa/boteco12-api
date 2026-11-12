@@ -3,7 +3,9 @@ import { prisma } from '../../lib/prisma'
 import { logger } from '../../lib/logger'
 import {
   DAILY_XP_CAP,
+  DEFAULT_PRODUCTION_ACTIVATION,
   DUEL_GAME_RULE_VERSION,
+  isDuelGamificationEnabled,
   isValidMatchResult,
   localDayFor,
   unlockedCosmeticsForXp,
@@ -22,11 +24,24 @@ type ParticipantResult = {
 
 export class ProcessDuelGamificationService {
   static enabled(): boolean {
-    return process.env.DUEL_GAMIFICATION_ENABLED === 'true'
+    return isDuelGamificationEnabled()
   }
 
-  static async execute(): Promise<{ enabled: boolean; processed: number; failed: number }> {
-    if (!this.enabled()) return { enabled: false, processed: 0, failed: 0 }
+  static paused(): boolean {
+    return process.env.DUEL_GAMIFICATION_PAUSED === 'true'
+  }
+
+  static activationCut(): Date | null {
+    const raw = process.env.DUEL_GAMIFICATION_ACTIVATED_AT
+      ?? (process.env.NODE_ENV === 'production' ? DEFAULT_PRODUCTION_ACTIVATION : null)
+    if (!raw) return null
+    const parsed = new Date(raw)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  static async execute(): Promise<{ enabled: boolean; paused: boolean; processed: number; failed: number }> {
+    if (!this.enabled()) return { enabled: false, paused: false, processed: 0, failed: 0 }
+    if (this.paused()) return { enabled: true, paused: true, processed: 0, failed: 0 }
 
     const pending = await prisma.miniDuel.findMany({
       where: { status: 'SETTLED', settledAt: { not: null }, gameReceipt: null },
@@ -49,7 +64,7 @@ export class ProcessDuelGamificationService {
         )
       }
     }
-    return { enabled: true, processed, failed }
+    return { enabled: true, paused: false, processed, failed }
   }
 
   private static async processDuel(duelId: string): Promise<void> {
@@ -87,6 +102,37 @@ export class ProcessDuelGamificationService {
     const participants = [duel.creatorId, duel.opponentId].filter(
       (userId): userId is string => Boolean(userId)
     )
+
+    const cut = this.activationCut()
+    if (cut && duel.mini.closeAt.getTime() < cut.getTime()) {
+      const results: ParticipantResult[] = []
+      for (const userId of participants) {
+        const granted = await tx.duelXpGrant.findUnique({
+          where: { userId_miniId: { userId, miniId: duel.miniId } },
+        })
+        if (!granted) {
+          await tx.duelXpGrant.create({
+            data: {
+              userId,
+              miniId: duel.miniId,
+              duelId: duel.id,
+              delta: 0,
+              reason: 'BEFORE_ENROLLMENT',
+              localDay,
+            },
+          })
+        }
+        results.push({ userId, delta: 0, reason: 'BEFORE_ENROLLMENT', localDay })
+      }
+      await tx.duelGameReceipt.create({
+        data: {
+          duelId: duel.id,
+          ruleVersion: DUEL_GAME_RULE_VERSION,
+          outcome: { participants: results, reason: 'BEFORE_ENROLLMENT' },
+        },
+      })
+      return
+    }
 
     const results: ParticipantResult[] = []
     for (const userId of participants) {

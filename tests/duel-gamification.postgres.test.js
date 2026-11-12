@@ -74,9 +74,15 @@ async function xpOf(userId) {
 
 test('gamificação: XP único, teto diário, void e replay', async t => {
   const previous = process.env.DUEL_GAMIFICATION_ENABLED
+  const previousCut = process.env.DUEL_GAMIFICATION_ACTIVATED_AT
+  const previousPaused = process.env.DUEL_GAMIFICATION_PAUSED
   process.env.DUEL_GAMIFICATION_ENABLED = 'true'
   t.after(async () => {
     process.env.DUEL_GAMIFICATION_ENABLED = previous
+    if (previousCut === undefined) delete process.env.DUEL_GAMIFICATION_ACTIVATED_AT
+    else process.env.DUEL_GAMIFICATION_ACTIVATED_AT = previousCut
+    if (previousPaused === undefined) delete process.env.DUEL_GAMIFICATION_PAUSED
+    else process.env.DUEL_GAMIFICATION_PAUSED = previousPaused
     await prisma.duelGameReceipt.deleteMany({ where: { duelId: { in: duels } } })
     await prisma.duelXpGrant.deleteMany({ where: { userId: { in: users } } })
     await prisma.duelXpDay.deleteMany({ where: { userId: { in: users } } })
@@ -144,4 +150,24 @@ test('gamificação: XP único, teto diário, void e replay', async t => {
   await ProcessDuelGamificationService.execute()
   assert.equal(await xpOf(a.id), 60)
   assert.equal(await prisma.duelXpGrant.count({ where: { userId: a.id } }), grantCount)
+
+  process.env.DUEL_GAMIFICATION_ACTIVATED_AT = '2026-04-01T00:00:00Z'
+  const lateMini = await mini()
+  await duel(lateMini.id, a.id, b.id, a.id)
+  await ProcessDuelGamificationService.execute()
+  const cutGrant = await prisma.duelXpGrant.findFirst({
+    where: { userId: a.id, miniId: lateMini.id },
+  })
+  assert.equal(cutGrant.reason, 'BEFORE_ENROLLMENT')
+  assert.equal(cutGrant.delta, 0)
+  assert.equal(await xpOf(a.id), 60)
+  delete process.env.DUEL_GAMIFICATION_ACTIVATED_AT
+
+  process.env.DUEL_GAMIFICATION_PAUSED = 'true'
+  const pausedMini = await mini()
+  const pausedDuel = await duel(pausedMini.id, a.id, b.id, a.id)
+  const pausedResult = await ProcessDuelGamificationService.execute()
+  assert.equal(pausedResult.paused, true)
+  assert.equal(await prisma.duelGameReceipt.count({ where: { duelId: pausedDuel.id } }), 0)
+  delete process.env.DUEL_GAMIFICATION_PAUSED
 })
