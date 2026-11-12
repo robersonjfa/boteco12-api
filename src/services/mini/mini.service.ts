@@ -2,6 +2,8 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 import { AppError } from '../../errors/AppError'
 import { gameSummariesForUsers } from '../duel-gamification/duel-gamification-summary.service'
+import { recordDuelGameEvent } from '../duel-gamification/duel-gamification-events.service'
+import { localDayFor } from '../duel-gamification/duel-gamification.rules'
 import { WalletService } from '../wallet/wallet.service'
 import { CalculateTicketScoreService } from '../score/calculate-ticket-score.service'
 import { RankingTiebreakService } from '../ranking/ranking-tiebreak.service'
@@ -77,7 +79,7 @@ export class MiniService {
 
   static async createDuel(miniId: string, creatorId: string, amount: number, recipientId?: string, requestKey?: string) {
     if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 1_073_741_823) throw AppError.badRequest('Informe um valor positivo de tampinhas')
-    return prisma.$transaction(async tx => {
+    const duel = await prisma.$transaction(async tx => {
       const mini = await lockMini(tx, miniId)
       if (requestKey) {
         const existing = await tx.miniDuel.findUnique({ where: { requestKey } })
@@ -97,12 +99,21 @@ export class MiniService {
       await WalletService.debit(creatorId, amount, `Duelo ${duel.id}: reserva`, tx)
       return duel
     })
+    await recordDuelGameEvent({
+      name: 'duel_created',
+      dedupeKey: `duel:created:${duel.id}`,
+      userId: creatorId,
+      duelId: duel.id,
+      miniId,
+      metadata: { amount, hasRecipient: Boolean(recipientId) },
+    })
+    return duel
   }
 
   static async accept(id: string, userId: string) {
     const ref = await prisma.miniDuel.findUnique({ where: { id } })
     if (!ref) throw AppError.notFound('Duelo')
-    return prisma.$transaction(async tx => {
+    const duel = await prisma.$transaction(async tx => {
       const mini = await lockMini(tx, ref.miniId)
       requireOpen(mini)
       const duel = await tx.miniDuel.findUniqueOrThrow({ where: { id } })
@@ -113,6 +124,15 @@ export class MiniService {
       await WalletService.debit(userId, duel.amount, `Duelo ${id}: reserva`, tx)
       return tx.miniDuel.update({ where: { id }, data: { opponentId: userId, status: 'CONFIRMED' } })
     })
+    await recordDuelGameEvent({
+      name: 'duel_accepted',
+      dedupeKey: `duel:accepted:${duel.id}`,
+      userId,
+      duelId: duel.id,
+      miniId: duel.miniId,
+      metadata: { amount: duel.amount },
+    })
+    return duel
   }
 
   static async cancel(id: string, userId: string) {
@@ -163,6 +183,14 @@ export class MiniService {
     const reveal = participant && duel.mini.closeAt.getTime() <= Date.now()
     const predictions = reveal ? await prisma.miniPrediction.findMany({ where: { miniId: duel.miniId, userId: { in: [duel.creatorId, duel.opponentId ?? ''] } }, select: { userId: true, prediction: true } }) : []
     const summaries = await gameSummariesForUsers([duel.creatorId, duel.opponentId, duel.recipientId])
+    void recordDuelGameEvent({
+      name: 'duel_detail_opened',
+      dedupeKey: `duel:detail:${duel.id}:${userId}:${localDayFor(new Date())}`,
+      userId,
+      duelId: duel.id,
+      miniId: duel.miniId,
+      metadata: { participant },
+    })
     return {
       ...duel,
       predictions,
@@ -189,12 +217,14 @@ export class MiniService {
   static async reconcile(miniId?: string) {
     const duels = await prisma.miniDuel.findMany({ where: { ...(miniId ? { miniId } : {}), OR: [{ status: 'WAITING', mini: { closeAt: { lte: new Date() } } }, { status: 'CONFIRMED', mini: { confirmedAt: { not: null } } }] }, select: { id: true, miniId: true }, take: 500, orderBy: { createdAt: 'asc' } })
     for (const ref of duels) {
+      const outcomes: Array<{ kind: 'settled' | 'expired'; id: string; amount: number }> = []
       await prisma.$transaction(async tx => {
         const mini = await lockMini(tx, ref.miniId)
         const duel = await tx.miniDuel.findUniqueOrThrow({ where: { id: ref.id } })
         if (duel.status === 'WAITING' && mini.closeAt.getTime() <= Date.now()) {
           await credit(tx, duel.id, duel.creatorId, duel.amount, 'devolução')
           await tx.miniDuel.update({ where: { id: duel.id }, data: { status: 'EXPIRED', settledAt: new Date() } })
+          outcomes.push({ kind: 'expired', id: duel.id, amount: duel.amount })
         } else if (duel.status === 'CONFIRMED' && mini.confirmedAt && duel.opponentId) {
           const users = await tx.user.findMany({ where: { id: { in: [duel.creatorId, duel.opponentId] } }, select: { id: true, createdAt: true } })
           const predictions = await tx.miniPrediction.findMany({ where: { miniId: mini.id, userId: { in: users.map(u => u.id) } } })
@@ -204,8 +234,18 @@ export class MiniService {
           if (winnerId) await credit(tx, duel.id, winnerId, duel.amount * 2, 'prêmio')
           else for (const id of [duel.creatorId, duel.opponentId].sort()) await credit(tx, duel.id, id, duel.amount, 'devolução')
           await tx.miniDuel.update({ where: { id: duel.id }, data: { status: 'SETTLED', winnerId, settledAt: new Date(), settlement: { metrics: metrics.map(m => ({ ...m, userCreatedAt: m.userCreatedAt.toISOString() })), reason: tied ? 'Empate em todos os critérios' : metrics[0].scoreRanking !== metrics[1].scoreRanking ? 'Maior pontuação' : 'Critérios oficiais: Super Duplas, Duplas e cadastro mais antigo', ruleVersion: 'simple-v1/tiebreak-v2' } } })
+          outcomes.push({ kind: 'settled', id: duel.id, amount: duel.amount })
         }
       }, { timeout: 15000 })
+      for (const outcome of outcomes) {
+        await recordDuelGameEvent({
+          name: outcome.kind === 'settled' ? 'duel_settled' : 'duel_expired',
+          dedupeKey: `duel:${outcome.kind === 'settled' ? 'settled' : 'expired'}:${outcome.id}`,
+          duelId: outcome.id,
+          miniId: ref.miniId,
+          metadata: { amount: outcome.amount },
+        })
+      }
     }
     return { processed: duels.length }
   }

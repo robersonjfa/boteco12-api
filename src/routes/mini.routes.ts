@@ -37,6 +37,15 @@ router.patch('/duels/gamification/me/privacy', authMiddleware, handle(req => {
 router.get('/duels/:id', authMiddleware, handle(req => MiniService.detail(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/accept', authMiddleware, handle(req => MiniService.accept(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/cancel', authMiddleware, handle(req => MiniService.cancel(id.parse(req.params.id), req.user!.id)))
+router.get('/admin/duels/gamification/funnel', authMiddleware, authorize('COMPETITION_READ'), handle(async () => {
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const rows = await prisma.duelGameEvent.groupBy({
+    by: ['name'],
+    where: { createdAt: { gte: since } },
+    _count: { _all: true },
+  })
+  return { since, events: rows.map(row => ({ name: row.name, count: row._count._all })) }
+}))
 router.get('/admin/minis', authMiddleware, authorize('COMPETITION_READ'), handle(req => MiniService.list(req.user!.id, true, page(req.query.page))))
 router.post('/admin/minis', authMiddleware, authorize('COMPETITION_WRITE', { audit: true, entity: 'MINI' }), handle(req => {
   const body = z.object({ name: z.string().trim().min(3).max(100), matches: z.array(z.object({ homeTeam: z.string().trim().min(1).max(100), awayTeam: z.string().trim().min(1).max(100), matchTime: z.coerce.date() }).strict()).min(2).max(3) }).strict().parse(req.body)
