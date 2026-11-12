@@ -134,6 +134,11 @@ export class ProcessDuelGamificationService {
       return
     }
 
+    const enrollments = await tx.duelGameEnrollment.findMany({
+      where: { userId: { in: participants } },
+    })
+    const enrollmentByUser = new Map(enrollments.map(item => [item.userId, item]))
+
     const results: ParticipantResult[] = []
     for (const userId of participants) {
       const granted = await tx.duelXpGrant.findUnique({
@@ -141,6 +146,25 @@ export class ProcessDuelGamificationService {
       })
       if (granted) {
         results.push({ userId, delta: granted.delta, reason: 'ALREADY_REWARDED', localDay })
+        continue
+      }
+      const enrollment = enrollmentByUser.get(userId)
+      const outsideEnrollment = enrollment && (
+        enrollment.startedAt.getTime() > duel.mini.closeAt.getTime() ||
+        (enrollment.endedAt != null && enrollment.endedAt.getTime() <= duel.mini.closeAt.getTime())
+      )
+      if (outsideEnrollment) {
+        await tx.duelXpGrant.create({
+          data: {
+            userId,
+            miniId: duel.miniId,
+            duelId: duel.id,
+            delta: 0,
+            reason: 'BEFORE_ENROLLMENT',
+            localDay,
+          },
+        })
+        results.push({ userId, delta: 0, reason: 'BEFORE_ENROLLMENT', localDay })
         continue
       }
       if (!hasValidResult) {

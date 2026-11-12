@@ -89,6 +89,7 @@ test('gamificação: XP único, teto diário, void e replay', async t => {
     await prisma.duelAchievement.deleteMany({ where: { userId: { in: users } } })
     await prisma.duelCosmeticUnlock.deleteMany({ where: { userId: { in: users } } })
     await prisma.duelGameProfile.deleteMany({ where: { userId: { in: users } } })
+    await prisma.duelGameEnrollment.deleteMany({ where: { userId: { in: users } } })
     await prisma.miniDuel.deleteMany({ where: { id: { in: duels } } })
     await prisma.miniPrediction.deleteMany({ where: { miniId: { in: minis } } })
     await prisma.miniMatch.deleteMany({ where: { miniId: { in: minis } } })
@@ -170,4 +171,20 @@ test('gamificação: XP único, teto diário, void e replay', async t => {
   assert.equal(pausedResult.paused, true)
   assert.equal(await prisma.duelGameReceipt.count({ where: { duelId: pausedDuel.id } }), 0)
   delete process.env.DUEL_GAMIFICATION_PAUSED
+
+  await prisma.duelGameEnrollment.create({
+    data: {
+      userId: a.id,
+      startedAt: new Date('2026-01-01T00:00:00Z'),
+      endedAt: new Date('2026-02-01T00:00:00Z'),
+    },
+  })
+  const enrolledMini = await mini()
+  await duel(enrolledMini.id, a.id, b.id, a.id)
+  await ProcessDuelGamificationService.execute()
+  const enrolledGrant = await prisma.duelXpGrant.findFirst({
+    where: { userId: a.id, miniId: enrolledMini.id },
+  })
+  assert.equal(enrolledGrant.reason, 'BEFORE_ENROLLMENT')
+  assert.equal(enrolledGrant.delta, 0)
 })

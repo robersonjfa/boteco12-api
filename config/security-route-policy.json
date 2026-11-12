@@ -420,6 +420,20 @@
       "path": "/admin/duels/gamification/funnel",
       "auth": "authMiddleware",
       "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "get",
+      "path": "/admin/duels/gamification/health",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_READ"
+    },
+    {
+      "file": "src/routes/mini.routes.ts",
+      "method": "patch",
+      "path": "/admin/duels/gamification/enrollments/:id",
+      "auth": "authMiddleware",
+      "permission": "COMPETITION_WRITE"
     }
   ]
 }

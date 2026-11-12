@@ -57,10 +57,11 @@ export class DuelGamificationProfileService {
   static async me(userId: string) {
     if (!enabled()) return { enabled: false }
 
-    const [profile, achievements, unlocks] = await Promise.all([
+    const [profile, achievements, unlocks, enrollment] = await Promise.all([
       prisma.duelGameProfile.findUnique({ where: { userId } }),
       prisma.duelAchievement.findMany({ where: { userId }, orderBy: { earnedAt: 'asc' } }),
       prisma.duelCosmeticUnlock.findMany({ where: { userId } }),
+      prisma.duelGameEnrollment.findUnique({ where: { userId } }),
     ])
     const xp = profile?.xp ?? 0
     const owned = new Set(unlocks.map(item => item.itemId))
@@ -72,6 +73,7 @@ export class DuelGamificationProfileService {
       titles: DUEL_TITLES.map(item => ({ ...item, owned: owned.has(item.id) })),
       frames: DUEL_FRAMES.map(item => ({ ...item, owned: owned.has(item.id) })),
       achievements: achievements.map(item => ({ code: item.code, earnedAt: item.earnedAt })),
+      enrollment: enrollment ? { startedAt: enrollment.startedAt, endedAt: enrollment.endedAt } : null,
       stats: await statsFor(userId),
       equipment: {
         titleId: profile?.titleId ?? DEFAULT_TITLE,
@@ -153,6 +155,42 @@ export class DuelGamificationProfileService {
       },
     })
     return this.me(userId)
+  }
+
+  static async setEnrollment(userId: string, enrolled: boolean) {
+    if (!enabled()) return { enabled: false }
+    if (enrolled) {
+      await prisma.duelGameEnrollment.upsert({
+        where: { userId },
+        create: { userId, startedAt: new Date(), endedAt: null },
+        update: { startedAt: new Date(), endedAt: null },
+      })
+    } else {
+      const now = new Date()
+      await prisma.duelGameEnrollment.upsert({
+        where: { userId },
+        create: { userId, startedAt: now, endedAt: now },
+        update: { endedAt: now },
+      })
+    }
+    return this.me(userId)
+  }
+
+  static async diagnostics() {
+    const [pending, oldest, grants] = await Promise.all([
+      prisma.miniDuel.count({ where: { status: 'SETTLED', gameReceipt: null } }),
+      prisma.miniDuel.findFirst({
+        where: { status: 'SETTLED', gameReceipt: null },
+        orderBy: { settledAt: 'asc' },
+        select: { settledAt: true },
+      }),
+      prisma.duelXpGrant.groupBy({ by: ['reason'], _count: { _all: true } }),
+    ])
+    return {
+      pending,
+      oldestSettledAt: oldest?.settledAt ?? null,
+      grants: grants.map(item => ({ reason: item.reason, count: item._count._all })),
+    }
   }
 
   static async updatePrivacy(userId: string, visibility: 'PUBLIC' | 'HIDDEN') {
