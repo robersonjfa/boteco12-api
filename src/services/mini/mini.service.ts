@@ -140,7 +140,10 @@ export class MiniService {
   }
 
   static async detail(id: string, userId: string) {
-    const duel = await prisma.miniDuel.findUnique({ where: { id }, include: duelInclude })
+    const duel = await prisma.miniDuel.findUnique({ where: { id }, include: {
+      ...duelInclude,
+      mini: { include: { ...miniInclude, predictions: { where: { userId }, select: { prediction: true } } } },
+    } })
     if (!duel) throw AppError.notFound('Duelo')
     const participant = duel.creatorId === userId || duel.opponentId === userId || duel.recipientId === userId
     if (!participant && duel.recipientId) throw AppError.notFound('Duelo')
