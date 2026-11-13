@@ -1024,6 +1024,7 @@ model MiniPrediction {
 model MiniDuel {
   id           String           @id @default(uuid())
   requestKey   String           @unique @default(uuid())
+  title        String?
   miniId       String
   creatorId    String
   recipientId  String?

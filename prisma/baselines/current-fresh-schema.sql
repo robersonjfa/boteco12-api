@@ -606,6 +606,7 @@ CREATE TABLE "mini_predictions" (
 CREATE TABLE "mini_duels" (
     "id" TEXT NOT NULL,
     "requestKey" TEXT NOT NULL,
+    "title" TEXT,
     "miniId" TEXT NOT NULL,
     "creatorId" TEXT NOT NULL,
     "recipientId" TEXT,
