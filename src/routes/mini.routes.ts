@@ -20,8 +20,8 @@ router.get('/minis/opponents', authMiddleware, handle(async req => {
 }))
 router.post('/minis/:id/predictions', authMiddleware, handle(req => MiniService.savePrediction(id.parse(req.params.id), req.user!.id, z.object({ picks: z.array(z.enum(['1', 'X', '2'])).min(2).max(3) }).strict().parse(req.body).picks), 201))
 router.post('/minis/:id/duels', authMiddleware, handle(req => {
-  const body = z.object({ amount: z.number().int().positive().max(1073741823), recipientId: id.optional(), requestKey: id }).strict().parse(req.body)
-  return MiniService.createDuel(id.parse(req.params.id), req.user!.id, body.amount, body.recipientId, body.requestKey)
+  const body = z.object({ amount: z.number().int().positive().max(1073741823), recipientId: id.optional(), requestKey: id, title: z.string().trim().min(3).max(60).optional() }).strict().parse(req.body)
+  return MiniService.createDuel(id.parse(req.params.id), req.user!.id, body.amount, body.recipientId, body.requestKey, body.title)
 }, 201))
 router.get('/duels', authMiddleware, handle(req => MiniService.duels(req.user!.id, z.enum(['mine', 'public']).default('mine').parse(req.query.mode), page(req.query.page))))
 router.get('/duels/gamification/me', authMiddleware, handle(req => DuelGamificationProfileService.me(req.user!.id)))
@@ -36,6 +36,7 @@ router.patch('/duels/gamification/me/privacy', authMiddleware, handle(req => {
 }))
 router.get('/duels/:id', authMiddleware, handle(req => MiniService.detail(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/accept', authMiddleware, handle(req => MiniService.accept(id.parse(req.params.id), req.user!.id)))
+router.post('/duels/:id/decline', authMiddleware, handle(req => MiniService.decline(id.parse(req.params.id), req.user!.id)))
 router.post('/duels/:id/cancel', authMiddleware, handle(req => MiniService.cancel(id.parse(req.params.id), req.user!.id)))
 router.get('/admin/duels/gamification/health', authMiddleware, authorize('COMPETITION_READ'), handle(() => DuelGamificationProfileService.diagnostics()))
 router.patch('/admin/duels/gamification/enrollments/:id', authMiddleware, authorize('COMPETITION_WRITE', { audit: true, entity: 'DUEL_GAME_ENROLLMENT' }), handle(req => {
