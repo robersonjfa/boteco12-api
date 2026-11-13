@@ -77,7 +77,7 @@ export class MiniService {
     })
   }
 
-  static async createDuel(miniId: string, creatorId: string, amount: number, recipientId?: string, requestKey?: string) {
+  static async createDuel(miniId: string, creatorId: string, amount: number, recipientId?: string, requestKey?: string, title?: string) {
     if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 1_073_741_823) throw AppError.badRequest('Informe um valor positivo de tampinhas')
     const duel = await prisma.$transaction(async tx => {
       const mini = await lockMini(tx, miniId)
@@ -95,7 +95,7 @@ export class MiniService {
         const recipient = await tx.user.findFirst({ where: { id: recipientId, adminBlockedAt: null } })
         if (!recipient) throw AppError.notFound('Adversário')
       }
-      const duel = await tx.miniDuel.create({ data: { miniId, creatorId, recipientId, amount, ...(requestKey ? { requestKey } : {}) } })
+      const duel = await tx.miniDuel.create({ data: { miniId, creatorId, recipientId, amount, ...(title ? { title } : {}), ...(requestKey ? { requestKey } : {}) } })
       await WalletService.debit(creatorId, amount, `Duelo ${duel.id}: reserva`, tx)
       return duel
     })
@@ -135,6 +135,20 @@ export class MiniService {
     return duel
   }
 
+  static async decline(id: string, userId: string) {
+    const duel = await prisma.miniDuel.findUnique({ where: { id } })
+    if (!duel) throw AppError.notFound('Duelo')
+    if (duel.recipientId) throw AppError.forbidden('Apenas desafios públicos podem ser recusados')
+    if (duel.creatorId === userId) throw AppError.badRequest('Você não pode recusar o próprio desafio')
+    if (duel.status !== 'WAITING') throw AppError.conflict('Duelo já aceito ou encerrado')
+    await prisma.duelDecline.upsert({
+      where: { duelId_userId: { duelId: id, userId } },
+      create: { duelId: id, userId },
+      update: {},
+    })
+    return { ok: true }
+  }
+
   static async cancel(id: string, userId: string) {
     const ref = await prisma.miniDuel.findUnique({ where: { id } })
     if (!ref) throw AppError.notFound('Duelo')
@@ -149,12 +163,20 @@ export class MiniService {
     })
   }
 
-  static async duels(userId: string, mode: 'mine' | 'public', page: number) {
+  static async duels(userId: string, mode: 'mine' | 'public' | 'finished', page: number) {
     const where: Prisma.MiniDuelWhereInput = mode === 'mine'
       ? { OR: [{ creatorId: userId }, { opponentId: userId }, { recipientId: userId }] }
-      : { status: 'WAITING', recipientId: null, creatorId: { not: userId }, mini: { status: 'OPEN', closeAt: { gt: new Date() } } }
+      : mode === 'finished'
+        ? { status: { in: ['SETTLED', 'CANCELLED', 'EXPIRED'] }, recipientId: null }
+        : {
+            status: 'WAITING',
+            recipientId: null,
+            creatorId: { not: userId },
+            mini: { status: 'OPEN', closeAt: { gt: new Date() } },
+            declines: { none: { userId } },
+          }
     const [duels, total] = await Promise.all([
-      prisma.miniDuel.findMany({ where, include: duelInclude, orderBy: { createdAt: 'desc' }, take: 20, skip: (page - 1) * 20 }),
+      prisma.miniDuel.findMany({ where, include: duelInclude, orderBy: mode === 'finished' ? { settledAt: 'desc' } : { createdAt: 'desc' }, take: 20, skip: (page - 1) * 20 }),
       prisma.miniDuel.count({ where }),
     ])
     const summaries = await gameSummariesForUsers(
