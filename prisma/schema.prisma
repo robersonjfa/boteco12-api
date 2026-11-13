@@ -225,6 +225,7 @@ model User {
   benefitInventory UserBenefitInventory[]
 
   passwordResetTokens PasswordResetToken[]
+  duelDeclines        DuelDecline[]
 
   duelGameProfile     DuelGameProfile?
   duelXpGrants        DuelXpGrant[]
@@ -1040,6 +1041,7 @@ model MiniDuel {
   winner       User?            @relation("MiniDuelWinner", fields: [winnerId], references: [id], onDelete: Restrict)
   gameReceipt  DuelGameReceipt?
   duelXpGrants DuelXpGrant[]
+  duelDeclines DuelDecline[]
 
   @@index([status, miniId])
   @@index([creatorId, createdAt])
@@ -1164,4 +1166,21 @@ model DuelGameEnrollment {
 
   @@index([endedAt])
   @@map("duel_game_enrollments")
+}
+
+//////////////////////////////////////////////////////
+// DUEL DECLINES
+//////////////////////////////////////////////////////
+
+model DuelDecline {
+  id        String   @id @default(uuid())
+  duelId    String
+  userId    String
+  createdAt DateTime @default(now())
+  duel      MiniDuel @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([duelId, userId])
+  @@index([userId, createdAt])
+  @@map("duel_declines")
 }
