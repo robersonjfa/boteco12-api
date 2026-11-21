@@ -15,9 +15,6 @@ permissions:
 
 env:
   NODE_VERSION: '22'
-  EASYPANEL_PROJECT: f12-prd
-  EASYPANEL_SERVICE: api
-  EASYPANEL_WORKER_SERVICE: worker-managed
   API_HEALTH_URL: ${{ vars.API_HEALTH_URL || 'https://api.boteco12.com/health' }}
 
 jobs:
@@ -180,93 +177,35 @@ jobs:
           RELEASE_VERSION="$(node scripts/release-fingerprint.js)"
           printf 'RELEASE_VERSION=%s\n' "$RELEASE_VERSION" >> "$GITHUB_ENV"
 
-      - name: Trigger EasyPanel API and worker deploys
+      - name: Trigger EasyPanel worker deploy
         env:
-          EASYPANEL_URL: ${{ secrets.EASYPANEL_URL }}
-          EASYPANEL_EMAIL: ${{ secrets.EASYPANEL_EMAIL }}
-          EASYPANEL_PASSWORD: ${{ secrets.EASYPANEL_PASSWORD }}
+          EASYPANEL_WORKER_DEPLOY_HOOK: ${{ secrets.EASYPANEL_WORKER_DEPLOY_HOOK }}
         run: |
           set -euo pipefail
-          node <<'NODE'
-          const required = ['EASYPANEL_URL', 'EASYPANEL_EMAIL', 'EASYPANEL_PASSWORD']
-          for (const name of required) {
-            if (!process.env[name]) throw new Error(`${name} is required`)
-          }
-
-          const base = process.env.EASYPANEL_URL.replace(/\/$/, '')
-
-          async function rpc(path, json, token) {
-            const response = await fetch(`${base}${path}`, {
-              method: 'POST',
-              headers: {
-                'content-type': 'application/json',
-                ...(token ? { authorization: `Bearer ${token}` } : {}),
-              },
-              body: JSON.stringify({ json }),
-            })
-
-            const text = await response.text()
-            let body
-            try {
-              body = text ? JSON.parse(text) : {}
-            } catch {
-              body = { raw: text }
-            }
-
-            if (!response.ok) {
-              throw new Error(`RPC ${path} failed with ${response.status}: ${text}`)
-            }
-
-            if (body?.error) {
-              const message = body.error?.message || 'unknown application error'
-              throw new Error(`RPC ${path} was rejected: ${message}`)
-            }
-
-            return body
-          }
-
-          const login = await rpc('/api/rpc/auth/login', {
-            email: process.env.EASYPANEL_EMAIL,
-            password: process.env.EASYPANEL_PASSWORD,
-            rememberMe: false,
-          })
-
-          const token = login?.json?.token
-          if (!token) throw new Error('EasyPanel login did not return a token')
-
-          const inventory = await rpc(
-            '/api/rpc/projects/listProjectsAndServices',
-            {},
-            token
-          )
-          const services = Object.entries(inventory?.json || {}).flatMap(
-            ([collection, items]) => Array.isArray(items)
-              ? items.map(item => ({ ...item, collection }))
-              : []
-          )
-
-          for (const serviceName of [
-            process.env.EASYPANEL_SERVICE || 'api',
-            process.env.EASYPANEL_WORKER_SERVICE || 'worker-managed',
-          ]) {
-            const service = services.find(item =>
-              item.projectName === (process.env.EASYPANEL_PROJECT || 'f12-prd') &&
-              item.name === serviceName
-            )
-            if (!service) throw new Error(`EasyPanel service ${serviceName} was not found`)
-
-            const serviceDescriptor = `${service.type || ''} ${service.collection || ''}`
-            const isCompose = serviceDescriptor.toLowerCase().includes('compose')
-            const serviceKind = isCompose ? 'compose' : 'app'
-            await rpc(`/api/rpc/services/${serviceKind}/deployService`, {
-              projectName: process.env.EASYPANEL_PROJECT || 'f12-prd',
-              serviceName,
-              ...(isCompose ? { forceRebuild: true } : {}),
-            }, token)
-            console.log(`EasyPanel deploy requested for ${serviceName} (${serviceKind}).`)
-          }
-
-          NODE
+          if [ -z "${EASYPANEL_WORKER_DEPLOY_HOOK:-}" ]; then
+            echo "EASYPANEL_WORKER_DEPLOY_HOOK is required" >&2
+            exit 1
+          fi
+          # Never print the webhook URL/token. The API is deployed by the
+          # existing GitHub → EasyPanel push webhook, not by this job.
+          set +e
+          HTTP_CODE="$(curl -sS -o /tmp/worker-hook-body -w "%{http_code}" \
+            --max-time 30 -X POST "$EASYPANEL_WORKER_DEPLOY_HOOK" 2>/tmp/worker-hook-err)"
+          CURL_STATUS=$?
+          set -e
+          if [ "$CURL_STATUS" -ne 0 ] || [ -z "$HTTP_CODE" ]; then
+            echo "Worker deploy webhook request failed." >&2
+            exit 1
+          fi
+          case "$HTTP_CODE" in
+            2??)
+              echo "EasyPanel worker deploy requested (HTTP $HTTP_CODE)."
+              ;;
+            *)
+              echo "Worker deploy webhook returned HTTP $HTTP_CODE." >&2
+              exit 1
+              ;;
+          esac
 
       - name: Wait for healthy API
         run: |
