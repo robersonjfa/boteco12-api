@@ -23,7 +23,7 @@ router.post('/minis/:id/duels', authMiddleware, handle(req => {
   const body = z.object({ amount: z.number().int().positive().max(1073741823), recipientId: id.optional(), requestKey: id, title: z.string().trim().min(3).max(60).optional() }).strict().parse(req.body)
   return MiniService.createDuel(id.parse(req.params.id), req.user!.id, body.amount, body.recipientId, body.requestKey, body.title)
 }, 201))
-router.get('/duels', authMiddleware, handle(req => MiniService.duels(req.user!.id, z.enum(['mine', 'public']).default('mine').parse(req.query.mode), page(req.query.page))))
+router.get('/duels', authMiddleware, handle(req => MiniService.duels(req.user!.id, z.enum(['mine', 'public', 'finished']).default('mine').parse(req.query.mode), page(req.query.page))))
 router.get('/duels/gamification/me', authMiddleware, handle(req => DuelGamificationProfileService.me(req.user!.id)))
 router.get('/duels/gamification/players/:id', authMiddleware, handle(req => DuelGamificationProfileService.player(req.user!.id, id.parse(req.params.id))))
 router.patch('/duels/gamification/me/equipment', authMiddleware, handle(req => {
