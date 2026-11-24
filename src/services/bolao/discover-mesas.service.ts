@@ -81,29 +81,10 @@ export function mesaRegistrationState(mesa: {
   return { state: 'OPEN', spotsRemaining }
 }
 
-function accessState(input: {
-  isOwner: boolean
-  joined: boolean
-  eligibility: 'ALL' | 'SUBSCRIBERS_ONLY' | 'FREE_ONLY' | null
-  isPro: boolean
-  registrationState: RegistrationState
-  category: MesaCategory
-  accessCost: number
-  balance: number
-}): AccessState {
-  if (input.isOwner) return 'OWNER'
-  if (input.joined) return 'ALREADY_JOINED'
-  if (input.eligibility === 'SUBSCRIBERS_ONLY' && !input.isPro) return 'PLAN_REQUIRED'
-  if (input.eligibility === 'FREE_ONLY' && input.isPro) return 'SIDEWALK_REQUIRED'
-  if (!['OPEN', 'CLOSING_SOON'].includes(input.registrationState)) return 'NOT_OPEN'
-  if (input.category === 'PAID' && input.balance < input.accessCost) return 'INSUFFICIENT_BALANCE'
-  return 'CAN_JOIN'
-}
-
 function recommendationReason(input: {
   accessState: AccessState
   registrationState: RegistrationState
-  category: MesaCategory
+  effectiveCost: number
 }) {
   if (input.accessState !== 'CAN_JOIN') {
     const labels: Record<Exclude<AccessState, 'CAN_JOIN'>, string> = {
@@ -117,7 +98,7 @@ function recommendationReason(input: {
     return labels[input.accessState]
   }
   if (input.registrationState === 'CLOSING_SOON') return 'Inscrição terminando'
-  if (input.category !== 'PAID') return 'Sem custo de entrada'
+  if (input.effectiveCost <= 0) return 'Sem custo de entrada'
   return 'Você pode entrar agora'
 }
 
@@ -214,10 +195,10 @@ function buildDiscoveryIndexQuery(input: {
     baseFilters.push(Prisma.sql`r."category"::text = ${input.category}`)
   }
   if (input.minCost != null) {
-    baseFilters.push(Prisma.sql`r."accessCost" >= ${input.minCost}`)
+    baseFilters.push(Prisma.sql`COALESCE(r."accessCost", r."entryFee") >= ${input.minCost}`)
   }
   if (input.maxCost != null) {
-    baseFilters.push(Prisma.sql`r."accessCost" <= ${input.maxCost}`)
+    baseFilters.push(Prisma.sql`COALESCE(r."accessCost", r."entryFee") <= ${input.maxCost}`)
   }
   if (input.query) {
     baseFilters.push(Prisma.sql`(
@@ -309,7 +290,7 @@ function buildDiscoveryIndexQuery(input: {
           WHEN eligibility = 'SUBSCRIBERS_ONLY' AND NOT ${input.isPro} THEN 'PLAN_REQUIRED'
           WHEN eligibility = 'FREE_ONLY' AND ${input.isPro} THEN 'SIDEWALK_REQUIRED'
           WHEN registration_state NOT IN ('OPEN', 'CLOSING_SOON') THEN 'NOT_OPEN'
-          WHEN category = 'PAID' AND ${input.balance} < access_cost THEN 'INSUFFICIENT_BALANCE'
+          WHEN access_cost > 0 AND ${input.balance} < access_cost THEN 'INSUFFICIENT_BALANCE'
           ELSE 'CAN_JOIN'
         END AS access_state
       FROM registration
@@ -472,7 +453,7 @@ export class DiscoverMesasService {
         recommendationReason: recommendationReason({
           accessState: indexed.accessState,
           registrationState: indexed.registrationState,
-          category: mesa.category,
+          effectiveCost: mesa.accessCost ?? mesa.entryFee ?? 0,
         }),
       }]
     })

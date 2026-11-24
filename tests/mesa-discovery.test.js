@@ -27,7 +27,7 @@ function mesa(overrides = {}) {
 
 test('consulta de descoberta valida filtros e paginação', () => {
   assert.deepEqual(DiscoverMesasQuerySchema.parse({}), {
-    registration: 'ALL', access: 'ALL', sort: 'RECOMMENDED', page: 1, limit: 12,
+    region: 'ALL', registration: 'ALL', access: 'ALL', sort: 'RECOMMENDED', page: 1, limit: 12,
   })
   assert.equal(DiscoverMesasQuerySchema.safeParse({ registration: 'INVALID' }).success, false)
   assert.equal(DiscoverMesasQuerySchema.safeParse({ minCost: '20', maxCost: '10' }).success, false)
