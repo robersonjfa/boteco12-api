@@ -6,7 +6,7 @@ Data de consolidacao:
 
 Ultima atualizacao:
 
-- 2026-10-11
+- 2026-11-23
 
 Objetivo:
 
@@ -2194,6 +2194,8 @@ Status: Concluido, implantado e validado em producao
 Prioridade: Alta
 Frente: Produto / Backend / Frontend mobile-first / Recomendacao
 
+Refinamento visual solicitado em 2026-11-20: o item 44 substitui a apresentação por abas e filtros dispersos por uma listagem com filtro unificado. A conclusão histórica deste item permanece registrada; as regras de descoberta, elegibilidade e paginação continuam válidas.
+
 Nota de conclusao 2026-10-08:
 
 - descoberta separa `Para voce`, `Minhas` e `Todas`, priorizando Mesas abertas e elegiveis
@@ -2365,7 +2367,7 @@ Evolucoes futuras ainda sujeitas a decisao de produto:
 
 ### 41. Regionalizar Mesas de forma opcional
 
-Status: Backlog aprovado para refinamento antes da implementacao
+Status: Concluido, implantado e validado em producao em 2026-11-07
 
 Prioridade: P2
 
@@ -2379,7 +2381,7 @@ Decisoes centrais:
 - regiao melhora descoberta, filtros e ordenacao, sem restringir entrada
 - regras atuais de categoria, inscricao, saldo, capacidade e duracao nao mudam
 
-Refinamento solicitado em 2026-11-06 (pendente de implementacao):
+Refinamento solicitado em 2026-11-06 (concluido e implantado em 2026-11-07):
 
 - ocultar o campo tecnico de codigo IBGE no perfil e nos formularios de Mesa,
   mantendo seu uso interno
@@ -2390,6 +2392,142 @@ Refinamento solicitado em 2026-11-06 (pendente de implementacao):
 - prever CEP invalido/inexistente e indisponibilidade da consulta, mantendo
   a alternativa de busca por nome
 
+Nota de conclusao 2026-11-07:
+
+- `regionScope` (`NATIONAL`, `STATE`, `CITY`) implantado em Mesa, com localizacao opcional no perfil e descoberta com filtro, contagem e afinidade regional calculados no servidor
+- seletor compartilhado de municipio por nome/UF ou CEP no perfil, na criacao e na edicao de Mesa; codigo IBGE permanece interno e o CEP nao e persistido
+- API `0f19111` e frontend `e75b5ae` em producao, com health check e rota de localizacao protegida registrados em `output/pdf/boteco12-duelos-regionalizacao-release.json`
+- privacidade documentada em [`docs/mesa-regionalizacao-privacidade.md`](/Users/roberson/dev/personal/boteco12-api/docs/mesa-regionalizacao-privacidade.md) e alteracoes administrativas de abrangencia auditadas
+- cobertura em `tests/mesa-region-*.test.js`, `tests/location.test.js`, `mesa-region.spec.ts` e `minis-location.spec.ts`
+- fora do MVP permanece a Mesa regional exclusiva; nenhuma regra de entrada, saldo, capacidade ou duracao mudou
+
 Backlog detalhado:
 
 - [`docs/backlog-mesas-regionalizacao.md`](/Users/roberson/dev/personal/boteco12-api/docs/backlog-mesas-regionalizacao.md)
+
+### 42. Destacar Duelos X1 na home com o mesmo banner do bloco inferior
+
+Status: Não iniciado
+
+Prioridade: P1
+
+Frente: Frontend / UX jogador — correção visual, sem mudança de regra
+
+Origem: pedido do PO em 2026-11-20, print da home do jogador.
+
+Objetivo:
+
+- o acesso a Duelos X1 (Duelos por tampinhas) na home deve ter o mesmo destaque do banner de baixo da tela
+
+Contexto do print:
+
+- em cima, o X1 é um bloco fino com borda: título "Duelos por tampinhas" e o texto "Escolha uma mini e desafie seus amigos.", com link para `/duelos`
+- embaixo, o card "Olá, {nome}" concentra plano, saldo de tampinhas, a frase de estado da rodada e a faixa laranja em largura total ("Minhas escolhas", "Fazer escolhas" ou "Minha escolha")
+
+Tarefas:
+
+- aplicar nesse bloco de X1 o mesmo tratamento do banner inferior: card com gradiente e chamada em faixa laranja
+- manter o destino `/duelos` e o banner de escolhas da rodada como estão
+
+Critérios de aceite:
+
+- na home, Duelos X1 e o banner inferior aparecem com o mesmo peso visual
+- o toque no X1 continua abrindo a área de duelos
+- regras de mini, carteira e palpites permanecem iguais
+- validar em desktop e mobile
+
+### 43. Simplificar e facilitar a tela de duelo
+
+Status: Concluido, implantado e validado em producao em 2026-11-21
+
+Prioridade: P1
+
+Frente: Frontend / UX jogador — ajuste de clareza, sem mudança de regra
+
+Origem: pedido do PO em 2026-11-20. A tela de duelo ficou confusa e precisa ser simplificada e facilitada.
+
+Objetivo:
+
+- deixar `/duelos` com um caminho óbvio: escolher a mini, desafiar ou aceitar um X1 e acompanhar os próprios duelos
+
+Contexto da tela atual:
+
+- no mesmo nível convivem cabeçalho, saldo, personalização de perfil, quatro abas (Desafios públicos, Fechados e finalizados, Meus duelos e convites, Mini rodadas), filtro por mini, cards com várias ações (ver, recusar, aceitar, ver perfil) e um detalhe que mistura palpites, aceite, resultado e regras
+
+Tarefas:
+
+- reduzir o que compete pela atenção e deixar uma ação principal visível
+- tornar evidente o próximo passo: criar um desafio, aceitar um aberto ou ver os meus
+- preservar palpite definitivo, reserva de tampinhas, convite, desafio público, fechamento e apuração
+
+Critérios de aceite:
+
+- um jogador entende o que fazer sem percorrer todas as seções
+- criar, aceitar, recusar e acompanhar continuam possíveis
+- nenhuma regra de duelo, carteira ou pontuação muda
+- validar em desktop e mobile
+
+Nota de conclusao 2026-11-21:
+
+- as quatro abas viraram uma lista unica com filtros compactos (`Todos`, `Apostas altas (50+ tampinhas)`, `Meus duelos`) e acao `Ver finalizados`
+- minis abertas passaram para a secao "Escolha sua Mini Rodada"; encerradas ficam recolhidas
+- personalizacao de perfil e regras foram para dialogos; o topo concentra `Criar duelo`, `Regras`, nivel/XP, saldo e reserva
+- criar, aceitar, recusar e acompanhar continuam disponiveis, sem mudanca de regra de duelo, carteira ou pontuacao
+- commits `eb78186`, `bbc34a3`, `4e5094c` e `a110e47`; regressao em `tests/e2e/duels-reorg.spec.ts` e `tests/e2e/duels-filters.spec.ts`
+- implantado em producao no deploy `44935662804` (2026-11-21)
+
+### 44. Simplificar a listagem de Mesas com filtro único e cards compactos
+
+Status: Concluido no frontend e implantado em producao em 2026-11-21; backend complementar pendente
+
+Prioridade: P1
+
+Frente: Frontend / UX jogador — organização visual e clareza, sem mudança de regra
+
+Origem: pedidos do PO em 2026-11-20, com prints da listagem de Mesas.
+
+Problema:
+
+- banner grande de “Conhecer os lugares”, abas “Para você / Minhas / Todas”, chips regionais e atalhos de filtro ocupam várias faixas antes dos resultados
+- controles de uma mesma busca estão dispersos; “Limpar” não redefine visão, região e busca
+- cards altos repetem participantes e restrições e podem mostrar custo positivo junto de “Sem entrada”
+
+Decisões aprovadas (revisão 2):
+
+- botão secundário “Ver planos” no topo (`/subscription`, só para `!isPro`), no lugar do `UpgradeCTA` nesta tela
+- busca + um único painel “Filtros” com Mostrar (Explorar / Minhas / Criadas por mim), Região (“Todo o Brasil” vira “Nacionais”), Inscrições ou Situação, Entrada (Grátis / Com tampinhas / Patrocinadas, via `maxCost`/`minCost`/`category`), “Só as que posso entrar” e Ordenar; grupos variam por escopo
+- escopo padrão dinâmico: Minhas se o usuário tiver Mesa ativa; senão, Explorar
+- URL como fonte do estado aplicado (`show`, `q`, `region`, `registration`, `status`, `entry`, `access`, `sort`, `page`), com compatibilidade para links antigos `view=`/`category=`
+- cards separados para Explorar e Minhas; `discover` já exclui Mesas próprias, participadas, lotadas e encerradas, e `/api/mesas/me` traz a lista completa com `isOwner`
+- uma tabela única de textos na especificação
+
+Entrega:
+
+- PR 1 (frontend): cards compactos e vocabulário financeiro/ocupação, com formatadores testados
+- PR 2 (frontend): hook `useMesaListFilters`, `MesaFiltersSheet`, novo topo, filtro único, restauração de rolagem
+- tarefa de backend separada, nao bloqueante (pendente): `maxCost`/`minCost` com `COALESCE(accessCost, entryFee)`; checagem de saldo da descoberta para qualquer custo > 0; recomendação “Sem custo de entrada” baseada no custo efetivo
+
+Limites:
+
+- não alterar planos, cobrança, premiação, inscrições, permissões ou algoritmo de recomendação
+- substitui a organização visual do item 40 sem reabrir sua conclusão histórica nem retirar funcionalidades
+- Explorar continua paginado e filtrado no servidor; não concatenar descoberta com Minhas
+
+Critérios de aceite (resumo; lista completa na especificação, §10):
+
+- sem banner, abas, chips ou atalhos; em 375×667 o primeiro card aparece sem rolar
+- aplicar volta à página 1, cancelar descarta, limpar restaura tudo; voltar do detalhe preserva critérios, página e rolagem
+- nenhum card mostra custo positivo como grátis; ocupação aparece uma vez; restrição aparece como texto
+- validar 320/375/430 px, desktop, zoom de 200% e teclado
+
+Nota de conclusao 2026-11-21:
+
+- entrega de frontend concluida no commit `0cd196b` (PR #20) e implantada no deploy `44935662804`
+- topo sem banner, abas ou chips: busca e painel `Filtros`, com `Ver planos` apenas para quem nao tem plano
+- `useMesaListFilters` usa a URL como fonte do estado aplicado, aplica na pagina 1, descarta no cancelar, limpa tudo e restaura a rolagem ao voltar do detalhe
+- cards compactos em `MesaDiscoveryCard`/`MyMesaCard`, com formatadores cobertos por `mesa-formatters.test.ts`, `mesa-list-filters.test.ts` e `mesa-filters-sheet.test.tsx`
+- pendente (nao bloqueante): tarefa de backend da secao `Entrega` — hoje [`discover-mesas.service.ts`](/Users/roberson/dev/personal/boteco12-stack/boteco12-api/src/services/bolao/discover-mesas.service.ts:216) filtra `accessCost` cru, so checa saldo quando a categoria e `PAID` e rotula qualquer categoria diferente de `PAID` como sem custo
+
+Especificação detalhada:
+
+- [Correção dos cards e simplificação da listagem de Mesas](../../boteco12-frontend/docs/spec-correcao-cards-listagem-mesas.md)

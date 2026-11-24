@@ -2,7 +2,7 @@
 
 Data da decisao: 2026-10-11
 
-Status: Backlog aprovado para refinamento antes da implementacao
+Status: Concluido, implantado e validado em producao em 2026-11-07
 
 Prioridade sugerida: P2
 
@@ -16,17 +16,20 @@ barreira obrigatoria no cadastro, na criacao ou na participacao.
 
 ## Refinamento de UX - 2026-11-06: municipio por nome ou CEP
 
-Status: solicitado pelo produto; pendente de implementacao.
+Status: concluido e implantado em 2026-11-07.
 
-Atualizacao de entrega em 06/11/2026: implementado e validado localmente; release
-de producao em preparacao. Seletor compartilhado no perfil, criacao e edicao de
+Atualizacao de entrega em 06/11/2026: implementado e validado; release de
+producao concluido em 07/11/2026. Seletor compartilhado no perfil, criacao e edicao de
 Mesa, com nomes do IBGE e consulta opcional via ViaCEP. Codigo IBGE oculto;
 validacao canonica de municipio/UF no servidor. A edicao de rascunhos preserva
 a regiao e a abrangencia publicada nao pode ser alterada silenciosamente.
 Evidencias: `tests/location.test.js`, integracoes PostgreSQL de regionalizacao,
-`tests/e2e/minis-location.spec.ts`, `mesa-region.spec.ts` e `admin-mesa-list.spec.ts`.
+`tests/e2e/minis-location.spec.ts`, `mesa-region.spec.ts` e
+`admin-mesa-list.spec.ts`. Release: API `0f19111` e frontend `e75b5ae`
+(health check e rota de localizacao protegida em
+`output/pdf/boteco12-duelos-regionalizacao-release.json`).
 
-Evidencia do estado atual:
+Evidencia do estado anterior ao refinamento (2026-11-06):
 
 - o perfil armazena pais, UF, codigo IBGE e nome do municipio; nao ha campo de
   CEP no cadastro atual nem integracao de consulta de CEP identificada
